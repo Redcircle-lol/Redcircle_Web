@@ -1,8 +1,8 @@
 import { Router } from "express";
 import { RedditService } from "../services/reddit.service";
 import { createPostToken } from "../services/token.service";
-import { db } from "@redcircle/db";
-import * as schema from "@redcircle/db";
+import { db } from "../db";
+import * as schema from "../db";
 import { eq, desc, and, gte, lte, like, or, sql } from "drizzle-orm";
 
 const { posts, users } = schema;

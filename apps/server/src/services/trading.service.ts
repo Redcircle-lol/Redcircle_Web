@@ -2,8 +2,8 @@ import {
   Connection, 
   PublicKey,
 } from '@solana/web3.js';
-import { db } from '@redcircle/db';
-import * as schema from '@redcircle/db';
+import { db } from '../db';
+import * as schema from '../db';
 import { eq } from 'drizzle-orm';
 import {
   createBuyTransaction,

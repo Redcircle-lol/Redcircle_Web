@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { db } from "@redcircle/db";
+import { db } from "../db";
 import { eq, desc, and } from "drizzle-orm";
-import * as schema from "@redcircle/db";
+import * as schema from "../db";
 
 const { users, posts, transactions } = schema;
 

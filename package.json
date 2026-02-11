@@ -3,20 +3,17 @@
   "private": true,
   "type": "module",
   "workspaces": [
-    "apps/*",
-    "packages/*"
+    "apps/*"
   ],
   "scripts": {
     "dev": "pnpm -r dev",
-    "build": "pnpm --filter @redcircle/db build && pnpm --filter server build",
+    "build": "pnpm --filter server build",
     "check-types": "pnpm -r check-types",
     "dev:native": "pnpm --filter native dev",
     "dev:web": "pnpm --filter web dev",
     "dev:server": "pnpm --filter server dev",
-    "db:push": "pnpm --filter @redcircle/db db:push",
-    "db:studio": "pnpm --filter @redcircle/db db:studio",
-    "db:generate": "pnpm --filter @redcircle/db db:generate",
-    "db:migrate": "pnpm --filter @redcircle/db db:migrate"
+    "db:push": "pnpm --filter server db:push",
+    "db:generate": "pnpm --filter server db:generate"
   },
   "packageManager": "pnpm@10.7.0",
   "dependencies": {

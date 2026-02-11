@@ -1,8 +1,8 @@
 import { Router } from "express";
 import { buyTokens, sellTokens, getTradingStats } from "../services/trading.service";
 import { authenticateToken } from "../middleware/auth";
-import { db } from "@redcircle/db";
-import * as schema from "@redcircle/db";
+import { db } from "../db";
+import * as schema from "../db";
 import { eq, and } from "drizzle-orm";
 
 const { holdings, transactions, priceHistory } = schema;

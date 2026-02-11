@@ -93,6 +93,99 @@ Day 3: Sam sells @ 0.00225 = 21.4 SOL
 
 ---
 
+## Development Setup
+
+### Prerequisites
+- Node.js 24+ 
+- pnpm 10+
+- Supabase account
+
+### Installation
+
+```bash
+# Install dependencies
+pnpm install
+
+# Start development servers
+pnpm dev:web      # Frontend on port 3001
+pnpm dev:server   # Backend on port 3000
+
+# Database management
+pnpm db:studio    # Open Drizzle Studio
+pnpm db:push      # Push schema changes to Supabase
+```
+
+### Environment Variables
+
+**Backend** (`apps/server/.env`):
+```env
+DATABASE_URL=postgresql://postgres.euqumaxjojmyhkwevqur:redcircle9089@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres
+JWT_SECRET=your_jwt_secret
+REDDIT_CLIENT_ID=your_reddit_client_id
+REDDIT_CLIENT_SECRET=your_reddit_client_secret
+REDDIT_REDIRECT_URI=https://api.redcircle.lol/auth/reddit/callback
+FRONTEND_URL=https://www.redcircle.lol
+SOLANA_RPC_URL=https://api.devnet.solana.com
+SOLANA_AUTHORITY_PRIVATE_KEY=your_private_key
+```
+
+**Frontend** (`apps/web/.env`):
+```env
+VITE_API_URL=https://redcircle-web.onrender.com
+```
+
+### Project Structure
+
+```
+redcircle/
+├── apps/
+│   ├── web/              # Vite + React frontend
+│   └── server/           # Express API backend + Database
+│       └── src/
+│           └── db/       # Drizzle ORM schemas & migrations
+└── package.json          # Workspace root
+```
+
+**✨ Simplified Structure:**
+- No more `packages/` folder - all database code is now in the server
+- Cleaner, easier to understand and deploy
+- See [SIMPLIFIED_STRUCTURE.md](./SIMPLIFIED_STRUCTURE.md) for details
+
+---
+
+## Tech Stack
+
+- **Frontend**: React 19, Vite, TanStack Router, Tailwind CSS
+- **Backend**: Express, Node.js
+- **Database**: Supabase PostgreSQL (via Drizzle ORM)
+- **Blockchain**: Solana, SPL Tokens, Meteora DBC
+- **Auth**: Reddit OAuth + JWT
+- **Deployment**: Vercel (frontend) + Render (backend)
+
+---
+
+## Recent Updates
+
+### 🎯 Simplified Project Structure (Feb 2026)
+- **Removed** `packages/` folder completely
+- **Moved** all database code directly into `apps/server/src/db/`
+- **Cleaner** structure - no more monorepo complexity
+- **Easier** to understand, maintain, and deploy
+- See [SIMPLIFIED_STRUCTURE.md](SIMPLIFIED_STRUCTURE.md) for details
+
+### 🎉 Supabase Migration (Feb 2026)
+- Migrated from Neon to Supabase PostgreSQL
+- Zero breaking changes - all features working
+- Better database management and monitoring
+- See [MIGRATION_COMPLETE.md](MIGRATION_COMPLETE.md) for details
+
+### ✨ Waitlist Feature
+- Cool animated email input component
+- Email validation and duplicate checking
+- Toast notifications
+- Located at: `apps/web/src/components/WaitlistInput.tsx`
+
+---
 
 <div align="center">
 

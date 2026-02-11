@@ -1,7 +1,7 @@
 import { Router } from "express";
 import jwt from "jsonwebtoken";
-import { db } from "@redcircle/db";
-import * as schema from "@redcircle/db";
+import { db } from "../db";
+import * as schema from "../db";
 import { eq } from "drizzle-orm";
 
 const { users } = schema;
