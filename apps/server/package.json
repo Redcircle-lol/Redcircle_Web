@@ -7,20 +7,23 @@
     "check-types": "tsc -b",
     "compile": "bun build --compile --minify --sourcemap --bytecode ./src/index.ts --outfile server",
     "dev": "tsx watch src/index.ts",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "db:generate": "drizzle-kit generate",
+    "db:push": "drizzle-kit push"
   },
   "dependencies": {
     "@meteora-ag/dynamic-bonding-curve-sdk": "^1.4.9",
-    "@redcircle/db": "workspace:*",
     "@solana/spl-token": "0.4.9",
     "@solana/web3.js": "1.95.8",
+    "@types/pg": "^8.16.0",
     "bn.js": "^5.2.2",
     "bs58": "5.0.0",
     "cors": "^2.8.5",
     "dotenv": "catalog:",
-    "drizzle-orm": "^0.44.2",
+    "drizzle-orm": "^0.44.6",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
+    "pg": "^8.18.0",
     "zod": "catalog:"
   },
   "devDependencies": {
@@ -29,6 +32,7 @@
     "@types/express": "^5.0.1",
     "@types/jsonwebtoken": "^9.0.7",
     "@types/node": "catalog:",
+    "drizzle-kit": "^0.31.5",
     "tsdown": "catalog:",
     "tsx": "^4.19.2",
     "typescript": "catalog:"

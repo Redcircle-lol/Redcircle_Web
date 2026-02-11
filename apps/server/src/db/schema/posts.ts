@@ -1,5 +1,5 @@
 import { pgTable, text, timestamp, integer, numeric, uuid, pgEnum } from "drizzle-orm/pg-core";
-import { users } from "./users.js";
+import { users } from "./users";
 
 // Enum for tokenization status
 export const tokenizationStatusEnum = pgEnum("tokenization_status", [
