@@ -35,14 +35,16 @@ function DashboardPage() {
   }, [search.tab]);
 
   useEffect(() => {
-    // Skip auth check for localhost testing
-    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    if (!isLocalhost && !isLoading && !isAuthenticated) {
-      // Redirect to sign-in if not authenticated (only in production)
+    // Only redirect if we're done loading AND not authenticated
+    if (!isLoading && !isAuthenticated) {
+      console.log("❌ Not authenticated, redirecting to sign-in...");
+      // Redirect to sign-in if not authenticated
       navigate({ 
         to: "/signin",
         search: { redirect: "/dashboard" }
       });
+    } else if (isAuthenticated) {
+      console.log("✅ User authenticated, dashboard unlocked");
     }
   }, [isAuthenticated, isLoading, navigate]);
 

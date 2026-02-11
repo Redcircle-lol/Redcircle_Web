@@ -65,10 +65,13 @@ function SignIn() {
         
         console.log("✅ Login successful, redirecting to dashboard...");
         
-        // Redirect immediately to dashboard
+        // Clean up URL immediately to prevent double processing
+        window.history.replaceState({}, document.title, "/signin");
+        
+        // Redirect to dashboard - increased timeout to ensure localStorage is updated
         setTimeout(() => {
           navigate({ to: redirect || "/dashboard" });
-        }, 100);
+        }, 300);
       } catch (err) {
         console.error("❌ Error parsing user data:", err);
         toast.error("Failed to complete sign in", {
