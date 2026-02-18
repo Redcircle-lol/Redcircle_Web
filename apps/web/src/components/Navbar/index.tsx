@@ -2,6 +2,7 @@ import { StaggeredMenu } from "../StaggeredMenu";
 import { useAuth } from "../../contexts/AuthContext";
 import UserProfile from "../UserProfile";
 import WalletButton from "../WalletButton";
+import { Link } from "@tanstack/react-router";
 
 const items = [
 	{
@@ -86,16 +87,25 @@ export default function Navbar() {
 				displaySocials={true}
 				displayItemNumbering={true}
 				logoComponent={
-					<span
+					<Link
+						to="/"
 						style={{
-							fontWeight: 800,
-							fontSize: "1.25rem",
-							letterSpacing: "-0.02em",
-							color: "#ffffff",
+							textDecoration: "none",
+							color: "inherit",
 						}}
 					>
-						Redcircle
-					</span>
+						<span
+							style={{
+								fontWeight: 800,
+								fontSize: "1.25rem",
+								letterSpacing: "-0.02em",
+								color: "#ffffff",
+								cursor: "pointer",
+							}}
+						>
+							Redcircle
+						</span>
+					</Link>
 				}
 				menuPanelHeader={
 					<div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full z-10000">

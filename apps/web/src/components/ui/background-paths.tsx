@@ -1,8 +1,9 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { useNavigate } from '@tanstack/react-router';
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { getApiUrl } from "@/lib/auth";
+
 const RedditIcon = () => (
 	<svg
 		xmlns="http://www.w3.org/2000/svg"
@@ -84,6 +85,82 @@ function AnimatedBackground() {
 	);
 }
 
+// Pure CSS confetti — no canvas-confetti needed
+const CONFETTI_COLORS = [
+	"#FF4500", "#14F195", "#FFD700", "#FF6B6B",
+	"#4ECDC4", "#ff9a00", "#00f2fe", "#a855f7", "#f43f5e",
+];
+
+function ConfettiRain() {
+	const [visible, setVisible] = useState(true);
+	const [pieces] = useState(() =>
+		Array.from({ length: 80 }, (_, i) => ({
+			id: i,
+			left: Math.random() * 100,
+			delay: Math.random() * 2.5,
+			duration: 2.5 + Math.random() * 2.5,
+			size: 6 + Math.random() * 8,
+			color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
+			drift: -40 + Math.random() * 80,
+			isCircle: Math.random() > 0.5,
+		}))
+	);
+
+	useEffect(() => {
+		const timer = setTimeout(() => setVisible(false), 7000);
+		return () => clearTimeout(timer);
+	}, []);
+
+	if (!visible) return null;
+
+	return (
+		<>
+			<style>{`
+				@keyframes confetti-fall {
+					0% {
+						transform: translateY(-20px) translateX(0px) rotateZ(0deg) rotateX(0deg);
+						opacity: 1;
+					}
+					15% {
+						opacity: 1;
+					}
+					100% {
+						transform: translateY(110vh) translateX(var(--confetti-drift)) rotateZ(720deg) rotateX(360deg);
+						opacity: 0;
+					}
+				}
+			`}</style>
+			<div
+				style={{
+					position: "fixed",
+					inset: 0,
+					pointerEvents: "none",
+					zIndex: 99999,
+					overflow: "hidden",
+				}}
+				aria-hidden="true"
+			>
+				{pieces.map((p) => (
+					<div
+						key={p.id}
+						style={{
+							position: "absolute",
+							top: -20,
+							left: `${p.left}%`,
+							width: p.size,
+							height: p.isCircle ? p.size : p.size * 1.5,
+							backgroundColor: p.color,
+							borderRadius: p.isCircle ? "50%" : "2px",
+							["--confetti-drift" as string]: `${p.drift}px`,
+							animation: `confetti-fall ${p.duration}s ease-in ${p.delay}s forwards`,
+						}}
+					/>
+				))}
+			</div>
+		</>
+	);
+}
+
 export function BackgroundPaths({
 	title = "Background Paths",
 	subtitle,
@@ -92,10 +169,58 @@ export function BackgroundPaths({
 	subtitle?: string;
 }) {
 	const words = title.split(" ");
-	const navigate = useNavigate();
+	const [email, setEmail] = useState("");
+	const [isSubmitting, setIsSubmitting] = useState(false);
+	const [isSuccess, setIsSuccess] = useState(false);
+	const [errorMessage, setErrorMessage] = useState("");
+	const [showConfetti, setShowConfetti] = useState(false);
 
-	const handleStartTrading = () => {
-		navigate({ to: "/launch" });
+	// -- Commented out: Start Trading Now navigation --
+	// const navigate = useNavigate();
+	// const handleStartTrading = () => {
+	// 	navigate({ to: "/launch" });
+	// };
+
+	const handleWaitlistSubmit = async (e: React.FormEvent) => {
+		e.preventDefault();
+		setErrorMessage("");
+
+		if (!email.trim()) {
+			setErrorMessage("Please enter your email address");
+			return;
+		}
+
+		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+		if (!emailRegex.test(email)) {
+			setErrorMessage("Please enter a valid email address");
+			return;
+		}
+
+		setIsSubmitting(true);
+
+		try {
+			const apiUrl = getApiUrl();
+			const response = await fetch(`${apiUrl}/api/waitlist`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ email: email.trim() }),
+			});
+
+			const data = await response.json();
+
+			if (response.status === 201) {
+				setIsSuccess(true);
+				setShowConfetti(true);
+			} else if (response.status === 409) {
+				setErrorMessage("You're already on the waitlist! 🎉");
+			} else {
+				setErrorMessage(data.message || "Something went wrong. Please try again.");
+			}
+		} catch {
+			setErrorMessage("Network error. Please try again.");
+		} finally {
+			setIsSubmitting(false);
+		}
 	};
 
 	return (
@@ -103,6 +228,9 @@ export function BackgroundPaths({
 			<div className="absolute inset-0 h-full w-full">
 				<AnimatedBackground />
 			</div>
+
+			{/* Confetti Rain — rendered via portal-like fixed positioning */}
+			{showConfetti && <ConfettiRain />}
 
 			<div className="relative z-10 container mx-auto px-4 md:px-6 text-center flex flex-col items-center justify-center min-h-[100vh] py-20">
 				{/* Animated Logo Integration */}
@@ -125,8 +253,7 @@ export function BackgroundPaths({
 						<div className="w-20 h-20 md:w-32 md:h-32 bg-white/80 dark:bg-black/80 backdrop-blur-xl rounded-3xl shadow-2xl p-5 border border-white/20 dark:border-white/10 z-10 relative flex items-center justify-center">
 							<RedditIcon />
 						</div>
-						{/* Orbiting Satellite */}
-						<motion.div 
+						<motion.div
 							animate={{ rotate: 360 }}
 							transition={{ duration: 8, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
 							className="absolute inset-[-20%] border border-orange-500/20 rounded-full border-dashed"
@@ -140,18 +267,18 @@ export function BackgroundPaths({
 								key={i}
 								className="absolute top-1/2 left-1/2 flex items-center justify-center"
 								initial={{ x: -100, y: 0, opacity: 0, scale: 0.5 }}
-								animate={{ 
-									x: [null, 100], 
-									y: [null, (i % 2 === 0 ? -20 : 20)],
+								animate={{
+									x: [null, 100],
+									y: [null, i % 2 === 0 ? -20 : 20],
 									opacity: [0, 1, 0],
 									scale: [0.5, 1, 0.5],
-									rotate: [0, 180]
+									rotate: [0, 180],
 								}}
-								transition={{ 
-									duration: 2, 
-									repeat: Number.POSITIVE_INFINITY, 
+								transition={{
+									duration: 2,
+									repeat: Number.POSITIVE_INFINITY,
 									delay: i * 0.4,
-									ease: "easeInOut"
+									ease: "easeInOut",
 								}}
 							>
 								<span className="text-green-400 dark:text-green-300 font-bold text-xl md:text-2xl drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]">
@@ -171,8 +298,7 @@ export function BackgroundPaths({
 						<div className="w-20 h-20 md:w-32 md:h-32 bg-white/80 dark:bg-black/80 backdrop-blur-xl rounded-3xl shadow-2xl p-5 border border-white/20 dark:border-white/10 z-10 relative flex items-center justify-center">
 							<BankIcon />
 						</div>
-						{/* Orbiting Satellite */}
-						<motion.div 
+						<motion.div
 							animate={{ rotate: -360 }}
 							transition={{ duration: 10, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
 							className="absolute inset-[-20%] border border-green-500/20 rounded-full border-dashed"
@@ -188,19 +314,14 @@ export function BackgroundPaths({
 				>
 					<h1 className="text-5xl sm:text-7xl md:text-8xl font-bold mb-8 tracking-tighter font-satoshi text-transparent bg-clip-text bg-gradient-to-b from-neutral-900 to-neutral-500 dark:from-white dark:to-neutral-500 leading-tight">
 						{words.map((word, wordIndex) => (
-							<span
-								key={wordIndex}
-								className="inline-block mr-4 last:mr-0"
-							>
+							<span key={wordIndex} className="inline-block mr-4 last:mr-0">
 								{word.split("").map((letter, letterIndex) => (
 									<motion.span
 										key={`${wordIndex}-${letterIndex}`}
 										initial={{ y: 100, opacity: 0 }}
 										animate={{ y: 0, opacity: 1 }}
 										transition={{
-											delay:
-												wordIndex * 0.1 +
-												letterIndex * 0.03 + 0.5,
+											delay: wordIndex * 0.1 + letterIndex * 0.03 + 0.5,
 											type: "spring",
 											stiffness: 150,
 											damping: 25,
@@ -225,6 +346,103 @@ export function BackgroundPaths({
 						</motion.p>
 					)}
 
+					{/* Waitlist Email Form */}
+					<motion.div
+						initial={{ opacity: 0, y: 20 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ delay: 1.1, duration: 0.8 }}
+						className="w-full max-w-lg mx-auto"
+					>
+						<AnimatePresence mode="wait">
+							{isSuccess ? (
+								<motion.div
+									key="success"
+									initial={{ opacity: 0, scale: 0.8 }}
+									animate={{ opacity: 1, scale: 1 }}
+									exit={{ opacity: 0, scale: 0.8 }}
+									transition={{ duration: 0.5, type: "spring", stiffness: 200 }}
+									className="flex flex-col items-center gap-3"
+								>
+									<div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center shadow-lg shadow-green-500/30">
+										<svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+											<path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+										</svg>
+									</div>
+									<h3 className="text-2xl font-bold text-neutral-900 dark:text-white">
+										You're on the list! 🎉
+									</h3>
+									<p className="text-neutral-500 dark:text-neutral-400 text-sm">
+										We'll notify you when we launch. Stay tuned!
+									</p>
+								</motion.div>
+							) : (
+								<motion.form
+									key="form"
+									initial={{ opacity: 1 }}
+									exit={{ opacity: 0, y: -20 }}
+									onSubmit={handleWaitlistSubmit}
+									className="flex flex-col items-center gap-4"
+								>
+									<p className="text-sm font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-widest mb-1">
+										Join the Waitlist
+									</p>
+
+									<div className="flex w-full gap-2 items-center bg-white/80 dark:bg-white/10 backdrop-blur-xl rounded-full border border-neutral-200 dark:border-white/15 shadow-xl shadow-black/5 dark:shadow-black/20 p-1.5 transition-all duration-300 focus-within:border-orange-400 dark:focus-within:border-orange-500 focus-within:shadow-orange-500/10">
+										<input
+											id="waitlist-email"
+											type="email"
+											value={email}
+											onChange={(e) => {
+												setEmail(e.target.value);
+												setErrorMessage("");
+											}}
+											placeholder="Enter your email address"
+											className="flex-1 bg-transparent border-none outline-none px-5 py-3 text-base text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500"
+											disabled={isSubmitting}
+											autoComplete="email"
+										/>
+										<button
+											type="submit"
+											disabled={isSubmitting}
+											className="shrink-0 px-6 py-3 rounded-full text-sm font-semibold
+												bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600
+												text-white transition-all duration-300
+												hover:scale-105 hover:shadow-lg hover:shadow-orange-500/30
+												disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100
+												cursor-pointer"
+										>
+											{isSubmitting ? (
+												<span className="flex items-center gap-2">
+													<svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+														<circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+														<path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+													</svg>
+													Joining...
+												</span>
+											) : (
+												"Get Early Access"
+											)}
+										</button>
+									</div>
+
+									<AnimatePresence>
+										{errorMessage && (
+											<motion.p
+												initial={{ opacity: 0, y: -10 }}
+												animate={{ opacity: 1, y: 0 }}
+												exit={{ opacity: 0, y: -10 }}
+												className="text-sm text-red-500 dark:text-red-400"
+											>
+												{errorMessage}
+											</motion.p>
+										)}
+									</AnimatePresence>
+								</motion.form>
+							)}
+						</AnimatePresence>
+					</motion.div>
+
+					{/* -- Commented out: Start Trading Now button --
 					<motion.div
 						initial={{ opacity: 0, y: 20 }}
 						animate={{ opacity: 1, y: 0 }}
@@ -242,9 +460,9 @@ export function BackgroundPaths({
 							Start Trading Now
 						</Button>
 					</motion.div>
+					*/}
 				</motion.div>
 			</div>
 		</div>
 	);
 }
-
