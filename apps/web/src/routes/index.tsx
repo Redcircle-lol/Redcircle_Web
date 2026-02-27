@@ -1,16 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
-import RedditFeed from "@/components/RedditFeed";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/")({
-	component: HomeComponent,
+	beforeLoad: () => {
+		throw redirect({
+			to: "/home",
+		});
+	},
 });
-
-function HomeComponent() {
-	return (
-		<div className="relative flex min-h-screen flex-col pt-20 sm:pt-24 md:pt-28 pb-4 sm:pb-6 md:pb-16">
-			<div className="mx-auto w-full max-w-7xl px-3 sm:px-4 md:px-6 lg:px-8 pt-4 sm:pt-6 md:pt-8">
-				<RedditFeed />
-			</div>
-		</div>
-	);
-}

@@ -73,22 +73,24 @@ export default function FeedCard({ post, className, onTrade }: FeedCardProps) {
           )}
         </div>
 
-        {/* Title & Link */}
-        <Link
-          to="/token/$tokenId"
-          params={{ tokenId: post.id }}
+        {/* Title & Link to Reddit */}
+        <a
+          href={post.redditUrl || "#"}
+          target="_blank"
+          rel="noopener noreferrer"
           className="group/link block"
         >
           <h3 className="mb-3 line-clamp-2 text-lg font-semibold leading-snug text-white/90 transition-colors group-hover/link:text-white">
             {post.title}
           </h3>
-        </Link>
+        </a>
 
-        {/* Media */}
+        {/* Media & Link to Reddit */}
         {post.imageUrl && (
-          <Link
-            to="/token/$tokenId"
-            params={{ tokenId: post.id }}
+          <a
+            href={post.redditUrl || "#"}
+            target="_blank"
+            rel="noopener noreferrer"
             className="mb-4 block overflow-hidden rounded-xl bg-neutral-800"
           >
             <motion.img
@@ -97,7 +99,7 @@ export default function FeedCard({ post, className, onTrade }: FeedCardProps) {
               className="h-48 w-full object-cover transition-transform duration-500 group-hover:scale-105"
               loading="lazy"
             />
-          </Link>
+          </a>
         )}
       </div>
 

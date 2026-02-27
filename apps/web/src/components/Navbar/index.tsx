@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 // Public tabs always visible
 const publicTabs = [
-	{ label: "Feed", to: "/" },
+	{ label: "Feed", to: "/feed" },
 ];
 
 // Authenticated-only tabs
@@ -41,7 +41,6 @@ export default function Navbar() {
 	}, [isOpen]);
 
 	const isActive = (to: string) => {
-		if (to === "/") return currentPath === "/" || currentPath === "/feed";
 		return currentPath === to;
 	};
 
