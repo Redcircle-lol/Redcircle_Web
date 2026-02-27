@@ -37,6 +37,7 @@ export default function RedditFeed({ sideFilters = false }: { sideFilters?: bool
   const [loadingMore, setLoadingMore] = useState(false);
   const [searchFilters, setSearchFilters] = useState<SearchFilters>({});
   const [isSearching, setIsSearching] = useState(false);
+  const [activeSort, setActiveSort] = useState<"trending" | "new">("trending");
 
   // Fetch posts from backend
   const fetchPosts = useCallback(async (showRefreshing = false, resetOffset = true, filters: SearchFilters = {}, currentOffset = 0) => {
@@ -152,6 +153,15 @@ export default function RedditFeed({ sideFilters = false }: { sideFilters?: bool
     fetchPosts(false, true, filters, 0);
   }, [fetchPosts]);
 
+  // Handle sort toggle (Popular / Latest)
+  const handleSortToggle = useCallback((sort: "trending" | "new") => {
+    setActiveSort(sort);
+    const newFilters = { ...searchFilters, sortBy: sort };
+    setSearchFilters(newFilters);
+    setOffset(0);
+    fetchPosts(false, true, newFilters, 0);
+  }, [fetchPosts, searchFilters]);
+
   // Initial fetch
   useEffect(() => {
     fetchPosts(true, true, {}, 0);
@@ -207,6 +217,31 @@ export default function RedditFeed({ sideFilters = false }: { sideFilters?: bool
                 Feed
               </motion.h2>
               <div className="flex items-center gap-3 w-full sm:w-auto overflow-x-auto scrollbar-hide">
+                {/* Popular / Latest Toggle */}
+                <div className="inline-flex rounded-full border border-white/10 bg-white/5 p-0.5">
+                  <button
+                    onClick={() => handleSortToggle("trending")}
+                    className={
+                      "px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200 " +
+                      (activeSort === "trending"
+                        ? "bg-white/15 text-white shadow-sm"
+                        : "text-white/60 hover:text-white")
+                    }
+                  >
+                    Popular
+                  </button>
+                  <button
+                    onClick={() => handleSortToggle("new")}
+                    className={
+                      "px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200 " +
+                      (activeSort === "new"
+                        ? "bg-white/15 text-white shadow-sm"
+                        : "text-white/60 hover:text-white")
+                    }
+                  >
+                    Latest
+                  </button>
+                </div>
                 {/* Refresh Button */}
                 <Button
                   onClick={handleRefresh}

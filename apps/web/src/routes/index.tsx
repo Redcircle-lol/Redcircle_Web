@@ -1,32 +1,16 @@
-import { BackgroundPaths } from "@/components/ui/background-paths";
-import { AnimatedFooter } from "@/components/ui/animated-footer";
-import FeaturesParallax from "@/components/FeaturesParallax";
 import { createFileRoute } from "@tanstack/react-router";
-import { WorldMapDemo } from "@/components/ui/world-map-demo";
-import RedCircleCards from "@/components/RedCircleCards";
-// import { RedCircleTimeline } from "@/components/RedCircleTimeline";
-import Testimonials from "@/components/ui/testimonials";
+import RedditFeed from "@/components/RedditFeed";
 
 export const Route = createFileRoute("/")({
 	component: HomeComponent,
 });
 
-
 function HomeComponent() {
-
 	return (
-		<div className="relative flex min-h-screen flex-col">
-			<BackgroundPaths 
-				title="Turn Viral Posts Into Digital Assets"
-				subtitle="RedCircle tokenizes Reddit content on Solana blockchain, creating a new economy around social media virality."
-				
-			/>
-			<WorldMapDemo />
-			<RedCircleCards />
-			<FeaturesParallax />
-			{/* <RedCircleTimeline /> */}
-			<Testimonials />
-			<AnimatedFooter />
+		<div className="relative flex min-h-screen flex-col pt-20 sm:pt-24 md:pt-28 pb-4 sm:pb-6 md:pb-16">
+			<div className="mx-auto w-full max-w-7xl px-3 sm:px-4 md:px-6 lg:px-8 pt-4 sm:pt-6 md:pt-8">
+				<RedditFeed />
+			</div>
 		</div>
 	);
 }

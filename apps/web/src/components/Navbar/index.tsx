@@ -1,124 +1,121 @@
-import { StaggeredMenu } from "../StaggeredMenu";
 import { useAuth } from "../../contexts/AuthContext";
 import UserProfile from "../UserProfile";
 import WalletButton from "../WalletButton";
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 
-const items = [
-	{
-		label: "Home",
-		link: "/",
-		ariaLabel: "Go to home page",
-	},
-	{
-		label: "Dashboard",
-		link: "/dashboard",
-		ariaLabel: "Open dashboard",
-	},
-	{
-		label: "Sign In",
-		link: "/signin",
-		ariaLabel: "Sign in to your account",
-	},
+// Public tabs always visible in the top bar
+const publicTabs = [
+	{ label: "Feed", to: "/" },
+	{ label: "Launch", to: "/launch" },
+	{ label: "Leaderboard", to: "/leaderboard" },
 ];
 
-const socialItems = [
-	{ label: "Twitter", link: "https://twitter.com/adityaslyf" },
-	{ label: "GitHub", link: "https://github.com/adityaslyf" },
-	{ label: "LinkedIn", link: "https://www.linkedin.com/in/aditya-varshney-089b33244/" },
+// Authenticated-only tabs/items
+const privateTabs = [
+	{ label: "Portfolio", to: "/portfolio" },
+	{ label: "Transactions", to: "/transactions" },
+	{ label: "Profile", to: "/profile" },
 ];
 
 export default function Navbar() {
 	const { isAuthenticated } = useAuth();
+	const routerState = useRouterState();
+	const currentPath = routerState.location.pathname;
 
-	// Dynamically build menu items based on auth status
-	const menuItems = isAuthenticated
-		? [
-				{
-					label: "Home",
-					link: "/",
-					ariaLabel: "Go to home page",
-				},
-				{
-					label: "Feed",
-					link: "/feed",
-					ariaLabel: "View feed",
-				},
-				{
-					label: "Dashboard",
-					link: "/dashboard",
-					ariaLabel: "Open dashboard",
-				},
-				{
-					label: "Leaderboard",
-					link: "/dashboard?tab=leaderboard",
-					ariaLabel: "View leaderboard",
-				},
-				{
-					label: "Portfolio",
-					link: "/portfolio",
-					ariaLabel: "View your portfolio",
-				},
-				{
-					label: "Transactions",
-					link: "/transactions",
-					ariaLabel: "View transaction history",
-				},
-				{
-					label: "Launch",
-					link: "/launch",
-					ariaLabel: "Launch a post",
-				},
-				{
-					label: "Profile",
-					link: "/dashboard?tab=profile",
-					ariaLabel: "View your profile",
-				},
-		  ]
-		: items;
+	// Check if a tab is active
+	const isActive = (to: string) => {
+		if (to === "/") return currentPath === "/" || currentPath === "/feed";
+		return currentPath === to;
+	};
 
 	return (
-		<>
-			<StaggeredMenu
-				position="right"
-				colors={["#0a0a0a", "#1a1a1a"]}
-				items={menuItems}
-				socialItems={socialItems}
-				displaySocials={true}
-				displayItemNumbering={true}
-				logoComponent={
+		<header className="fixed top-0 left-0 right-0 z-50">
+			{/* Glassmorphism background */}
+			<div className="absolute inset-0 bg-black/80 backdrop-blur-xl border-b border-white/10" />
+
+			<div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+				<div className="flex h-16 items-center justify-between">
+					{/* Left: Logo */}
 					<Link
-						to="/"
-						style={{
-							textDecoration: "none",
-							color: "inherit",
-						}}
+						to="/home"
+						className="flex shrink-0 items-center gap-2 mr-3"
 					>
-						<span
-							style={{
-								fontWeight: 800,
-								fontSize: "1.25rem",
-								letterSpacing: "-0.02em",
-								color: "#ffffff",
-								cursor: "pointer",
-							}}
-						>
+						<span className="font-extrabold text-lg sm:text-xl tracking-tight text-white">
 							Redcircle
 						</span>
 					</Link>
-				}
-				menuPanelHeader={
-					<div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full z-10000">
-					{isAuthenticated && <UserProfile />}
-						<WalletButton />
+
+					{/* Middle: All tabs in one row */}
+					<div className="min-w-0 flex-1 overflow-x-auto scrollbar-hide">
+						<nav className="flex min-w-max items-center gap-1 whitespace-nowrap">
+							{publicTabs.map((tab) => (
+								<Link
+									key={tab.to}
+									to={tab.to}
+									className={
+										"relative px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 " +
+										(isActive(tab.to)
+											? "text-white bg-white/10"
+											: "text-white/60 hover:text-white hover:bg-white/5")
+									}
+								>
+									{tab.label}
+									{isActive(tab.to) && (
+										<span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4/5 h-0.5 bg-purple-500 rounded-full" />
+									)}
+								</Link>
+							))}
+							{isAuthenticated &&
+								privateTabs.map((tab) => (
+									<Link
+										key={tab.label}
+										to={tab.to}
+										className={
+											"relative px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 " +
+											(isActive(tab.to)
+												? "text-white bg-white/10"
+												: "text-white/60 hover:text-white hover:bg-white/5")
+										}
+									>
+										{tab.label}
+										{isActive(tab.to) && (
+											<span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4/5 h-0.5 bg-purple-500 rounded-full" />
+										)}
+									</Link>
+								))}
+						</nav>
 					</div>
-				}
-				menuButtonColor="#ffffff"
-				openMenuButtonColor="#ffffff"
-				accentColor="#3b82f6"
-				changeMenuColorOnOpen={false}
-				isFixed={true}
-			/>
-		</>
+
+					{/* Right section */}
+					<div className="ml-3 flex shrink-0 items-center gap-2 sm:gap-3">
+						{/* Invest in us link (desktop) */}
+						<a
+							href="https://twitter.com/adityaslyf"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="hidden md:inline-flex text-sm text-white/60 hover:text-white transition-colors"
+						>
+							Invest in us
+						</a>
+
+						{isAuthenticated && (
+							<div className="hidden sm:flex items-center gap-2">
+								<UserProfile />
+							</div>
+						)}
+						<WalletButton />
+
+						{!isAuthenticated && (
+							<Link
+								to="/signin"
+								className="text-sm px-3 py-1.5 rounded-lg border border-white/20 text-white/80 hover:text-white hover:bg-white/5 transition-all"
+							>
+								Sign In
+							</Link>
+						)}
+					</div>
+				</div>
+			</div>
+		</header>
 	);
 }

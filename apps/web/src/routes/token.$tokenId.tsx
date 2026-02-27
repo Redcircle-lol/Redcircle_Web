@@ -63,12 +63,12 @@ function TokenDetailsPage() {
         <div className="max-w-md text-center">
           <p className="text-xl text-red-400">⚠️ {error || "Token not found"}</p>
           <Button
-            onClick={() => navigate({ to: "/dashboard" })}
+            onClick={() => navigate({ to: "/" })}
             className="mt-6"
             variant="outline"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Dashboard
+            Back to Feed
           </Button>
         </div>
       </div>
@@ -85,7 +85,7 @@ function TokenDetailsPage() {
       <div className="mx-auto w-full max-w-6xl">
         {/* Back Button */}
         <Button
-          onClick={() => navigate({ to: "/dashboard" })}
+          onClick={() => navigate({ to: "/" })}
           variant="ghost"
           className="mb-6 text-white/70 hover:text-white"
         >

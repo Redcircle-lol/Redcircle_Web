@@ -1,26 +1,23 @@
 
 import { motion } from "motion/react";
 import { Link } from "@tanstack/react-router";
-import { Home, Trophy, Wallet, ArrowLeftRight, Rocket, User } from "lucide-react";
+import { Home, Trophy, Wallet, Rocket, User } from "lucide-react";
 
 interface MobileNavProps {
-  currentPage?: "feed" | "leaderboard" | "portfolio" | "transactions" | "launch" | "profile";
+  currentPage?: "feed" | "leaderboard" | "portfolio" | "launch" | "profile";
 }
 
 const NAV_ITEMS: { 
-  key: "feed" | "leaderboard" | "portfolio" | "transactions" | "launch" | "profile"; 
+  key: "feed" | "leaderboard" | "portfolio" | "launch" | "profile"; 
   label: string; 
   icon: React.ComponentType<{ className?: string; strokeWidth?: number }>; 
   to: string;
-  search?: Record<string, string | undefined>;
-  resetScroll?: boolean;
 }[] = [
-  { key: "feed", label: "Feed", icon: Home, to: "/dashboard", search: { tab: "feed" }, resetScroll: true },
-  { key: "leaderboard", label: "Board", icon: Trophy, to: "/dashboard", search: { tab: "leaderboard" }, resetScroll: true },
-  { key: "portfolio", label: "Portfolio", icon: Wallet, to: "/dashboard", search: { tab: "portfolio" }, resetScroll: true },
-  { key: "transactions", label: "History", icon: ArrowLeftRight, to: "/dashboard", search: { tab: "transactions" }, resetScroll: true },
-  { key: "launch", label: "Launch", icon: Rocket, to: "/dashboard", search: { tab: "launch" }, resetScroll: true },
-  { key: "profile", label: "Profile", icon: User, to: "/dashboard", search: { tab: "profile" }, resetScroll: true },
+  { key: "feed", label: "Feed", icon: Home, to: "/" },
+  { key: "leaderboard", label: "Board", icon: Trophy, to: "/leaderboard" },
+  { key: "portfolio", label: "Portfolio", icon: Wallet, to: "/portfolio" },
+  { key: "launch", label: "Launch", icon: Rocket, to: "/launch" },
+  { key: "profile", label: "Profile", icon: User, to: "/profile" },
 ];
 
 export default function MobileNav({ currentPage }: MobileNavProps) {
@@ -37,9 +34,8 @@ export default function MobileNav({ currentPage }: MobileNavProps) {
           return (
             <Link
               key={item.key}
-              to="/dashboard"
-              search={{ tab: item.key }}
-              resetScroll={item.resetScroll}
+              to={item.to}
+              resetScroll
               className="flex-1 relative group"
               style={{ WebkitTapHighlightColor: 'transparent' }}
             >

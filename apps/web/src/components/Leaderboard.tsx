@@ -1,6 +1,6 @@
 import { motion } from "motion/react";
 import { useState, useEffect } from "react";
-import { fetchWithAuth } from "@/lib/auth";
+import { getApiUrl } from "@/lib/auth";
 
 type Category = "author" | "curator";
 
@@ -26,7 +26,8 @@ export default function Leaderboard({ sideFilters = false }: { sideFilters?: boo
         setLoading(true);
         setError(null);
 
-        const response = await fetchWithAuth(`/api/leaderboard?category=${category}&limit=10`);
+        const apiUrl = getApiUrl();
+        const response = await fetch(`${apiUrl}/api/leaderboard?category=${category}&limit=10`);
         const result = await response.json();
 
         if (result.success) {

@@ -3,10 +3,8 @@ import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { TrendingUp, TrendingDown, Wallet, RefreshCw } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { fetchWithAuth, getApiUrl } from "@/lib/auth";
+import { fetchWithAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
-import MobileNav from "@/components/MobileNav";
-import DesktopSidebar from "@/components/DesktopSidebar";
 
 export const Route = createFileRoute("/portfolio")({
   component: PortfolioPage,
@@ -52,11 +50,6 @@ function PortfolioPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Redirect if not authenticated
-  if (!user) {
-    return <Navigate to="/signin" search={{ redirect: "/portfolio" }} />;
-  }
-
   const fetchPortfolio = async (isRefresh = false) => {
     try {
       if (isRefresh) {
@@ -88,6 +81,11 @@ function PortfolioPage() {
     fetchPortfolio(true);
   };
 
+  // Redirect if not authenticated
+  if (!user) {
+    return <Navigate to="/signin" search={{ redirect: "/portfolio" }} />;
+  }
+
   if (loading) {
     return (
       <div className="mx-auto min-h-screen w-full max-w-7xl px-4 pt-32 sm:px-6 lg:px-8">
@@ -99,16 +97,11 @@ function PortfolioPage() {
   }
 
   return (
-    <>
-      <MobileNav currentPage="portfolio" />
-      <DesktopSidebar currentPage="portfolio" />
-      
-      <div className="mx-auto min-h-screen w-full max-w-7xl px-4 pt-32 pb-20 sm:px-6 md:pl-32 lg:pl-36 lg:px-8">
+      <div className="mx-auto min-h-screen w-full max-w-7xl px-4 pt-32 pb-20 sm:px-6 lg:px-8">
       {/* Header */}
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-white">Portfolio</h1>
-          <p className="mt-1 text-white/60">Track your token holdings and performance</p>
         </div>
         
         <Button
@@ -276,6 +269,5 @@ function PortfolioPage() {
         </div>
       )}
       </div>
-    </>
   );
 }

@@ -12,9 +12,12 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as TransactionsRouteImport } from './routes/transactions'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SigninRouteImport } from './routes/signin'
+import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as PortfolioRouteImport } from './routes/portfolio'
+import { Route as LeaderboardRouteImport } from './routes/leaderboard'
 import { Route as LaunchRouteImport } from './routes/launch'
+import { Route as HomeRouteImport } from './routes/home'
 import { Route as FeedRouteImport } from './routes/feed'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
@@ -35,6 +38,11 @@ const SigninRoute = SigninRouteImport.update({
   path: '/signin',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
@@ -45,9 +53,19 @@ const PortfolioRoute = PortfolioRouteImport.update({
   path: '/portfolio',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LeaderboardRoute = LeaderboardRouteImport.update({
+  id: '/leaderboard',
+  path: '/leaderboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LaunchRoute = LaunchRouteImport.update({
   id: '/launch',
   path: '/launch',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HomeRoute = HomeRouteImport.update({
+  id: '/home',
+  path: '/home',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FeedRoute = FeedRouteImport.update({
@@ -75,9 +93,12 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
   '/feed': typeof FeedRoute
+  '/home': typeof HomeRoute
   '/launch': typeof LaunchRoute
+  '/leaderboard': typeof LeaderboardRoute
   '/portfolio': typeof PortfolioRoute
   '/privacy': typeof PrivacyRoute
+  '/profile': typeof ProfileRoute
   '/signin': typeof SigninRoute
   '/terms': typeof TermsRoute
   '/transactions': typeof TransactionsRoute
@@ -87,9 +108,12 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
   '/feed': typeof FeedRoute
+  '/home': typeof HomeRoute
   '/launch': typeof LaunchRoute
+  '/leaderboard': typeof LeaderboardRoute
   '/portfolio': typeof PortfolioRoute
   '/privacy': typeof PrivacyRoute
+  '/profile': typeof ProfileRoute
   '/signin': typeof SigninRoute
   '/terms': typeof TermsRoute
   '/transactions': typeof TransactionsRoute
@@ -100,9 +124,12 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
   '/feed': typeof FeedRoute
+  '/home': typeof HomeRoute
   '/launch': typeof LaunchRoute
+  '/leaderboard': typeof LeaderboardRoute
   '/portfolio': typeof PortfolioRoute
   '/privacy': typeof PrivacyRoute
+  '/profile': typeof ProfileRoute
   '/signin': typeof SigninRoute
   '/terms': typeof TermsRoute
   '/transactions': typeof TransactionsRoute
@@ -114,9 +141,12 @@ export interface FileRouteTypes {
     | '/'
     | '/dashboard'
     | '/feed'
+    | '/home'
     | '/launch'
+    | '/leaderboard'
     | '/portfolio'
     | '/privacy'
+    | '/profile'
     | '/signin'
     | '/terms'
     | '/transactions'
@@ -126,9 +156,12 @@ export interface FileRouteTypes {
     | '/'
     | '/dashboard'
     | '/feed'
+    | '/home'
     | '/launch'
+    | '/leaderboard'
     | '/portfolio'
     | '/privacy'
+    | '/profile'
     | '/signin'
     | '/terms'
     | '/transactions'
@@ -138,9 +171,12 @@ export interface FileRouteTypes {
     | '/'
     | '/dashboard'
     | '/feed'
+    | '/home'
     | '/launch'
+    | '/leaderboard'
     | '/portfolio'
     | '/privacy'
+    | '/profile'
     | '/signin'
     | '/terms'
     | '/transactions'
@@ -151,9 +187,12 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRoute: typeof DashboardRoute
   FeedRoute: typeof FeedRoute
+  HomeRoute: typeof HomeRoute
   LaunchRoute: typeof LaunchRoute
+  LeaderboardRoute: typeof LeaderboardRoute
   PortfolioRoute: typeof PortfolioRoute
   PrivacyRoute: typeof PrivacyRoute
+  ProfileRoute: typeof ProfileRoute
   SigninRoute: typeof SigninRoute
   TermsRoute: typeof TermsRoute
   TransactionsRoute: typeof TransactionsRoute
@@ -183,6 +222,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SigninRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/privacy': {
       id: '/privacy'
       path: '/privacy'
@@ -197,11 +243,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortfolioRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/leaderboard': {
+      id: '/leaderboard'
+      path: '/leaderboard'
+      fullPath: '/leaderboard'
+      preLoaderRoute: typeof LeaderboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/launch': {
       id: '/launch'
       path: '/launch'
       fullPath: '/launch'
       preLoaderRoute: typeof LaunchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/home': {
+      id: '/home'
+      path: '/home'
+      fullPath: '/home'
+      preLoaderRoute: typeof HomeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/feed': {
@@ -239,9 +299,12 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRoute: DashboardRoute,
   FeedRoute: FeedRoute,
+  HomeRoute: HomeRoute,
   LaunchRoute: LaunchRoute,
+  LeaderboardRoute: LeaderboardRoute,
   PortfolioRoute: PortfolioRoute,
   PrivacyRoute: PrivacyRoute,
+  ProfileRoute: ProfileRoute,
   SigninRoute: SigninRoute,
   TermsRoute: TermsRoute,
   TransactionsRoute: TransactionsRoute,

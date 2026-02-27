@@ -51,7 +51,7 @@ export function isAuthenticated(): boolean {
 // Logout user
 export function logout(): void {
   removeAuthToken();
-  window.location.href = "/signin";
+  window.location.href = "/";
 }
 
 // Get API URL

@@ -113,10 +113,10 @@ export function AnimatedFooter() {
         {/* Links */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-8">
           <MotionCol title="Platform" links={[
-            { label: "Dashboard", href: "/dashboard" },
-            { label: "Feed", href: "/dashboard?tab=feed" },
-            { label: "Launch Token", href: "/dashboard?tab=launch" },
-            { label: "Portfolio", href: "/dashboard?tab=portfolio" },
+            { label: "Feed", href: "/" },
+            { label: "Launch Token", href: "/launch" },
+            { label: "Leaderboard", href: "/leaderboard" },
+            { label: "Portfolio", href: "/portfolio" },
           ]} delay={0.05} />
           <MotionCol title="Legal" links={[
             { label: "Privacy Policy", href: "/privacy" },
