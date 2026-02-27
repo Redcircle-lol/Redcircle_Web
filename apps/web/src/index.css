@@ -18,19 +18,24 @@ body {
 }
 
 /* Fix stacking context - Prevent z-index inheritance issues */
-body > #app {
+body>#app {
   position: relative;
 }
 
 /* Content should never need z-index - use natural document flow */
 /* EXCEPT: sticky elements (parallax cards) need their z-index */
-main, section, article, div:not([class*="fixed"]):not([class*="absolute"]):not([class*="sticky"]) {
+/* ALSO: Exclude wallet-adapter and other third-party UI components that manage their own positioning */
+main,
+section,
+article,
+div:not([class*="fixed"]):not([class*="absolute"]):not([class*="sticky"]):not([class*="wallet-adapter"]) {
   position: relative;
   z-index: auto;
 }
 
 /* Only fixed/absolute positioned elements should have z-index */
-[class*="fixed"], [class*="absolute"] {
+[class*="fixed"],
+[class*="absolute"] {
   isolation: isolate;
 }
 
@@ -145,11 +150,18 @@ main, section, article, div:not([class*="fixed"]):not([class*="absolute"]):not([
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
     font-family: "Satoshi", "Inter", "Geist", ui-sans-serif, system-ui, sans-serif;
   }
-  h1, h2, h3, h4, h5, h6 {
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: "Satoshi", "Inter", ui-sans-serif, system-ui, sans-serif;
     letter-spacing: -0.01em;
     text-transform: none;
@@ -164,6 +176,7 @@ main, section, article, div:not([class*="fixed"]):not([class*="absolute"]):not([
   font-style: normal;
   font-display: swap;
 }
+
 @font-face {
   font-family: "Satoshi";
   src: url("/src/components/font/Satoshi-Medium.otf") format("opentype");
@@ -171,6 +184,7 @@ main, section, article, div:not([class*="fixed"]):not([class*="absolute"]):not([
   font-style: normal;
   font-display: swap;
 }
+
 @font-face {
   font-family: "Satoshi";
   src: url("/src/components/font/Satoshi-Bold.otf") format("opentype");
@@ -178,6 +192,7 @@ main, section, article, div:not([class*="fixed"]):not([class*="absolute"]):not([
   font-style: normal;
   font-display: swap;
 }
+
 @font-face {
   font-family: "Satoshi";
   src: url("/src/components/font/Satoshi-Black.otf") format("opentype");
@@ -194,6 +209,7 @@ main, section, article, div:not([class*="fixed"]):not([class*="absolute"]):not([
   font-style: normal;
   font-display: swap;
 }
+
 @font-face {
   font-family: "Font1797";
   src: url("/src/components/font/1797/1797-MEDIUM.otf") format("opentype");
@@ -201,6 +217,7 @@ main, section, article, div:not([class*="fixed"]):not([class*="absolute"]):not([
   font-style: normal;
   font-display: swap;
 }
+
 @font-face {
   font-family: "Font1797";
   src: url("/src/components/font/1797/1797-COMPRESSED.otf") format("opentype");
@@ -209,7 +226,9 @@ main, section, article, div:not([class*="fixed"]):not([class*="absolute"]):not([
   font-display: swap;
 }
 
-.font-1797 { font-family: "Satoshi", "Inter", ui-sans-serif, system-ui, sans-serif !important; }
+.font-1797 {
+  font-family: "Satoshi", "Inter", ui-sans-serif, system-ui, sans-serif !important;
+}
 
 /* Sign-in page animations */
 @keyframes fadeSlideIn {
@@ -257,18 +276,53 @@ main, section, article, div:not([class*="fixed"]):not([class*="absolute"]):not([
   animation: testimonialIn 0.6s ease-out forwards;
 }
 
-.animate-delay-100 { animation-delay: 0.1s; }
-.animate-delay-200 { animation-delay: 0.2s; }
-.animate-delay-300 { animation-delay: 0.3s; }
-.animate-delay-400 { animation-delay: 0.4s; }
-.animate-delay-500 { animation-delay: 0.5s; }
-.animate-delay-600 { animation-delay: 0.6s; }
-.animate-delay-700 { animation-delay: 0.7s; }
-.animate-delay-800 { animation-delay: 0.8s; }
-.animate-delay-900 { animation-delay: 0.9s; }
-.animate-delay-1000 { animation-delay: 1s; }
-.animate-delay-1200 { animation-delay: 1.2s; }
-.animate-delay-1400 { animation-delay: 1.4s; }
+.animate-delay-100 {
+  animation-delay: 0.1s;
+}
+
+.animate-delay-200 {
+  animation-delay: 0.2s;
+}
+
+.animate-delay-300 {
+  animation-delay: 0.3s;
+}
+
+.animate-delay-400 {
+  animation-delay: 0.4s;
+}
+
+.animate-delay-500 {
+  animation-delay: 0.5s;
+}
+
+.animate-delay-600 {
+  animation-delay: 0.6s;
+}
+
+.animate-delay-700 {
+  animation-delay: 0.7s;
+}
+
+.animate-delay-800 {
+  animation-delay: 0.8s;
+}
+
+.animate-delay-900 {
+  animation-delay: 0.9s;
+}
+
+.animate-delay-1000 {
+  animation-delay: 1s;
+}
+
+.animate-delay-1200 {
+  animation-delay: 1.2s;
+}
+
+.animate-delay-1400 {
+  animation-delay: 1.4s;
+}
 
 .custom-checkbox {
   appearance: none;
@@ -298,13 +352,17 @@ main, section, article, div:not([class*="fixed"]):not([class*="absolute"]):not([
 
 /* Hide scrollbar while maintaining scroll functionality */
 .scrollbar-hide {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
-  -webkit-overflow-scrolling: touch;  /* Smooth scrolling on iOS */
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
+  -webkit-overflow-scrolling: touch;
+  /* Smooth scrolling on iOS */
 }
 
 .scrollbar-hide::-webkit-scrollbar {
-  display: none;  /* Chrome, Safari and Opera */
+  display: none;
+  /* Chrome, Safari and Opera */
 }
 
 /* Safe area insets for mobile devices with notches */

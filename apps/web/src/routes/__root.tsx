@@ -51,8 +51,10 @@ function RootComponent() {
 			>
 				<WalletContextProvider>
 					<AuthProvider>
-						<Navbar />
-						<Outlet />
+						 <Navbar />
+						 <div className="pt-16 sm:pt-16 md:pt-16">
+							 <Outlet />
+						 </div>
 						<Toaster richColors />
 					</AuthProvider>
 				</WalletContextProvider>

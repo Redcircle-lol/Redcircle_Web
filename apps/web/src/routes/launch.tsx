@@ -19,7 +19,7 @@ function LaunchPage() {
     const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     if (!isLocalhost && !isLoading && !isAuthenticated) {
       console.log("❌ Not authenticated, redirecting to sign in...");
-      navigate({ to: "/signin" });
+      navigate({ to: "/signin", search: { redirect: "/launch" } });
     }
   }, [user, isLoading, isAuthenticated, navigate]);
 

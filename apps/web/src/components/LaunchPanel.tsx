@@ -163,10 +163,10 @@ export default function LaunchPanel() {
             <Sparkles className="w-3 h-3" />
             Tokenize Viral Content
           </span>
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 tracking-tight font-satoshi">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4 tracking-tight font-satoshi">
             Launch Your Token
           </h1>
-          <p className="text-lg text-white/50 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-base sm:text-lg text-white/50 max-w-2xl mx-auto leading-relaxed px-4">
             Turn any Reddit post into a tradable digital asset on Solana.
             Capture viral momentum and earn rewards.
           </p>
@@ -189,7 +189,7 @@ export default function LaunchPanel() {
                 <label className="block text-sm font-medium text-white/70 ml-1">
                   Reddit Post URL
                 </label>
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-3">
                   <input
                     required
                     value={url}
@@ -199,18 +199,21 @@ export default function LaunchPanel() {
                       setError("");
                     }}
                     placeholder="Paste Reddit link here..."
-                    className="flex-1 bg-neutral-950/50 border border-white/10 rounded-lg px-4 py-3 text-white placeholder:text-white/20 focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/30 transition-all"
+                    className="flex-1 bg-neutral-950/50 border border-white/10 rounded-lg px-4 py-3 text-white placeholder:text-white/20 focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/30 transition-all text-sm"
                   />
                   <Button
                     type="button"
                     onClick={handleFetchPost}
                     disabled={!url || isFetching}
-                    className="h-auto px-6 rounded-lg bg-white text-black hover:bg-white/90 font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="h-12 sm:h-auto px-6 rounded-lg bg-white text-black hover:bg-white/90 font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isFetching ? (
                       <div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
                     ) : (
-                      <ArrowRight className="w-5 h-5" />
+                      <div className="flex items-center gap-2">
+                        <span className="sm:hidden">Fetch Post</span>
+                        <ArrowRight className="w-5 h-5" />
+                      </div>
                     )}
                   </Button>
                 </div>
@@ -220,7 +223,7 @@ export default function LaunchPanel() {
                     animate={{ opacity: 1, y: 0 }}
                     className="flex items-center gap-2 text-red-400 text-sm bg-red-500/5 border border-red-500/10 px-4 py-3 rounded-lg"
                   >
-                    <AlertCircle className="w-4 h-4" />
+                    <AlertCircle className="w-4 h-4 shrink-0" />
                     {error}
                   </motion.div>
                 )}
@@ -349,7 +352,7 @@ export default function LaunchPanel() {
                       </div>
                     </div>
 
-                    <div className="pt-4 flex justify-end gap-3">
+                    <div className="pt-4 flex flex-col-reverse sm:flex-row justify-end gap-3">
                       <Button
                         type="button"
                         variant="ghost"
@@ -357,14 +360,14 @@ export default function LaunchPanel() {
                           setUrl("");
                           setPostPreview(null);
                         }}
-                        className="text-white/60 hover:text-white hover:bg-white/5 rounded-lg"
+                        className="h-12 sm:h-auto text-white/60 hover:text-white hover:bg-white/5 rounded-lg"
                       >
                         Cancel
                       </Button>
                       <Button
                         type="submit"
                         disabled={isSubmitting}
-                        className="bg-white text-black hover:bg-white/90 px-8 py-6 rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="h-12 sm:h-auto bg-white text-black hover:bg-white/90 px-8 py-4 rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {isSubmitting ? (
                           <div className="flex items-center gap-2">
