@@ -9,16 +9,10 @@ import { motion, AnimatePresence } from "framer-motion";
 // Public tabs always visible
 const publicTabs = [
 	{ label: "Feed", to: "/" },
-	{ label: "Launch", to: "/launch" },
-	{ label: "Leaderboard", to: "/leaderboard" },
 ];
 
 // Authenticated-only tabs
-const privateTabs = [
-	{ label: "Portfolio", to: "/portfolio" },
-	{ label: "Transactions", to: "/transactions" },
-	{ label: "Profile", to: "/profile" },
-];
+const privateTabs: { label: string; to: string }[] = [];
 
 export default function Navbar() {
 	const { isAuthenticated } = useAuth();
@@ -59,54 +53,60 @@ export default function Navbar() {
 
 				<div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 					<div className="flex h-16 items-center justify-between">
-						{/* Left: Logo */}
-						<Link
-							to="/home"
-							className="flex shrink-0 items-center gap-2 mr-3 z-50"
-						>
-							<span className="font-extrabold text-lg sm:text-xl tracking-tight text-white">
-								Redcircle
-							</span>
-						</Link>
+						{/* Left section: Logo + Nav */}
+						<div className="flex items-center gap-6 sm:gap-8">
+							<Link
+								to="/home"
+								className="relative pb-1 flex shrink-0 items-center gap-2 z-50 transition-all duration-300 font-extrabold text-lg sm:text-xl tracking-tight text-white"
+							>
+								<span>Redcircle</span>
+								{currentPath === "/home" && (
+									<motion.span 
+										layoutId="active-nav-indicator"
+										className="absolute bottom-0 left-0 right-0 h-[4px] bg-white rounded-full shadow-[0_4px_10px_rgba(0,0,0,1)]"
+										transition={{ type: "spring", stiffness: 380, damping: 30 }}
+									/>
+								)}
+							</Link>
 
-						{/* Middle: Desktop Nav */}
-						<nav className="hidden md:flex flex-1 items-center justify-center gap-1">
-							{publicTabs.map((tab) => (
-								<Link
-									key={tab.to}
-									to={tab.to}
-									className={
-										"relative px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 " +
-										(isActive(tab.to)
-											? "text-white bg-white/10"
-											: "text-white/60 hover:text-white hover:bg-white/5")
-									}
-								>
-									{tab.label}
-									{isActive(tab.to) && (
-										<span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4/5 h-0.5 bg-purple-500 rounded-full" />
-									)}
-								</Link>
-							))}
-							{isAuthenticated &&
-								privateTabs.map((tab) => (
+							{/* Desktop Nav */}
+							<nav className="hidden md:flex items-center gap-1">
+								{publicTabs.map((tab) => (
 									<Link
-										key={tab.label}
+										key={tab.to}
 										to={tab.to}
-										className={
-											"relative px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 " +
-											(isActive(tab.to)
-												? "text-white bg-white/10"
-												: "text-white/60 hover:text-white hover:bg-white/5")
-										}
+										className="relative pb-1 transition-all duration-300 font-extrabold text-lg sm:text-xl tracking-tight text-white"
 									>
 										{tab.label}
 										{isActive(tab.to) && (
-											<span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4/5 h-0.5 bg-purple-500 rounded-full" />
+											<motion.span 
+												layoutId="active-nav-indicator"
+												className="absolute bottom-0 left-0 right-0 h-[4px] bg-white rounded-full shadow-[0_4px_10px_rgba(0,0,0,1)]"
+												transition={{ type: "spring", stiffness: 380, damping: 30 }}
+											/>
 										)}
 									</Link>
 								))}
-						</nav>
+								{isAuthenticated &&
+									privateTabs.map((tab) => (
+										<Link
+											key={tab.label}
+											to={tab.to}
+											className={
+												"relative px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 " +
+												(isActive(tab.to)
+													? "text-white bg-white/10"
+													: "text-white/60 hover:text-white hover:bg-white/5")
+											}
+										>
+											{tab.label}
+											{isActive(tab.to) && (
+												<span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4/5 h-0.5 bg-purple-500 rounded-full" />
+											)}
+										</Link>
+									))}
+							</nav>
+						</div>
 
 						{/* Right section */}
 						<div className="flex shrink-0 items-center gap-2 sm:gap-3 z-50">
@@ -128,15 +128,7 @@ export default function Navbar() {
 								</button>
 							</div>
 
-							{!isAuthenticated && !isOpen && (
-								<Link
-									to="/signin"
-									search={{ redirect: undefined }}
-									className="hidden sm:inline-flex text-sm px-3 py-1.5 rounded-lg border border-white/20 text-white/80 hover:text-white hover:bg-white/5 transition-all"
-								>
-									Sign In
-								</Link>
-							)}
+
 						</div>
 					</div>
 				</div>
@@ -206,17 +198,7 @@ export default function Navbar() {
 									</>
 								)}
 
-								{!isAuthenticated && (
-									<div className="pt-4">
-										<Link
-											to="/signin"
-											search={{ redirect: undefined }}
-											className="block w-full text-center py-3 rounded-lg bg-white text-black font-semibold active:opacity-90"
-										>
-											Sign In
-										</Link>
-									</div>
-								)}
+
 							</nav>
 
 							<div className="mt-auto text-center">
