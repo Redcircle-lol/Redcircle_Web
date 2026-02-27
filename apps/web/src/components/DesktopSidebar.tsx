@@ -2,13 +2,13 @@ import { Link } from "@tanstack/react-router";
 import { Home, Trophy, Wallet, Rocket, User } from "lucide-react";
 
 interface DesktopSidebarProps {
-  currentPage?: "feed" | "leaderboard" | "portfolio" | "launch" | "profile";
+  currentPage?: "feed" | "leaderboard" | "launch" | "profile";
 }
 
 const NAV_ITEMS = [
   { key: "feed", label: "Feed", icon: Home, to: "/" },
   { key: "leaderboard", label: "Board", icon: Trophy, to: "/leaderboard" },
-  { key: "portfolio", label: "Portfolio", icon: Wallet, to: "/portfolio" },
+  // { key: "portfolio", label: "Portfolio", icon: Wallet, to: "/portfolio" },
   { key: "launch", label: "Launch", icon: Rocket, to: "/launch" },
   { key: "profile", label: "Profile", icon: User, to: "/profile" },
 ];

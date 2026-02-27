@@ -22,7 +22,7 @@ function SignIn() {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      navigate({ to: redirect || "/dashboard" });
+        navigate({ to: redirect || "/" });
     }
   }, [isAuthenticated, navigate, redirect]);
 
@@ -68,8 +68,8 @@ function SignIn() {
         window.history.replaceState({}, document.title, "/signin");
 
         // Redirect to dashboard - increased timeout to ensure localStorage is updated
-        setTimeout(() => {
-          navigate({ to: redirect || "/dashboard" });
+          setTimeout(() => {
+            navigate({ to: redirect || "/" });
         }, 300);
       } catch (err) {
         console.error("❌ Error parsing user data:", err);

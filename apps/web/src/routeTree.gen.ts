@@ -14,7 +14,6 @@ import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SigninRouteImport } from './routes/signin'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PrivacyRouteImport } from './routes/privacy'
-import { Route as PortfolioRouteImport } from './routes/portfolio'
 import { Route as LeaderboardRouteImport } from './routes/leaderboard'
 import { Route as LaunchRouteImport } from './routes/launch'
 import { Route as HomeRouteImport } from './routes/home'
@@ -46,11 +45,6 @@ const ProfileRoute = ProfileRouteImport.update({
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PortfolioRoute = PortfolioRouteImport.update({
-  id: '/portfolio',
-  path: '/portfolio',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LeaderboardRoute = LeaderboardRouteImport.update({
@@ -96,7 +90,6 @@ export interface FileRoutesByFullPath {
   '/home': typeof HomeRoute
   '/launch': typeof LaunchRoute
   '/leaderboard': typeof LeaderboardRoute
-  '/portfolio': typeof PortfolioRoute
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/signin': typeof SigninRoute
@@ -111,7 +104,6 @@ export interface FileRoutesByTo {
   '/home': typeof HomeRoute
   '/launch': typeof LaunchRoute
   '/leaderboard': typeof LeaderboardRoute
-  '/portfolio': typeof PortfolioRoute
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/signin': typeof SigninRoute
@@ -127,7 +119,6 @@ export interface FileRoutesById {
   '/home': typeof HomeRoute
   '/launch': typeof LaunchRoute
   '/leaderboard': typeof LeaderboardRoute
-  '/portfolio': typeof PortfolioRoute
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/signin': typeof SigninRoute
@@ -144,7 +135,6 @@ export interface FileRouteTypes {
     | '/home'
     | '/launch'
     | '/leaderboard'
-    | '/portfolio'
     | '/privacy'
     | '/profile'
     | '/signin'
@@ -159,7 +149,6 @@ export interface FileRouteTypes {
     | '/home'
     | '/launch'
     | '/leaderboard'
-    | '/portfolio'
     | '/privacy'
     | '/profile'
     | '/signin'
@@ -174,7 +163,6 @@ export interface FileRouteTypes {
     | '/home'
     | '/launch'
     | '/leaderboard'
-    | '/portfolio'
     | '/privacy'
     | '/profile'
     | '/signin'
@@ -190,7 +178,6 @@ export interface RootRouteChildren {
   HomeRoute: typeof HomeRoute
   LaunchRoute: typeof LaunchRoute
   LeaderboardRoute: typeof LeaderboardRoute
-  PortfolioRoute: typeof PortfolioRoute
   PrivacyRoute: typeof PrivacyRoute
   ProfileRoute: typeof ProfileRoute
   SigninRoute: typeof SigninRoute
@@ -234,13 +221,6 @@ declare module '@tanstack/react-router' {
       path: '/privacy'
       fullPath: '/privacy'
       preLoaderRoute: typeof PrivacyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/portfolio': {
-      id: '/portfolio'
-      path: '/portfolio'
-      fullPath: '/portfolio'
-      preLoaderRoute: typeof PortfolioRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/leaderboard': {
@@ -302,7 +282,6 @@ const rootRouteChildren: RootRouteChildren = {
   HomeRoute: HomeRoute,
   LaunchRoute: LaunchRoute,
   LeaderboardRoute: LeaderboardRoute,
-  PortfolioRoute: PortfolioRoute,
   PrivacyRoute: PrivacyRoute,
   ProfileRoute: ProfileRoute,
   SigninRoute: SigninRoute,
