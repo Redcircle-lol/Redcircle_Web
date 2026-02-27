@@ -207,15 +207,6 @@ export default function RedditFeed({ sideFilters = false }: { sideFilters?: bool
           {/* Dashboard Section - Order 1 on mobile, 2 on desktop */}
           <div className="z-40 mb-6 order-1 sm:order-2">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <motion.h2
-                initial={{ opacity: 0, y: 8 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4 }}
-                className="text-2xl sm:text-3xl font-bold text-white tracking-tight"
-              >
-                Feed
-              </motion.h2>
               <div className="flex items-center gap-3 w-full sm:w-auto overflow-x-auto scrollbar-hide">
                 {/* Popular / Latest Toggle */}
                 <div className="inline-flex rounded-full border border-white/10 bg-white/5 p-0.5">

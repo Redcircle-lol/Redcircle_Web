@@ -69,8 +69,8 @@ export default function Navbar() {
 								)}
 							</Link>
 
-							{/* Desktop Nav */}
-							<nav className="hidden md:flex items-center gap-1">
+							{/* Nav Links */}
+							<nav className="flex items-center gap-4 sm:gap-1">
 								{publicTabs.map((tab) => (
 									<Link
 										key={tab.to}
