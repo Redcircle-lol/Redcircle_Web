@@ -82,13 +82,13 @@ export class RedditService {
         throw new Error(`OAuth token request failed: ${response.status}`);
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as { access_token: string };
       this.accessToken = data.access_token;
       // Set expiry to 50 minutes (tokens last 1 hour, but refresh earlier)
       this.tokenExpiry = Date.now() + (50 * 60 * 1000);
       
       console.log("✅ Reddit OAuth token acquired");
-      return this.accessToken;
+      return this.accessToken as string;
     } catch (error) {
       console.error("❌ Failed to get Reddit OAuth token:", error);
       return "";
@@ -106,7 +106,7 @@ export class RedditService {
 
     for (const pattern of patterns) {
       const match = url.match(pattern);
-      if (match) return match[1];
+      if (match) return match[1] || null;
     }
 
     return null;
@@ -172,7 +172,7 @@ export class RedditService {
         throw new Error(`Reddit API error: ${response.status} ${response.statusText}`);
       }
 
-      const data: RedditApiResponse[] = await response.json();
+      const data = (await response.json()) as RedditApiResponse[];
 
       // Reddit returns an array: [post_data, comments_data]
       if (!data || data.length === 0 || !data[0]?.data?.children?.[0]) {
@@ -181,18 +181,36 @@ export class RedditService {
 
       const postData = data[0].data.children[0].data;
 
-      // Extract thumbnail (handle various cases)
+      // Enhanced Thumbnail Extraction Strategy
       let thumbnail: string | null = null;
-      if (postData.thumbnail && 
-          postData.thumbnail !== "self" && 
-          postData.thumbnail !== "default" &&
-          postData.thumbnail !== "nsfw" &&
-          postData.thumbnail !== "spoiler" &&
-          postData.thumbnail.startsWith("http")) {
-        thumbnail = postData.thumbnail;
-      } else if (postData.preview?.images?.[0]?.source?.url) {
-        // Use preview image if thumbnail not available
+      
+      // 1. Check for high-quality preview images first (usually better than thumbnails)
+      if (postData.preview?.images?.[0]?.source?.url) {
         thumbnail = postData.preview.images[0].source.url.replace(/&amp;/g, "&");
+      } 
+      // 2. Check the "url" field if it's a direct link to an image
+      else if (postData.url && /\.(jpg|jpeg|png|gif|webp)$/i.test(postData.url)) {
+        thumbnail = postData.url;
+      }
+      // 3. Handle reddit galleries (use the first image)
+      else if (postData.is_gallery && postData.media_metadata) {
+        const firstEntry: any = Object.values(postData.media_metadata)[0];
+        if (firstEntry?.s?.u) {
+          thumbnail = firstEntry.s.u.replace(/&amp;/g, "&");
+        }
+      }
+      // 4. Fallback to the standard thumbnail field if it's a valid URL
+      else if (postData.thumbnail && /^http/i.test(postData.thumbnail)) {
+        thumbnail = postData.thumbnail;
+      }
+      // 5. Check media/secure_media for video thumbnails
+      else if (postData.secure_media?.oembed?.thumbnail_url) {
+        thumbnail = postData.secure_media.oembed.thumbnail_url;
+      }
+      
+      // Final fallback to Reddit logo if still no image found
+      if (!thumbnail) {
+        thumbnail = "https://www.redditstatic.com/desktop2x/img/favicon/android-icon-192x192.png";
       }
 
       const post: RedditPost = {
@@ -208,8 +226,8 @@ export class RedditService {
         num_comments: postData.num_comments || 0,
         created_utc: postData.created_utc,
         is_video: postData.is_video || false,
-        post_hint: postData.post_hint,
-        preview: postData.preview,
+        post_hint: (postData.post_hint as string) || undefined,
+        preview: postData.preview as RedditPost["preview"],
       };
 
       console.log(`✅ Reddit post fetched: "${post.title}" by u/${post.author}`);
