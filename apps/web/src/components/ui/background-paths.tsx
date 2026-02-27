@@ -232,13 +232,13 @@ export function BackgroundPaths({
 			{/* Confetti Rain — rendered via portal-like fixed positioning */}
 			{showConfetti && <ConfettiRain />}
 
-			<div className="relative z-10 container mx-auto px-4 md:px-6 text-center flex flex-col items-center justify-center min-h-[100vh] py-20">
+			<div className="relative z-10 container mx-auto px-4 md:px-6 text-center flex flex-col items-center justify-center min-h-[calc(100vh-64px)] py-10">
 				{/* Animated Logo Integration */}
 				<motion.div
 					initial={{ opacity: 0, scale: 0.8 }}
 					animate={{ opacity: 1, scale: 1 }}
 					transition={{ duration: 1, ease: "easeOut" }}
-					className="mb-16 relative flex items-center justify-center gap-12 md:gap-24"
+					className="mb-8 relative flex items-center justify-center gap-12 md:gap-24"
 				>
 					{/* Central Glow */}
 					<div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200%] h-[200%] bg-gradient-to-r from-orange-500/20 to-green-500/20 blur-3xl rounded-full pointer-events-none" />
@@ -312,7 +312,7 @@ export function BackgroundPaths({
 					transition={{ duration: 1, ease: "easeOut", delay: 0.2 }}
 					className="max-w-5xl mx-auto relative z-20"
 				>
-					<h1 className="text-5xl sm:text-7xl md:text-8xl font-bold mb-8 tracking-tighter font-satoshi text-transparent bg-clip-text bg-gradient-to-b from-neutral-900 to-neutral-500 dark:from-white dark:to-neutral-500 leading-tight">
+					<h1 className="text-5xl sm:text-7xl md:text-8xl font-bold mb-4 tracking-tighter font-satoshi text-transparent bg-clip-text bg-gradient-to-b from-neutral-900 to-neutral-500 dark:from-white dark:to-neutral-500 leading-tight">
 						{words.map((word, wordIndex) => (
 							<span key={wordIndex} className="inline-block mr-4 last:mr-0">
 								{word.split("").map((letter, letterIndex) => (
@@ -340,7 +340,7 @@ export function BackgroundPaths({
 							initial={{ opacity: 0, y: 20 }}
 							animate={{ opacity: 1, y: 0 }}
 							transition={{ delay: 0.8, duration: 0.8 }}
-							className="text-lg md:text-2xl text-neutral-600 dark:text-neutral-400 mb-12 max-w-3xl mx-auto font-light leading-relaxed tracking-tight"
+							className="text-lg md:text-2xl text-neutral-600 dark:text-neutral-400 mb-8 max-w-3xl mx-auto font-light leading-relaxed tracking-tight"
 						>
 							{subtitle}
 						</motion.p>
