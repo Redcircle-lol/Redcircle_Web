@@ -177,3 +177,16 @@ export async function fetchRedCirclePool(postId: string) {
     return null;
   }
 }
+
+/**
+ * Returns the server authority wallet's public key.
+ * Used by trading service as the curator for all RedCircle pools.
+ */
+export function getAuthorityPublicKey() {
+  return getAuthorityKeypair().publicKey;
+}
+
+/**
+ * Re-export so trading service can read the treasury address.
+ */
+export { getTreasuryAddress };

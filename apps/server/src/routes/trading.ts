@@ -80,7 +80,7 @@ router.post("/sell", authenticateToken, async (req, res) => {
     const result = await sellTokens({
       postId,
       sellerWalletAddress: walletAddress,
-      amount: parseInt(amount),
+      amount: parseFloat(amount),
     });
 
     res.json({
