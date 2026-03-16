@@ -6,8 +6,11 @@ import { ArrowLeft, ExternalLink, TrendingUp, Users, Activity, DollarSign } from
 import { Button } from "@/components/ui/button";
 import PriceChart from "@/components/PriceChart";
 import TradingModal from "@/components/TradingModal";
+import ClaimCreatorFeesButton from "@/components/ClaimCreatorFeesButton";
 import type { FeedPost } from "@/components/FeedCard";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { usePool } from "@/hooks/usePool";
 
 export const Route = createFileRoute("/token/$tokenId")({
   component: TokenDetailsPage,
@@ -16,10 +19,14 @@ export const Route = createFileRoute("/token/$tokenId")({
 function TokenDetailsPage() {
   const { tokenId } = Route.useParams();
   const navigate = Route.useNavigate();
+  const { user } = useAuth();
   const [post, setPost] = useState<FeedPost | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showTradingModal, setShowTradingModal] = useState(false);
+
+  // Live pool stats (for creator fee amounts + creator wallet)
+  const { stats: poolStats } = usePool(post?.id ?? '', !!post?.redcirclePoolPda);
 
   useEffect(() => {
     const fetchTokenDetails = async () => {
@@ -228,6 +235,18 @@ function TokenDetailsPage() {
                 )}
               </div>
             </div>
+
+            {/* Creator fee claim — only visible to the post author */}
+            {post.redditPostId && post.redcirclePoolPda && (
+              <ClaimCreatorFeesButton
+                postId={post.id}
+                redditPostId={post.redditPostId}
+                postAuthor={post.author}
+                currentUsername={user?.username ?? undefined}
+                unclaimedFees={poolStats?.unclaimedCreatorFees}
+                creatorWallet={poolStats?.creatorWallet}
+              />
+            )}
           </motion.div>
 
           {/* Right Column - Chart */}

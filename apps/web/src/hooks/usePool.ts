@@ -29,6 +29,9 @@ export interface PoolStats {
   poolQuoteReserves?: number;
   // Raw reserves for client-side curve math (RedCircle only)
   rawReserves: RawReserves | null;
+  // On-chain wallet addresses (RedCircle only)
+  creatorWallet?: string;
+  curatorWallet?: string;
 }
 
 interface UsePoolResult {

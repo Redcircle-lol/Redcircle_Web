@@ -373,6 +373,8 @@ async function getRedCircleStats(post: typeof schema.posts.$inferSelect) {
       virtualTokenUnits: pool.virtualTokenReserve.toString(),
       curveType: parseCurveType(pool.curveType) as number,
     },
+    creatorWallet: pool.creator.toBase58(),
+    curatorWallet: pool.curator.toBase58(),
   };
 }
 

@@ -133,9 +133,70 @@ export default function TradingModal({ post, isOpen, onClose }: TradingModalProp
 
       // RedCircle returns a VersionedTransaction; DBC returns a legacy Transaction.
       const { Transaction, VersionedTransaction } = await import("@solana/web3.js");
-      const transaction = isRedCircle
+      let transaction = isRedCircle
         ? VersionedTransaction.deserialize(txBuffer)
         : Transaction.from(txBuffer);
+
+      // ── Referral: on the first RedCircle buy, if ?ref=<addr> is present
+      // and the user has no referral PDA yet, prepend registerReferral to the tx.
+      if (isRedCircle && tradeType === "buy") {
+        const refParam = new URLSearchParams(window.location.search).get("ref");
+        if (refParam) {
+          try {
+            const { PublicKey: PK } = await import("@solana/web3.js");
+            const inviterPubkey = new PK(refParam);
+
+            const anchor = await import("@coral-xyz/anchor");
+            const { RedCircleClient } = await import("@redcircle-lol/protocol-sdk");
+            const mockWallet = {
+              publicKey,
+              signTransaction: async (t: any) => t,
+              signAllTransactions: async (ts: any[]) => ts,
+            };
+            const provider = new anchor.AnchorProvider(connection, mockWallet as any, {
+              commitment: "confirmed",
+              skipPreflight: true,
+            });
+            const rcClient = new RedCircleClient(provider);
+
+            // Check if user already has a referral PDA — skip if so
+            let hasReferral = false;
+            try {
+              await rcClient.fetchReferral(publicKey);
+              hasReferral = true;
+            } catch { /* PDA doesn't exist yet */ }
+
+            if (!hasReferral) {
+              const referralIx = await rcClient.registerReferral(publicKey, inviterPubkey);
+              // Rebuild a new VersionedTransaction with registerReferral prepended
+              const { TransactionMessage } = await import("@solana/web3.js");
+              const existingMsg = (transaction as any).message;
+              const { blockhash } = await connection.getLatestBlockhash();
+              const newMsg = new TransactionMessage({
+                payerKey: publicKey,
+                recentBlockhash: blockhash,
+                instructions: [
+                  referralIx,
+                  ...existingMsg.compiledInstructions.map((ci: any) => ({
+                    programId: existingMsg.staticAccountKeys[ci.programIdIndex],
+                    keys: ci.accountKeyIndexes.map((idx: number) => ({
+                      pubkey: existingMsg.staticAccountKeys[idx],
+                      isSigner: false,
+                      isWritable: false,
+                    })),
+                    data: Buffer.from(ci.data),
+                  })),
+                ],
+              }).compileToV0Message();
+              transaction = new VersionedTransaction(newMsg);
+              console.log("✅ Referral registration prepended to buy tx");
+            }
+          } catch (refErr) {
+            // Referral setup failures must never block the trade
+            console.warn("⚠️ Referral setup skipped:", refErr);
+          }
+        }
+      }
 
       const signature = await sendTransaction(transaction as any, connection, {
         skipPreflight: false,

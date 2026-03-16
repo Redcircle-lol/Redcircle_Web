@@ -26,6 +26,8 @@ export type FeedPost = {
   redditUrl?: string;
   totalSupply?: number;
   holders?: number;
+  redditPostId?: string;       // Reddit post ID — PDA seed for the RedCircle pool
+  redcirclePoolPda?: string;   // Pool PDA address
 };
 
 type FeedCardProps = {
