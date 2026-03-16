@@ -47,6 +47,11 @@ function getTreasuryAddress(): PublicKey {
 
 let _client: RedCircleClient | null = null;
 
+/** Call after changing env vars in tests to get a fresh client. */
+export function resetRedCircleClient() {
+  _client = null;
+}
+
 export function getRedCircleClient(): RedCircleClient {
   if (_client) return _client;
 
@@ -58,7 +63,11 @@ export function getRedCircleClient(): RedCircleClient {
     preflightCommitment: 'confirmed',
   });
 
-  _client = new RedCircleClient(provider);
+  // Override program ID via env so localnet and devnet both work without code changes
+  const programIdEnv = process.env.REDCIRCLE_PROGRAM_ID;
+  const opts = programIdEnv ? { programId: new PublicKey(programIdEnv) } : undefined;
+
+  _client = new RedCircleClient(provider, opts);
   return _client;
 }
 

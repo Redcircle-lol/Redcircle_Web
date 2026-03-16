@@ -181,8 +181,8 @@ router.post("/tokenize", async (req, res) => {
       });
     }
 
-    // Generate token symbol (e.g., "POST1A2B3C")
-    const tokenSymbol = `POST${redditPost.id.toUpperCase().substring(0, 6)}`;
+    // Generate token symbol — protocol enforces MAX_SYMBOL_LEN = 8 chars
+    const tokenSymbol = `P${redditPost.id.toUpperCase().substring(0, 7)}`;
 
     // Token name shown on-chain — keep short, protocol enforces limits
     const tokenName = `r/${redditPost.subreddit} ${tokenSymbol}`.substring(0, 32);

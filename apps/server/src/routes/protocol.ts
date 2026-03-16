@@ -74,8 +74,8 @@ router.post('/set-creator', authenticateToken, async (req, res) => {
     // Server keypair signs
     const { Keypair } = await import('@solana/web3.js');
     const bs58 = (await import('bs58')).default;
-    const secretKeyStr = process.env.REDCIRCLE_AUTHORITY_KEYPAIR;
-    if (!secretKeyStr) throw new Error('REDCIRCLE_AUTHORITY_KEYPAIR not set');
+    const secretKeyStr = process.env.SOLANA_AUTHORITY_PRIVATE_KEY;
+    if (!secretKeyStr) throw new Error('SOLANA_AUTHORITY_PRIVATE_KEY not set');
     const secretKey = bs58.decode(secretKeyStr);
     const authorityKeypair = Keypair.fromSecretKey(secretKey);
     tx.sign([authorityKeypair]);
@@ -155,7 +155,7 @@ router.post('/claim-curator-fees/:postId', async (req, res) => {
 
     const { Keypair } = await import('@solana/web3.js');
     const bs58 = (await import('bs58')).default;
-    const secretKey = bs58.decode(process.env.REDCIRCLE_AUTHORITY_KEYPAIR!);
+    const secretKey = bs58.decode(process.env.SOLANA_AUTHORITY_PRIVATE_KEY!);
     const authorityKeypair = Keypair.fromSecretKey(secretKey);
     tx.sign([authorityKeypair]);
 

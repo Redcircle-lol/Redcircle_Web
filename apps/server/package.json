@@ -12,9 +12,9 @@
     "db:push": "drizzle-kit push"
   },
   "dependencies": {
-    "@redcircle-lol/protocol-sdk": "^0.1.1",
     "@coral-xyz/anchor": "^0.32.1",
     "@meteora-ag/dynamic-bonding-curve-sdk": "^1.4.9",
+    "@redcircle-lol/protocol-sdk": "^0.1.2",
     "@solana/spl-token": "0.4.9",
     "@solana/web3.js": "1.95.8",
     "@types/pg": "^8.16.0",

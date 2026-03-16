@@ -11,9 +11,9 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
-    "@redcircle-lol/protocol-sdk": "^0.1.1",
     "@coral-xyz/anchor": "^0.32.1",
     "@hookform/resolvers": "^5.1.1",
+    "@redcircle-lol/protocol-sdk": "^0.1.2",
     "@solana/wallet-adapter-base": "^0.9.27",
     "@solana/wallet-adapter-react": "^0.15.39",
     "@solana/wallet-adapter-react-ui": "^0.9.39",
