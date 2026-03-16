@@ -1,6 +1,11 @@
 import { Router } from "express";
 import { RedditService } from "../services/reddit.service";
-import { createPostToken } from "../services/token.service";
+import {
+  createRedCirclePool,
+  REDCIRCLE_TOKEN_DECIMALS,
+  REDCIRCLE_TOKEN_SUPPLY,
+  REDCIRCLE_INITIAL_PRICE,
+} from "../services/redcircle.service";
 import { db } from "../db";
 import * as schema from "../db";
 import { eq, desc, and, gte, lte, like, or, sql } from "drizzle-orm";
@@ -176,40 +181,44 @@ router.post("/tokenize", async (req, res) => {
       });
     }
 
-    // Calculate initial market cap
-    const marketCap = (parseFloat(tokenSupply.toString()) * parseFloat(initialPrice)).toFixed(9);
-
-    // Generate token symbol (e.g., "POST123")
+    // Generate token symbol (e.g., "POST1A2B3C")
     const tokenSymbol = `POST${redditPost.id.toUpperCase().substring(0, 6)}`;
 
-    // === BLOCKCHAIN: Create actual SPL token on Solana ===
-    console.log("\n🚀 Creating SPL token on Solana blockchain...");
-    let tokenMintData;
+    // Token name shown on-chain — keep short, protocol enforces limits
+    const tokenName = `r/${redditPost.subreddit} ${tokenSymbol}`.substring(0, 32);
+
+    // === BLOCKCHAIN: Create RedCircle Protocol pool ===
+    // The protocol handles token mint creation + minting 1B tokens in one instruction.
+    // No separate createMint / mintTo calls needed.
+    console.log("\n🚀 Creating RedCircle pool on Solana...");
+    let poolData;
     try {
-      tokenMintData = await createPostToken({
+      poolData = await createRedCirclePool({
         postId: redditPost.id,
-        tokenSymbol,
-        tokenSupply: parseInt(tokenSupply.toString()),
-        decimals: 9, // Standard SPL token decimals
+        name: tokenName,
+        symbol: tokenSymbol,
+        uri: '', // Metadata URI — can be updated later via IPFS/Arweave
       });
-      
-      console.log("✅ Token successfully minted on blockchain!");
-      console.log(`   Mint Address: ${tokenMintData.mintAddress}`);
-      console.log(`   Explorer: ${tokenMintData.explorerUrl}`);
-      if (tokenMintData.dbcPoolAddress) {
-        console.log(`   DBC Pool: ${tokenMintData.dbcPoolAddress}`);
-      }
-    } catch (mintError) {
-      console.error("❌ Failed to mint token on blockchain:", mintError);
-      
+
+      console.log("✅ RedCircle pool created on blockchain!");
+      console.log(`   Pool PDA  : ${poolData.poolPda}`);
+      console.log(`   Token Mint: ${poolData.tokenMint}`);
+      console.log(`   Explorer  : ${poolData.explorerUrl}`);
+    } catch (poolError) {
+      console.error("❌ Failed to create RedCircle pool:", poolError);
       return res.status(500).json({
-        error: "Failed to mint token on blockchain",
-        details: mintError instanceof Error ? mintError.message : "Unknown error",
-        hint: "Check backend logs for details. Ensure SOLANA_AUTHORITY_PRIVATE_KEY is set and has sufficient SOL."
+        error: "Failed to create RedCircle pool on blockchain",
+        details: poolError instanceof Error ? poolError.message : "Unknown error",
+        hint: "Check SOLANA_AUTHORITY_PRIVATE_KEY is set and has ≥ 0.05 SOL. " +
+              "Ensure the RedCircle protocol Config PDA is initialized on this network.",
       });
     }
 
-    // Create post record with blockchain data
+    // Protocol always uses 1B supply and curve-determined initial price
+    const initialPriceStr = REDCIRCLE_INITIAL_PRICE.toFixed(9);
+    const marketCap = (REDCIRCLE_TOKEN_SUPPLY * REDCIRCLE_INITIAL_PRICE).toFixed(9);
+
+    // Create post record with RedCircle pool data
     const [newPost] = await db
       .insert(posts)
       .values({
@@ -223,19 +232,20 @@ router.post("/tokenize", async (req, res) => {
         upvotes: redditPost.upvotes,
         comments: redditPost.num_comments,
         redditCreatedAt: new Date(redditPost.created_utc * 1000),
-        tokenSupply: parseInt(tokenSupply.toString()),
-        initialPrice: initialPrice.toString(),
-        currentPrice: initialPrice.toString(),
+        tokenSupply: REDCIRCLE_TOKEN_SUPPLY,
+        initialPrice: initialPriceStr,
+        currentPrice: initialPriceStr,
         description: description || null,
         tokenSymbol,
-        tokenDecimals: tokenMintData.decimals,
-        tokenMintAddress: tokenMintData.mintAddress, // ← Blockchain address
-        dbcPoolAddress: tokenMintData.dbcPoolAddress || null, // ← DBC pool address
-        dbcConfigAddress: tokenMintData.dbcConfigAddress || null, // ← DBC config address
-        status: "active", // ← Token is minted and active!
+        tokenDecimals: REDCIRCLE_TOKEN_DECIMALS,
+        tokenMintAddress: poolData.tokenMint,        // PDA-derived by protocol
+        redcirclePoolPda: poolData.poolPda,           // RedCircle Pool PDA
+        dbcPoolAddress: null,                         // Not used for RedCircle pools
+        dbcConfigAddress: null,
+        status: "active",
         totalVolume: "0",
         marketCap,
-        holders: 1, // Authority wallet holds initial supply
+        holders: 0, // No holders yet — tokens are held by the pool vault
         creatorId: finalUserId,
         creatorRewards: "0",
         tags: redditPost.subreddit ? [redditPost.subreddit] : [],
@@ -247,12 +257,13 @@ router.post("/tokenize", async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: "Post tokenized successfully on Solana blockchain",
+      message: "Post tokenized successfully via RedCircle Protocol",
       post: newPost,
       blockchain: {
-        mintAddress: tokenMintData.mintAddress,
-        explorerUrl: tokenMintData.explorerUrl,
-        transactionSignature: tokenMintData.signature,
+        poolPda: poolData.poolPda,
+        mintAddress: poolData.tokenMint,
+        explorerUrl: poolData.explorerUrl,
+        transactionSignature: poolData.transactionSignature,
       },
     });
   } catch (error) {

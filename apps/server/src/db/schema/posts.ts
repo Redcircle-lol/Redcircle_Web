@@ -37,8 +37,11 @@ export const posts = pgTable("posts", {
   tokenMintAddress: text("token_mint_address").unique(), // Solana token mint address
   tokenSymbol: text("token_symbol"), // e.g., "POST123"
   tokenDecimals: integer("token_decimals").default(9), // Standard SPL token decimals
-  dbcPoolAddress: text("dbc_pool_address").unique(), // Meteora DBC pool address
-  dbcConfigAddress: text("dbc_config_address"), // Meteora DBC config address
+  dbcPoolAddress: text("dbc_pool_address").unique(), // Meteora DBC pool address (legacy)
+  dbcConfigAddress: text("dbc_config_address"), // Meteora DBC config address (legacy)
+
+  // RedCircle Protocol (replaces Meteora DBC for new pools)
+  redcirclePoolPda: text("redcircle_pool_pda").unique(), // Pool PDA — seed: ["pool", postId]
   
   // Tokenization Status
   status: tokenizationStatusEnum("status").default("pending").notNull(),
