@@ -1,6 +1,14 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { X, TrendingUp, TrendingDown, Wallet, ArrowRightLeft } from "lucide-react";
+import {
+  X,
+  TrendingUp,
+  TrendingDown,
+  Wallet,
+  ArrowRightLeft,
+  AlertTriangle,
+  RefreshCw,
+} from "lucide-react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { Connection } from "@solana/web3.js";
@@ -9,10 +17,22 @@ import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import type { FeedPost } from "@/components/FeedCard";
 import { cn } from "@/lib/utils";
-import { fetchWithAuth, getApiUrl } from "@/lib/auth";
-import { Buffer } from 'buffer';
+import { fetchWithAuth } from "@/lib/auth";
+import { Buffer } from "buffer";
+import { usePool } from "@/hooks/usePool";
+import {
+  estimateBuy,
+  estimateSell,
+  priceImpactBps,
+  formatSol,
+  formatTokens,
+  formatPoolStatus,
+  poolStatusColour,
+} from "@/lib/redcircle";
 
 type TradeType = "buy" | "sell";
+
+// Polyfill Buffer for Solana web3.js browser compat
 // @ts-ignore
 window.Buffer = Buffer;
 
@@ -28,100 +48,58 @@ export default function TradingModal({ post, isOpen, onClose }: TradingModalProp
   const [tradeType, setTradeType] = useState<TradeType>("buy");
   const [amount, setAmount] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  interface TradingStats {
-    currentPrice: number;
-    totalSupply: number;
-    soldSupply: number;
-    availableSupply: number;
-    totalVolume: number;
-    marketCap: number;
-    holders: number;
-    buyPrice1: number;
-    buyPrice10: number;
-    buyPrice100: number;
-  }
 
-  const [tradingStats, setTradingStats] = useState<TradingStats | null>(null);
-  const [loadingStats, setLoadingStats] = useState(false);
+  const { stats, loading: loadingStats, error: statsError, refresh } = usePool(post.id, isOpen);
 
-  const fetchTradingStats = async () => {
-    setLoadingStats(true);
-    try {
-      const response = await fetchWithAuth(`/api/trading/stats/${post.id}`);
-      const data = await response.json();
-      
-      if (data.success) {
-        setTradingStats(data.stats);
-      }
-    } catch (error) {
-      console.error("Failed to fetch trading stats:", error);
-    } finally {
-      setLoadingStats(false);
-    }
-  };
+  const isRedCircle = stats?.poolType === "redcircle";
+  // For RedCircle buy, the amount input is in SOL; everything else is tokens.
+  const inputIsSol = isRedCircle && tradeType === "buy";
+  const inputUnit = inputIsSol ? "SOL" : (post.tokenSymbol || "Tokens");
 
-  // Fetch trading stats when modal opens
-  useEffect(() => {
-    if (isOpen && post.id) {
-      fetchTradingStats();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, post.id]);
+  // ─── Live estimate via client-side curve math ───────────────────────────────
+  const estimate = useMemo(() => {
+    const parsed = parseFloat(amount);
+    if (!parsed || parsed <= 0 || !isRedCircle) return null;
+    const reserves = stats?.rawReserves ?? null;
 
-  // Calculate trade preview using bonding curve
-  const tradePreview = useMemo(() => {
-    const tokenAmount = parseFloat(amount) || 0;
-    
-    if (!tradingStats || tokenAmount === 0) {
-      return {
-        tokenAmount: 0,
-        tokenPrice: post.tokenPrice || 0,
-        totalCost: 0,
-        fee: 0,
-        finalTotal: 0,
-      };
-    }
-
-    // Use backend bonding curve calculations
-    let totalCost = 0;
-    
     if (tradeType === "buy") {
-      // Approximate using current price (backend will calculate exact)
-      totalCost = tokenAmount * tradingStats.currentPrice;
+      const tokensOut = estimateBuy(reserves, parsed);
+      const impact = priceImpactBps(reserves, parsed);
+      return { kind: "buy" as const, solIn: parsed, tokensOut, impact };
     } else {
-      // Sell includes 5% platform fee
-      totalCost = tokenAmount * tradingStats.currentPrice * 0.95;
+      const solOut = estimateSell(reserves, parsed);
+      return { kind: "sell" as const, tokensIn: parsed, solOut };
     }
-    
-    const fee = tradeType === "buy" ? totalCost * 0.005 : totalCost * 0.05;
-    const finalTotal = totalCost;
+  }, [amount, isRedCircle, tradeType, stats?.rawReserves]);
 
-    return {
-      tokenAmount,
-      tokenPrice: tradingStats.currentPrice,
-      totalCost,
-      fee,
-      finalTotal,
-    };
-  }, [amount, tradingStats, tradeType, post.tokenPrice]);
+  // Flat price preview for DBC posts
+  const flatPreview = useMemo(() => {
+    if (isRedCircle || !stats) return null;
+    const parsed = parseFloat(amount) || 0;
+    if (parsed <= 0) return null;
+    const totalCost =
+      tradeType === "buy"
+        ? parsed * stats.currentPrice
+        : parsed * stats.currentPrice * 0.97; // 3% fee
+    return { tokenAmount: parsed, totalCost };
+  }, [amount, isRedCircle, tradeType, stats]);
 
-  const handleConnectWallet = () => {
-    setVisible(true);
-  };
+  // ─── Quick-fill buttons ─────────────────────────────────────────────────────
+  const quickFills = inputIsSol ? ["0.01", "0.05", "0.1", "0.5"] : ["10", "50", "100", "500"];
+
+  // ─── Handlers ───────────────────────────────────────────────────────────────
+  const handleConnectWallet = () => setVisible(true);
 
   const handleTrade = async () => {
     if (!connected || !publicKey) {
       handleConnectWallet();
       return;
     }
-
-    if (!amount || parseFloat(amount) <= 0) {
-      toast.error("Invalid amount", {
-        description: "Please enter a positive token amount to trade.",
-      });
+    const parsed = parseFloat(amount);
+    if (!parsed || parsed <= 0) {
+      toast.error("Invalid amount", { description: `Please enter a positive ${inputUnit} amount.` });
       return;
     }
-
     if (!sendTransaction) {
       toast.error("Wallet not supported", {
         description: "Your connected wallet cannot send transactions.",
@@ -130,140 +108,104 @@ export default function TradingModal({ post, isOpen, onClose }: TradingModalProp
     }
 
     setIsSubmitting(true);
-    
     try {
       const walletAddress = publicKey.toBase58();
-      
-      // Step 1: Request transaction from backend
-      console.log(`🔄 Preparing ${tradeType} transaction...`);
       const endpoint = tradeType === "buy" ? "/api/trading/buy" : "/api/trading/sell";
-      
+
+      // Build request body — RedCircle buy uses `amountInSOL`, everything else uses `amount`
+      const body =
+        isRedCircle && tradeType === "buy"
+          ? { postId: post.id, amountInSOL: parsed, walletAddress }
+          : { postId: post.id, amount: parsed, walletAddress };
+
       const response = await fetchWithAuth(endpoint, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          postId: post.id,
-          amount: parseInt(amount),
-          walletAddress,
-        }),
+        body: JSON.stringify(body),
       });
-
       const data = await response.json();
-
       if (!data.success) {
         throw new Error(data.details || data.error || "Transaction failed");
       }
 
-      console.log("✅ Transaction prepared by backend");
-      console.log(`   Cost: ${data.cost?.toFixed(6)} SOL`);
-
-      // Step 2: Deserialize partially-signed transaction
-      const { Transaction, VersionedTransaction } = await import("@solana/web3.js");
-      const transactionBuffer = Buffer.from(data.transaction, "base64");
-      const transaction = Transaction.from(transactionBuffer);
-
-      // Step 3: Get connection
       const rpcUrl = import.meta.env.VITE_SOLANA_RPC_URL || "https://api.devnet.solana.com";
       const connection = new Connection(rpcUrl, "confirmed");
+      const txBuffer = Buffer.from(data.transaction, "base64");
 
-      console.log("📋 Transaction details:");
-      console.log(`   Fee payer: ${transaction.feePayer?.toBase58()}`);
-      console.log(`   Recent blockhash: ${transaction.recentBlockhash}`);
-      console.log(`   Signatures count: ${transaction.signatures.length}`);
+      // RedCircle returns a VersionedTransaction; DBC returns a legacy Transaction.
+      const { Transaction, VersionedTransaction } = await import("@solana/web3.js");
+      const transaction = isRedCircle
+        ? VersionedTransaction.deserialize(txBuffer)
+        : Transaction.from(txBuffer);
 
-      // Step 4: Send transaction (wallet will add its signature and send)
-      console.log("🔑 Requesting wallet to sign and send transaction...");
-      const signature = await sendTransaction(transaction, connection, {
+      const signature = await sendTransaction(transaction as any, connection, {
         skipPreflight: false,
         preflightCommitment: "confirmed",
-        signers: [], // Authority already signed on backend
       });
 
-      console.log("⏳ Waiting for confirmation...");
-      console.log(`   Signature: ${signature}`);
-
-      // Step 5: Wait for confirmation
       const latestBlockhash = await connection.getLatestBlockhash();
-      const confirmation = await connection.confirmTransaction({
-        signature,
-        blockhash: latestBlockhash.blockhash,
-        lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
-      }, "confirmed");
-
+      const confirmation = await connection.confirmTransaction(
+        { signature, ...latestBlockhash },
+        "confirmed"
+      );
       if (confirmation.value.err) {
         throw new Error(`Transaction failed: ${JSON.stringify(confirmation.value.err)}`);
       }
 
-      console.log("✅ Transaction confirmed!");
+      // Resolve token/SOL amounts for the confirm payload
+      const confirmedTokens =
+        tradeType === "buy"
+          ? (data.quote?.estimatedTokens ?? estimate?.tokensOut ?? parsed)
+          : parsed;
+      const confirmedSol =
+        tradeType === "buy"
+          ? parsed
+          : (data.quote?.estimatedReturn ?? estimate?.solOut ?? parsed * (stats?.currentPrice ?? 0));
 
-      // Step 7: Notify backend of confirmation
       await fetchWithAuth("/api/trading/confirm", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify({
           signature,
           postId: post.id,
           type: tradeType,
-          amount: tradePreview.tokenAmount,
-          price: tradePreview.finalTotal,
+          amount: confirmedTokens,
+          price: confirmedSol,
         }),
       });
 
-      // Success!
-      toast.success(
-        tradeType === "buy" ? "Purchase successful 🎉" : "Sale successful 🎉",
-        {
-          description:
-            `${tradePreview.tokenAmount} tokens ` +
-            `${tradeType === "buy" ? "bought" : "sold"} for ` +
-            `${tradePreview.finalTotal.toFixed(6)} SOL.`,
-          action: {
-            label: "View on Solscan",
-            onClick: () =>
-              window.open(
-                `https://solscan.io/tx/${signature}?cluster=devnet`,
-                "_blank",
-                "noopener,noreferrer",
-              ),
-          },
+      toast.success(tradeType === "buy" ? "Purchase successful!" : "Sale successful!", {
+        description:
+          tradeType === "buy"
+            ? `~${formatTokens(confirmedTokens)} tokens bought for ${formatSol(confirmedSol)} SOL.`
+            : `${formatTokens(confirmedTokens)} tokens sold for ~${formatSol(confirmedSol)} SOL.`,
+        action: {
+          label: "Solscan",
+          onClick: () =>
+            window.open(
+              `https://solscan.io/tx/${signature}?cluster=devnet`,
+              "_blank",
+              "noopener,noreferrer"
+            ),
         },
-      );
-      
-      // Refresh stats and close
-      await fetchTradingStats();
+      });
+
+      refresh();
       onClose();
       setAmount("");
-    } catch (error) {
-      console.error("❌ Trade error:", error);
-      
-      let errorMessage = "Trade failed. ";
-      if (error instanceof Error) {
-        if (error.message?.includes("User rejected")) {
-          errorMessage += "Transaction was cancelled.";
-        } else {
-          errorMessage += error.message;
-        }
-      } else {
-        errorMessage += "Please try again.";
-      }
-      
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Please try again.";
       toast.error("Trade failed", {
-        description: errorMessage,
+        description: msg.includes("User rejected") ? "Transaction was cancelled." : msg,
       });
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // ─── Render ─────────────────────────────────────────────────────────────────
   return (
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -272,7 +214,6 @@ export default function TradingModal({ post, isOpen, onClose }: TradingModalProp
             onClick={onClose}
           />
 
-          {/* Modal */}
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -282,7 +223,7 @@ export default function TradingModal({ post, isOpen, onClose }: TradingModalProp
               className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-white/20 bg-black/95 shadow-2xl backdrop-blur-xl"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Animated background gradient */}
+              {/* Background gradient */}
               <div
                 className="pointer-events-none absolute inset-0 opacity-30"
                 style={{
@@ -291,7 +232,7 @@ export default function TradingModal({ post, isOpen, onClose }: TradingModalProp
                 }}
               />
 
-              {/* Close button */}
+              {/* Close */}
               <button
                 onClick={onClose}
                 className="absolute right-4 top-4 z-10 rounded-xl border border-white/10 bg-white/5 p-2 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
@@ -300,108 +241,165 @@ export default function TradingModal({ post, isOpen, onClose }: TradingModalProp
               </button>
 
               <div className="relative p-6">
-                {/* Header */}
-                <div className="mb-6">
+                {/* ── Header ─────────────────────────────────────── */}
+                <div className="mb-5">
                   <div className="mb-3 flex items-center gap-3">
                     <div className="rounded-xl border border-white/20 bg-white/5 p-2.5">
                       <ArrowRightLeft className="h-5 w-5 text-white" />
                     </div>
-                    <div>
-                      <h2 className="text-xl font-bold text-white">Trade Token</h2>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-xl font-bold text-white">Trade Token</h2>
+                        {/* Pool status badge */}
+                        {stats?.poolStatus && (
+                          <span
+                            className={cn(
+                              "rounded-full border px-2 py-0.5 text-xs font-semibold",
+                              poolStatusColour(stats.poolStatus),
+                              "border-current/30 bg-current/10"
+                            )}
+                          >
+                            {formatPoolStatus(stats.poolStatus)}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-sm text-white/60">
-                        {post.tokenPrice ? `${post.tokenPrice.toFixed(3)} SOL` : "Price N/A"}
+                        {stats
+                          ? `${formatSol(stats.currentPrice)} SOL / token`
+                          : post.tokenPrice
+                          ? `${post.tokenPrice.toFixed(6)} SOL`
+                          : "Price N/A"}
                       </p>
                     </div>
+
+                    {/* Refresh button */}
+                    <button
+                      onClick={refresh}
+                      disabled={loadingStats}
+                      className="rounded-xl border border-white/10 bg-white/5 p-2 text-white/50 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-40"
+                    >
+                      <RefreshCw className={cn("h-4 w-4", loadingStats && "animate-spin")} />
+                    </button>
                   </div>
-                  
-                  {/* Post info */}
+
+                  {/* Post info + stats */}
                   <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
                     <h3 className="mb-2 line-clamp-2 text-sm font-semibold text-white">
                       {post.title}
                     </h3>
-                    <div className="flex items-center gap-3 text-xs text-white/60">
+                    <div className="mb-3 flex items-center gap-3 text-xs text-white/60">
                       <span>r/{post.subreddit}</span>
                       <span>•</span>
                       <span>u/{post.author}</span>
                     </div>
-                    
-                    {/* Trading Stats */}
-                    {loadingStats ? (
-                      <div className="mt-3 text-xs text-white/50">Loading stats...</div>
-                    ) : tradingStats ? (
-                      <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
+
+                    {statsError && (
+                      <div className="mb-2 flex items-center gap-2 text-xs text-yellow-400">
+                        <AlertTriangle className="h-3 w-3" />
+                        Stats unavailable — showing cached data
+                      </div>
+                    )}
+
+                    {loadingStats && !stats ? (
+                      <div className="text-xs text-white/40">Loading pool stats…</div>
+                    ) : stats ? (
+                      <div className="grid grid-cols-2 gap-3 text-xs">
                         <div>
-                          <div className="text-white/50">Current Price</div>
+                          <div className="text-white/50">Price</div>
                           <div className="font-semibold text-white">
-                            {tradingStats.currentPrice.toFixed(6)} SOL
+                            {formatSol(stats.currentPrice)} SOL
                           </div>
                         </div>
                         <div>
-                          <div className="text-white/50">Available</div>
+                          <div className="text-white/50">Market Cap</div>
                           <div className="font-semibold text-white">
-                            {tradingStats.availableSupply.toLocaleString()}
+                            {formatSol(stats.marketCap)} SOL
                           </div>
                         </div>
                         <div>
                           <div className="text-white/50">Volume</div>
                           <div className="font-semibold text-white">
-                            {tradingStats.totalVolume.toFixed(3)} SOL
+                            {formatSol(stats.totalVolume)} SOL
                           </div>
                         </div>
                         <div>
                           <div className="text-white/50">Holders</div>
-                          <div className="font-semibold text-white">
-                            {tradingStats.holders}
-                          </div>
+                          <div className="font-semibold text-white">{stats.holders}</div>
                         </div>
                       </div>
                     ) : (
                       post.marketCap && (
-                        <div className="mt-2 flex gap-4 text-xs text-white/50">
+                        <div className="flex gap-4 text-xs text-white/50">
                           <span>MC: {post.marketCap.toLocaleString()} SOL</span>
-                          {post.volume24h && (
-                            <span>Vol: {post.volume24h.toLocaleString()} SOL</span>
-                          )}
                         </div>
                       )
+                    )}
+
+                    {/* ── Migration progress bar (RedCircle only) ── */}
+                    {isRedCircle &&
+                      stats?.migrationProgress !== undefined &&
+                      stats.migrationProgress < 100 && (
+                        <div className="mt-3">
+                          <div className="mb-1 flex justify-between text-xs text-white/50">
+                            <span>Bonding curve progress</span>
+                            <span>{stats.migrationProgress.toFixed(1)}%</span>
+                          </div>
+                          <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
+                            <motion.div
+                              initial={{ width: 0 }}
+                              animate={{ width: `${stats.migrationProgress}%` }}
+                              transition={{ duration: 0.8, ease: "easeOut" }}
+                              className="h-full rounded-full bg-gradient-to-r from-purple-500 to-blue-500"
+                            />
+                          </div>
+                          {stats.migrationThresholdSol && (
+                            <p className="mt-1 text-xs text-white/30">
+                              {formatSol(stats.realSolReserve ?? 0)} /{" "}
+                              {formatSol(stats.migrationThresholdSol)} SOL collected
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                    {isRedCircle && stats?.migrationProgress === 100 && (
+                      <div className="mt-3 rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-xs text-blue-400">
+                        Bonding curve complete — pool migrating to DEX
+                      </div>
                     )}
                   </div>
                 </div>
 
-                {/* Buy/Sell Toggle */}
-                <div className="mb-6">
+                {/* ── Buy / Sell Toggle ───────────────────────────── */}
+                <div className="mb-5">
                   <div className="flex gap-2 rounded-xl border border-white/10 bg-white/5 p-1">
-                    <button
-                      onClick={() => setTradeType("buy")}
-                      className={cn(
-                        "flex-1 rounded-lg px-4 py-3 text-sm font-semibold transition-all",
-                        tradeType === "buy"
-                          ? "bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-white shadow-lg shadow-green-500/10 border border-green-500/30"
-                          : "text-white/60 hover:text-white"
-                      )}
-                    >
-                      <TrendingUp className="mx-auto mb-1 h-5 w-5" />
-                      Buy
-                    </button>
-                    <button
-                      onClick={() => setTradeType("sell")}
-                      className={cn(
-                        "flex-1 rounded-lg px-4 py-3 text-sm font-semibold transition-all",
-                        tradeType === "sell"
-                          ? "bg-gradient-to-r from-red-500/20 to-pink-500/20 text-white shadow-lg shadow-red-500/10 border border-red-500/30"
-                          : "text-white/60 hover:text-white"
-                      )}
-                    >
-                      <TrendingDown className="mx-auto mb-1 h-5 w-5" />
-                      Sell
-                    </button>
+                    {(["buy", "sell"] as TradeType[]).map((t) => (
+                      <button
+                        key={t}
+                        onClick={() => { setTradeType(t); setAmount(""); }}
+                        className={cn(
+                          "flex-1 rounded-lg px-4 py-3 text-sm font-semibold transition-all",
+                          tradeType === t
+                            ? t === "buy"
+                              ? "border border-green-500/30 bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-white shadow-lg shadow-green-500/10"
+                              : "border border-red-500/30 bg-gradient-to-r from-red-500/20 to-pink-500/20 text-white shadow-lg shadow-red-500/10"
+                            : "text-white/60 hover:text-white"
+                        )}
+                      >
+                        {t === "buy" ? (
+                          <TrendingUp className="mx-auto mb-1 h-5 w-5" />
+                        ) : (
+                          <TrendingDown className="mx-auto mb-1 h-5 w-5" />
+                        )}
+                        {t.charAt(0).toUpperCase() + t.slice(1)}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
-                {/* Amount Input */}
-                <div className="mb-6 space-y-3">
+                {/* ── Amount Input ────────────────────────────────── */}
+                <div className="mb-5 space-y-3">
                   <label className="text-sm font-medium text-white/80">
-                    Token Amount
+                    {inputIsSol ? "SOL to spend" : `${inputUnit} amount`}
                   </label>
                   <div className="relative">
                     <Input
@@ -411,84 +409,121 @@ export default function TradingModal({ post, isOpen, onClose }: TradingModalProp
                       onChange={(e) => setAmount(e.target.value)}
                       className="h-14 rounded-xl border-white/20 bg-white/5 pr-20 text-lg text-white placeholder:text-white/30"
                       min="0"
-                      step="0.01"
+                      step={inputIsSol ? "0.01" : "1"}
                     />
-                    <button
-                      onClick={() => setAmount("100")}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg border border-white/20 bg-white/10 px-3 py-1 text-xs text-white/80 hover:bg-white/20"
-                    >
-                      MAX
-                    </button>
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-white/50">
+                      {inputUnit}
+                    </span>
                   </div>
-                  
-                  {/* Quick amount buttons */}
+
+                  {/* Quick fills */}
                   <div className="flex gap-2">
-                    {[10, 50, 100, 500].map((value) => (
+                    {quickFills.map((v) => (
                       <button
-                        key={value}
-                        onClick={() => setAmount(value.toString())}
+                        key={v}
+                        onClick={() => setAmount(v)}
                         className="flex-1 rounded-lg border border-white/10 bg-white/5 py-2 text-xs text-white/70 hover:bg-white/10"
                       >
-                        {value}
+                        {v}
                       </button>
                     ))}
                   </div>
                 </div>
 
-                {/* Trade Preview */}
+                {/* ── Order Summary ───────────────────────────────── */}
                 {amount && parseFloat(amount) > 0 && (
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
-                    className="mb-6 space-y-2 rounded-xl border border-white/10 bg-white/5 p-4"
+                    className="mb-5 space-y-2 rounded-xl border border-white/10 bg-white/5 p-4"
                   >
-                    <h4 className="mb-3 text-sm font-semibold text-white/80">
-                      Order Summary
-                    </h4>
-                    <div className="flex justify-between text-sm text-white/60">
-                      <span>Token Amount</span>
-                      <span className="text-white">{tradePreview.tokenAmount.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm text-white/60">
-                      <span>Price per Token</span>
-                      <span className="text-white">{tradePreview.tokenPrice.toFixed(4)} SOL</span>
-                    </div>
-                    <div className="flex justify-between text-sm text-white/60">
-                      <span>Subtotal</span>
-                      <span className="text-white">{tradePreview.totalCost.toFixed(4)} SOL</span>
-                    </div>
-                    <div className="flex justify-between text-sm text-white/60">
-                      <span>Trading Fee (0.5%)</span>
-                      <span className="text-white">{tradePreview.fee.toFixed(4)} SOL</span>
-                    </div>
-                    <div className="mt-3 border-t border-white/10 pt-3">
-                      <div className="flex justify-between text-base font-semibold">
-                        <span className="text-white/80">Total</span>
-                        <span className="text-white">{tradePreview.finalTotal.toFixed(4)} SOL</span>
-                      </div>
-                    </div>
+                    <h4 className="mb-3 text-sm font-semibold text-white/80">Order Summary</h4>
+
+                    {isRedCircle && estimate ? (
+                      estimate.kind === "buy" ? (
+                        <>
+                          <Row label="You spend" value={`${formatSol(estimate.solIn)} SOL`} />
+                          <Row
+                            label="You receive (est.)"
+                            value={`~${formatTokens(estimate.tokensOut)} ${post.tokenSymbol || "tokens"}`}
+                            highlight
+                          />
+                          <Row
+                            label="Price per token"
+                            value={
+                              estimate.tokensOut > 0
+                                ? `${formatSol(estimate.solIn / estimate.tokensOut)} SOL`
+                                : "—"
+                            }
+                          />
+                          <Row
+                            label="Protocol fee (3%)"
+                            value={`${formatSol(estimate.solIn * 0.03)} SOL`}
+                          />
+                          {estimate.impact > 0 && (
+                            <Row
+                              label="Price impact"
+                              value={`${(estimate.impact / 100).toFixed(2)}%`}
+                              warn={estimate.impact > 500}
+                            />
+                          )}
+                          <div className="mt-2 text-xs text-white/30">
+                            1% slippage tolerance applied server-side
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <Row
+                            label="You sell"
+                            value={`${formatTokens(estimate.tokensIn)} ${post.tokenSymbol || "tokens"}`}
+                          />
+                          <Row
+                            label="You receive (est.)"
+                            value={`~${formatSol(estimate.solOut)} SOL`}
+                            highlight
+                          />
+                          <Row
+                            label="Protocol fee (3%)"
+                            value={`${formatSol(estimate.solOut * 0.03)} SOL`}
+                          />
+                          <div className="mt-2 text-xs text-white/30">
+                            1% slippage tolerance applied server-side
+                          </div>
+                        </>
+                      )
+                    ) : flatPreview ? (
+                      <>
+                        <Row label="Token amount" value={flatPreview.tokenAmount.toFixed(2)} />
+                        <Row
+                          label={tradeType === "buy" ? "Total cost" : "You receive"}
+                          value={`${flatPreview.totalCost.toFixed(6)} SOL`}
+                          highlight
+                        />
+                      </>
+                    ) : null}
                   </motion.div>
                 )}
 
-                {/* Wallet Info Banner */}
+                {/* ── Wallet Banner ───────────────────────────────── */}
                 {connected ? (
-                  <div className="mb-6 flex items-center gap-3 rounded-xl border border-green-500/20 bg-green-500/5 p-3">
+                  <div className="mb-5 flex items-center gap-3 rounded-xl border border-green-500/20 bg-green-500/5 p-3">
                     <Wallet className="h-5 w-5 text-green-400" />
-                    <div className="flex-1 text-xs text-white/70">
-                      <span className="font-medium text-green-400">Wallet connected:</span>{" "}
-                      {publicKey?.toBase58().slice(0, 4)}...{publicKey?.toBase58().slice(-4)}
-                    </div>
+                    <span className="flex-1 text-xs text-white/70">
+                      <span className="font-medium text-green-400">Connected: </span>
+                      {publicKey?.toBase58().slice(0, 4)}…{publicKey?.toBase58().slice(-4)}
+                    </span>
                   </div>
                 ) : (
-                  <div className="mb-6 flex items-center gap-3 rounded-xl border border-yellow-500/20 bg-yellow-500/5 p-3">
+                  <div className="mb-5 flex items-center gap-3 rounded-xl border border-yellow-500/20 bg-yellow-500/5 p-3">
                     <Wallet className="h-5 w-5 text-yellow-400" />
-                    <div className="flex-1 text-xs text-white/70">
-                      <span className="font-medium text-yellow-400">Wallet not connected.</span> Click the button below to connect.
-                    </div>
+                    <span className="flex-1 text-xs text-white/70">
+                      <span className="font-medium text-yellow-400">Wallet not connected. </span>
+                      Click below to connect.
+                    </span>
                   </div>
                 )}
 
-                {/* Action Buttons */}
+                {/* ── Action Buttons ──────────────────────────────── */}
                 <div className="flex gap-3">
                   <Button
                     variant="outline"
@@ -499,7 +534,10 @@ export default function TradingModal({ post, isOpen, onClose }: TradingModalProp
                   </Button>
                   <Button
                     onClick={handleTrade}
-                    disabled={(!connected && !isSubmitting) || (connected && (!amount || parseFloat(amount) <= 0 || isSubmitting))}
+                    disabled={
+                      isSubmitting ||
+                      (connected && (!amount || parseFloat(amount) <= 0))
+                    }
                     className={cn(
                       "flex-1 rounded-xl font-semibold text-white shadow-lg",
                       !connected
@@ -509,15 +547,13 @@ export default function TradingModal({ post, isOpen, onClose }: TradingModalProp
                         : "bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 shadow-red-500/30"
                     )}
                   >
-                    {isSubmitting ? (
-                      <>Processing...</>
-                    ) : !connected ? (
-                      <>Connect Wallet</>
-                    ) : (
-                      <>
-                        {tradeType === "buy" ? "Buy" : "Sell"} Tokens
-                      </>
-                    )}
+                    {isSubmitting
+                      ? "Processing…"
+                      : !connected
+                      ? "Connect Wallet"
+                      : tradeType === "buy"
+                      ? `Buy ${post.tokenSymbol || "Tokens"}`
+                      : `Sell ${post.tokenSymbol || "Tokens"}`}
                   </Button>
                 </div>
               </div>
@@ -529,3 +565,30 @@ export default function TradingModal({ post, isOpen, onClose }: TradingModalProp
   );
 }
 
+// ─── Small helper component ─────────────────────────────────────────────────
+
+function Row({
+  label,
+  value,
+  highlight = false,
+  warn = false,
+}: {
+  label: string;
+  value: string;
+  highlight?: boolean;
+  warn?: boolean;
+}) {
+  return (
+    <div className="flex justify-between text-sm text-white/60">
+      <span>{label}</span>
+      <span
+        className={cn(
+          highlight && "font-semibold text-white",
+          warn && "font-semibold text-orange-400"
+        )}
+      >
+        {value}
+      </span>
+    </div>
+  );
+}

@@ -282,6 +282,7 @@ async function getRedCircleStats(post: typeof schema.posts.$inferSelect) {
   // Fallback to DB values if pool account not found on current network
   if (!pool) {
     return {
+      poolType: 'redcircle' as const,
       currentPrice: parseFloat(post.currentPrice),
       totalSupply: post.tokenSupply,
       soldSupply: 0,
@@ -290,10 +291,10 @@ async function getRedCircleStats(post: typeof schema.posts.$inferSelect) {
       marketCap: parseFloat(post.marketCap),
       holders: post.holders,
       poolStatus: 'unknown',
-      poolStatusRaw: null,
       realSolReserve: 0,
       virtualSolReserve: 0,
       migrationProgress: 0,
+      rawReserves: null,
     };
   }
 
@@ -347,6 +348,7 @@ async function getRedCircleStats(post: typeof schema.posts.$inferSelect) {
   };
 
   return {
+    poolType: 'redcircle' as const,
     currentPrice,
     totalSupply,
     soldSupply,
@@ -366,12 +368,18 @@ async function getRedCircleStats(post: typeof schema.posts.$inferSelect) {
     buyPrice100: getBuyPrice(0.1),
     poolBaseReserves: availableSupply,
     poolQuoteReserves: realSolReserve,
+    rawReserves: {
+      virtualSolLamports: pool.virtualSolReserve.toString(),
+      virtualTokenUnits: pool.virtualTokenReserve.toString(),
+      curveType: parseCurveType(pool.curveType) as number,
+    },
   };
 }
 
 async function getDBCStats(post: typeof schema.posts.$inferSelect) {
   if (!post.dbcPoolAddress) {
     return {
+      poolType: 'dbc' as const,
       currentPrice: parseFloat(post.currentPrice),
       totalSupply: post.tokenSupply,
       soldSupply: 0,
@@ -382,6 +390,7 @@ async function getDBCStats(post: typeof schema.posts.$inferSelect) {
       buyPrice1: parseFloat(post.currentPrice),
       buyPrice10: parseFloat(post.currentPrice) * 10,
       buyPrice100: parseFloat(post.currentPrice) * 100,
+      rawReserves: null,
     };
   }
 
@@ -400,6 +409,7 @@ async function getDBCStats(post: typeof schema.posts.$inferSelect) {
   const quote100 = await dbcBuyQuote(post.dbcPoolAddress, 0.1);
 
   return {
+    poolType: 'dbc' as const,
     currentPrice,
     totalSupply: post.tokenSupply,
     soldSupply: post.tokenSupply - baseReserves,
@@ -412,6 +422,7 @@ async function getDBCStats(post: typeof schema.posts.$inferSelect) {
     buyPrice100: quote100.pricePerToken,
     poolBaseReserves: baseReserves,
     poolQuoteReserves: quoteReserves,
+    rawReserves: null,
   };
 }
 
