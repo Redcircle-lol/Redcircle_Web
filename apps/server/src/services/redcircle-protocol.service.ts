@@ -5,7 +5,7 @@ import {
 } from "@solana/web3.js";
 import BN from "bn.js";
 import bs58 from "bs58";
-import protocolSdk from "../../../../../redcircle-protocol/sdk/dist/index.js";
+import protocolSdk from "@redcircle/protocol-sdk";
 
 const {
   RedCircleClient,
