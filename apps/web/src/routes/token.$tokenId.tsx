@@ -315,24 +315,14 @@ function TokenDetailsPage() {
                   <ArrowRightLeft className="h-4 w-4" />
                   Trade on DexScreener
                 </a>
-                <div className="grid grid-cols-2 gap-2">
-                  <a
-                    href={`https://jup.ag/swap/SOL-${post.tokenMintAddress}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/5 py-2.5 text-xs text-white/60 hover:text-white hover:bg-white/10 transition-colors"
-                  >
-                    Jupiter <ExternalLink className="h-3 w-3" />
-                  </a>
-                  <a
-                    href={`https://solscan.io/token/${post.tokenMintAddress}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/5 py-2.5 text-xs text-white/60 hover:text-white hover:bg-white/10 transition-colors"
-                  >
-                    Solscan <ExternalLink className="h-3 w-3" />
-                  </a>
-                </div>
+                <a
+                  href={`https://jup.ag/swap/SOL-${post.tokenMintAddress}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/5 py-2.5 text-xs text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+                >
+                  Jupiter <ExternalLink className="h-3 w-3" />
+                </a>
               </div>
             ) : (
               <TradingModal post={post} isOpen={true} onClose={() => { setChartRefreshKey(k => k + 1); void fetchTokenDetails(false); }} />

@@ -1,6 +1,7 @@
 import "dotenv/config";
 import cors from "cors";
 import express from "express";
+import { startPriceSyncJob } from "./jobs/priceSync";
 import redditAuthRoutes from "./config/reddit-oauth-simple";
 import postsRoutes from "./routes/posts";
 import portfolioRoutes from "./routes/portfolio";
@@ -81,4 +82,5 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
 	const port = process.env.PORT || 3000;
 	app.listen(Number(port), () => {
 	console.log(`\nServer running on port ${port}\n`);
+	startPriceSyncJob();
 });
