@@ -35,6 +35,26 @@ app.use("/api/price-history", priceHistoryRoutes);
 app.use("/api/waitlist", waitlistRoutes);
 app.use("/api/launches", launchesRoutes);
 
+// ── DexScreener proxy (avoids browser CORS restrictions) ──────────────────────
+app.get("/api/tokens/:mint/price", async (req, res) => {
+  try {
+    const { mint } = req.params;
+    const resp = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${mint}`, {
+      headers: { "Accept": "application/json" },
+    });
+    const data = await resp.json() as { pairs?: unknown[] };
+    if (!data.pairs?.length) return res.json({ pair: null });
+    const pairs = data.pairs as Record<string, unknown>[];
+    const best = pairs.sort((a, b) =>
+      ((b.liquidity as Record<string, number> | undefined)?.usd ?? 0) -
+      ((a.liquidity as Record<string, number> | undefined)?.usd ?? 0)
+    )[0];
+    res.json({ pair: best });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch price data" });
+  }
+});
+
 app.get("/", (_req, res) => {
 	res.status(200).json({ message: "RedCircle API is running" });
 });

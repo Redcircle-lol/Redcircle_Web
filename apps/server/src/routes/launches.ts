@@ -2,7 +2,7 @@ import express, { type Request, type Response } from "express";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { db } from "../db";
-import { launches } from "../db";
+import { launches, posts } from "../db";
 import { authenticateToken } from "../middleware/auth";
 import * as Orynth from "../services/orynth.service";
 
@@ -18,6 +18,47 @@ function mapOrynthStatus(o: Orynth.LaunchStatus): DbStatus {
     case "submitted": return "confirming";
     case "launched":  return "confirmed";
     case "failed":    return "failed";
+  }
+}
+
+// ─── Sync confirmed launch → posts table (feed) ──────────────────────────────
+// Parses subreddit from a reddit URL like https://www.reddit.com/r/solana/...
+function subredditFromUrl(url: string): string {
+  const m = url.match(/reddit\.com\/r\/([^/?#]+)/i);
+  return m ? m[1] : "reddit";
+}
+
+async function syncLaunchToFeed(launch: LaunchRow) {
+  if (!launch.mintAddress || !launch.launcherId) return;
+  try {
+    await db.insert(posts).values({
+      redditPostId:     launch.sourceId,
+      redditUrl:        launch.sourceUrl,
+      title:            launch.sourceTitle,
+      author:           launch.creatorUsername,
+      subreddit:        subredditFromUrl(launch.sourceUrl),
+      thumbnail:        launch.tokenImageUrl ?? undefined,
+      upvotes:          0,
+      comments:         0,
+      tokenSupply:      1_000_000_000,
+      initialPrice:     "0",
+      currentPrice:     "0",
+      tokenMintAddress: launch.mintAddress,
+      tokenSymbol:      launch.tokenSymbol,
+      description:      launch.tokenDescription ?? undefined,
+      status:           "active",
+      creatorId:        launch.launcherId,
+    }).onConflictDoUpdate({
+      target: posts.redditPostId,
+      set: {
+        tokenMintAddress: launch.mintAddress,
+        tokenSymbol:      launch.tokenSymbol,
+        status:           "active",
+        updatedAt:        new Date(),
+      },
+    });
+  } catch (e) {
+    console.warn("Could not sync launch to posts feed:", e);
   }
 }
 
@@ -235,6 +276,8 @@ router.get("/:launchId/status", async (req, res) => {
         launch.status      = newStatus;
         launch.mintAddress = remote.launch.mintAddress ?? launch.mintAddress;
         launch.poolAddress = remote.launch.poolAddress ?? launch.poolAddress;
+
+        if (newStatus === "confirmed") await syncLaunchToFeed(launch);
       } catch (e) {
         console.warn("Could not sync Orynth status:", e);
       }
@@ -295,6 +338,12 @@ router.post("/webhook", async (req: Request, res: Response) => {
           updatedAt:   new Date(),
         })
         .where(eq(launches.orynthLaunchId, orynthLaunchId));
+
+      // Sync to posts table so it appears in the feed
+      const [confirmedLaunch] = await db.select().from(launches)
+        .where(eq(launches.orynthLaunchId, orynthLaunchId))
+        .limit(1);
+      if (confirmedLaunch) await syncLaunchToFeed(confirmedLaunch);
     }
 
     res.json({ ok: true });
