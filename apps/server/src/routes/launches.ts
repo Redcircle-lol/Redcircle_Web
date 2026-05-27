@@ -140,17 +140,6 @@ router.post("/prepare", authenticateToken, async (req: Request, res: Response) =
       imageUrl:    body.imageUrl ?? body.redditThumbnail ?? "https://www.redcircle.lol/logo.png",
     };
 
-    console.log("🚀 [Launch/prepare] Zod body:", JSON.stringify({
-      redditPostId:   body.redditPostId,
-      redditUrl:      body.redditUrl,
-      redditThumbnail: body.redditThumbnail,
-      imageUrl:       body.imageUrl,
-      tokenName:      body.tokenName,
-      tokenSymbol:    body.tokenSymbol,
-      payerWalletAddress: body.payerWalletAddress,
-    }));
-    console.log("🚀 [Launch/prepare] Orynth payload imageUrl:", orynthPayload.imageUrl);
-
     const prepared = await Orynth.prepareLaunch(orynthPayload);
 
     // prepared.launch is the actual data
