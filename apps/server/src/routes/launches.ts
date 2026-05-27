@@ -119,7 +119,7 @@ router.post("/prepare", authenticateToken, async (req: Request, res: Response) =
     }
 
     // Call Orynth /prepare — source has NO `title`, creator has NO `displayName`
-    const prepared = await Orynth.prepareLaunch({
+    const orynthPayload = {
       externalId,
       payerWalletAddress: body.payerWalletAddress,
       source: {
@@ -131,14 +131,27 @@ router.post("/prepare", authenticateToken, async (req: Request, res: Response) =
       creator: {
         platform:       "reddit",
         username:       body.redditAuthor,
-        platformUserId: body.redditAuthor, // Reddit username doubles as platform user ID
+        platformUserId: body.redditAuthor,
         profileUrl:     `https://reddit.com/u/${body.redditAuthor}`,
       },
       name:        body.tokenName,
       symbol:      body.tokenSymbol.toUpperCase(),
       description: body.description ?? body.redditTitle,
       imageUrl:    body.imageUrl ?? body.redditThumbnail ?? "https://www.redcircle.lol/logo.png",
-    });
+    };
+
+    console.log("🚀 [Launch/prepare] Zod body:", JSON.stringify({
+      redditPostId:   body.redditPostId,
+      redditUrl:      body.redditUrl,
+      redditThumbnail: body.redditThumbnail,
+      imageUrl:       body.imageUrl,
+      tokenName:      body.tokenName,
+      tokenSymbol:    body.tokenSymbol,
+      payerWalletAddress: body.payerWalletAddress,
+    }));
+    console.log("🚀 [Launch/prepare] Orynth payload imageUrl:", orynthPayload.imageUrl);
+
+    const prepared = await Orynth.prepareLaunch(orynthPayload);
 
     // prepared.launch is the actual data
     const orynthLaunch = prepared.launch;
@@ -195,7 +208,10 @@ router.post("/prepare", authenticateToken, async (req: Request, res: Response) =
       feeConfig:            orynthLaunch.feeConfig,
     });
   } catch (err) {
-    console.error("❌ Launch prepare error:", err);
+    console.error("❌ [Launch/prepare] Error:", err instanceof Error ? err.message : err);
+    if (err && typeof err === "object" && "issues" in err) {
+      console.error("❌ [Launch/prepare] Zod issues:", JSON.stringify((err as any).issues));
+    }
     res.status(500).json({ success: false, error: err instanceof Error ? err.message : "Failed to prepare launch" });
   }
 });
