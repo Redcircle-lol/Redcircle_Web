@@ -7,7 +7,6 @@ const navLinks = [
   { label: "Feed", to: "/feed" },
   { label: "Launch", to: "/launch" },
   { label: "Leaderboard", to: "/leaderboard" },
-  { label: "Transactions", to: "/transactions" },
 ];
 
 export default function Navbar() {
@@ -69,6 +68,7 @@ export default function Navbar() {
             ) : (
               <Link
                 to="/signin"
+                search={{ redirect: undefined }}
                 className="hidden md:flex px-4 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white text-sm font-medium transition-all"
               >
                 Sign In
@@ -122,6 +122,7 @@ export default function Navbar() {
           {!isAuthenticated && (
             <Link
               to="/signin"
+              search={{ redirect: undefined }}
               onClick={() => setMenuOpen(false)}
               className="flex items-center justify-center h-11 mt-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white text-sm font-medium transition-all"
             >
