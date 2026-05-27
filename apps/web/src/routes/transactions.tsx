@@ -39,7 +39,6 @@ interface TransactionStats {
 }
 
 export const Route = createFileRoute("/transactions")({
-  beforeLoad: () => { throw redirect({ to: "/home" }); },
   component: TransactionsPage,
 });
 

@@ -1,10 +1,5 @@
-<<<<<<< HEAD
-import { createFileRoute, redirect } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-=======
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
->>>>>>> 4704f85 (added a script for quick spinup, and several UI improvements)
 import { fetchWithAuth } from "@/lib/auth";
 import { motion } from "motion/react";
 import { ArrowLeft, ExternalLink, TrendingUp, Users, Activity, DollarSign } from "lucide-react";
@@ -15,7 +10,6 @@ import type { FeedPost } from "@/components/FeedCard";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/token/$tokenId")({
-  beforeLoad: () => { throw redirect({ to: "/home" }); },
   component: TokenDetailsPage,
 });
 
