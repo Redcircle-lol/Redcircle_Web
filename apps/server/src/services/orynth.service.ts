@@ -84,6 +84,7 @@ async function orynthFetch<T>(path: string, options: RequestInit = {}): Promise<
 
   const data = await res.json() as Record<string, unknown>;
   if (!res.ok) {
+    console.error(`❌ [Orynth] ${path} → ${res.status}`, JSON.stringify(data));
     const msg = (data.message ?? data.error ?? `Orynth API ${res.status}`) as string;
     throw new Error(msg);
   }
