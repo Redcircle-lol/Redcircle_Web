@@ -55,17 +55,6 @@ export default function InfoModal({ open, onClose }: InfoModalProps) {
                 </ul>
               </div>
 
-              <div>
-                <h3 className="text-sm sm:text-lg font-bold text-[#FF4500] text-center mb-1.5">Fees & Rewards</h3>
-                <p className="text-xs sm:text-sm font-bold text-white text-center mb-1.5">2% fee on every buy and sell</p>
-                <ul className="space-y-1 sm:space-y-1.5 text-xs sm:text-sm text-white/70">
-                  <li className="flex items-center justify-between"><span>0.40% → Creator</span><span className="text-white/30 text-[10px] sm:text-xs">claimable USDC</span></li>
-                  <li className="flex items-center justify-between"><span>0.15% → Curator</span><span className="text-white/30 text-[10px] sm:text-xs">claimable USDC</span></li>
-                  <li className="flex items-center justify-between"><span>0.50% → RedCircle</span><span /></li>
-                  <li className="flex items-center justify-between"><span>0.95% → Protocol</span><span className="text-white/30 text-[10px] sm:text-xs">Meteora + Orynth</span></li>
-                </ul>
-              </div>
-
               <button
                 onClick={onClose}
                 className="w-full rounded-2xl bg-[#FF4500] hover:bg-[#FF4500]/85 text-white font-bold py-3 text-sm transition-all cursor-pointer"
