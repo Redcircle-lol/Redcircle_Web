@@ -62,17 +62,17 @@ function SocialPage() {
   const [infoOpen, setInfoOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center px-4">
+    <div className="h-[calc(100vh-64px)] overflow-hidden bg-black flex flex-col items-center justify-center px-4">
       <InfoModal open={infoOpen} onClose={() => setInfoOpen(false)} />
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="w-full max-w-sm flex flex-col items-center gap-8"
+        className="w-full max-w-sm flex flex-col items-center gap-5"
       >
         {/* Branding */}
         <div className="flex flex-col items-center gap-3">
-          <img src="/logo.png" alt="RedCircle" className="w-16 h-16 rounded-2xl" />
+          <img src="/logo.png" alt="RedCircle" className="w-12 h-12 rounded-2xl" />
           <div className="text-center">
             <h1 className="text-xl font-bold text-white tracking-tight">RedCircle</h1>
             <p className="text-sm text-white/40 mt-0.5">Tokenize viral Reddit posts on Solana</p>
@@ -80,7 +80,7 @@ function SocialPage() {
         </div>
 
         {/* Links */}
-        <div className="w-full flex flex-col gap-3">
+        <div className="w-full flex flex-col gap-2.5">
           {links.map((link, i) => (
             <motion.a
               key={link.href}
@@ -90,7 +90,7 @@ function SocialPage() {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 + i * 0.07 }}
-              className={`flex items-center gap-4 w-full rounded-2xl border px-5 py-4 text-white transition-all ${link.bg} ${link.border}`}
+              className={`flex items-center gap-4 w-full rounded-2xl border px-4 py-3 text-white transition-all ${link.bg} ${link.border}`}
             >
               <span className="text-white/70">{link.icon}</span>
               <div className="flex-1 min-w-0">
