@@ -65,14 +65,6 @@ function HomeComponent() {
       <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 pt-6 sm:pt-10 pb-8">
         {/* Hero */}
         <div className="mb-8 sm:mb-12 text-center">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 rounded-full border border-[#E8431C]/20 bg-[#E8431C]/8 px-3 sm:px-4 py-1.5 text-xs text-[#E8431C]/80 mb-5 sm:mb-7 backdrop-blur-sm">
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#E8431C] opacity-75" />
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#E8431C]" />
-            </span>
-            Powered by Orynth
-          </div>
 
           <h1 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight leading-[1.05] mb-4 sm:mb-5">
             <span className="text-white">Turn Reddit Posts Into</span>

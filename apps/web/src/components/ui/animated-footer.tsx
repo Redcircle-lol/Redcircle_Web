@@ -130,7 +130,11 @@ export function AnimatedFooter() {
 
         {/* bottom row */}
         <div className="mt-10 flex flex-col md:flex-row items-center justify-between gap-6 text-neutral-500 text-sm">
-          <span>© {new Date().getFullYear()} RedCircle. All rights reserved.</span>
+          <div className="flex items-center gap-3">
+            <span>© {new Date().getFullYear()} RedCircle. All rights reserved.</span>
+            <span className="text-neutral-700">·</span>
+            <span className="text-xs text-neutral-600">Powered by <a href="https://orynth.com" target="_blank" rel="noopener noreferrer" className="hover:text-neutral-400 transition-colors">Orynth</a></span>
+          </div>
           <div className="flex items-center gap-3">
             <span className="text-xs text-neutral-600">CA:</span>
             <CopyCA />

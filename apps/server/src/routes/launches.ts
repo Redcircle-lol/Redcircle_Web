@@ -6,6 +6,7 @@ import { db } from "../db";
 import { launches, posts } from "../db";
 import { authenticateToken } from "../middleware/auth";
 import * as Orynth from "../services/orynth.service";
+import { RedditService } from "../services/reddit.service";
 import { broadcastLaunch } from "../services/ws.service";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
@@ -34,6 +35,9 @@ function subredditFromUrl(url: string): string {
 async function syncLaunchToFeed(launch: LaunchRow) {
   if (!launch.mintAddress) return;
   try {
+    const redditData = launch.sourceUrl
+      ? await RedditService.fetchPost(launch.sourceUrl).catch(() => null)
+      : null;
     await db.insert(posts).values({
       ...(launch.postId ? { id: launch.postId } : {}),
       redditPostId:     launch.sourceId,
@@ -42,8 +46,8 @@ async function syncLaunchToFeed(launch: LaunchRow) {
       author:           launch.creatorUsername,
       subreddit:        subredditFromUrl(launch.sourceUrl),
       thumbnail:        launch.tokenImageUrl ?? undefined,
-      upvotes:          0,
-      comments:         0,
+      upvotes:          redditData?.upvotes ?? 0,
+      comments:         redditData?.num_comments ?? 0,
       tokenSupply:      1_000_000_000,
       initialPrice:     "0",
       currentPrice:     "0",
@@ -60,6 +64,8 @@ async function syncLaunchToFeed(launch: LaunchRow) {
         tokenSymbol:      launch.tokenSymbol,
         tokenSlug:        launch.tokenSlug ?? undefined,
         status:           "active",
+        upvotes:          redditData?.upvotes ?? 0,
+        comments:         redditData?.num_comments ?? 0,
         updatedAt:        new Date(),
       },
     });
