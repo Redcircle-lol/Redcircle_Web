@@ -16,7 +16,7 @@ export default function InfoModal({ open, onClose }: InfoModalProps) {
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center"
         >
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm cursor-default" onClick={onClose} />
 
           <motion.div
             initial={{ opacity: 0, y: 40 }}
@@ -27,15 +27,14 @@ export default function InfoModal({ open, onClose }: InfoModalProps) {
           >
             <button
               onClick={onClose}
-              className="absolute top-3 right-3 text-white/30 hover:text-white transition-colors z-10"
+              className="absolute top-3 right-3 text-white/30 hover:text-white transition-colors z-10 cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
 
             <div className="px-5 sm:px-8 pt-5 sm:pt-8 pb-5 sm:pb-6 space-y-3 sm:space-y-5">
               <div className="text-center">
-                <h2 className="text-lg sm:text-2xl font-bold text-[#FF4500]">RedCircle</h2>
-                <p className="text-xs sm:text-sm text-white/40 mt-0.5">The Reddit token economy</p>
+                <img src="/logo.png" alt="RedCircle" className="w-10 h-10 rounded-xl mx-auto" />
               </div>
 
               <div className="text-center">
@@ -69,9 +68,8 @@ export default function InfoModal({ open, onClose }: InfoModalProps) {
 
               <button
                 onClick={onClose}
-                className="w-full rounded-2xl bg-[#FF4500] hover:bg-[#FF4500]/85 text-white font-bold py-3 text-sm transition-all flex items-center justify-center gap-2"
+                className="w-full rounded-2xl bg-[#FF4500] hover:bg-[#FF4500]/85 text-white font-bold py-3 text-sm transition-all cursor-pointer"
               >
-                <img src="/logo.png" alt="" className="w-5 h-5 rounded-full" />
                 let's go
               </button>
             </div>

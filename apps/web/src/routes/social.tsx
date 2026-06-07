@@ -106,7 +106,7 @@ function SocialPage() {
 
         <button
           onClick={() => setInfoOpen(true)}
-          className="text-xs text-white/20 hover:text-white/50 transition-colors underline underline-offset-2"
+          className="text-xs text-white/20 hover:text-white/50 transition-colors underline underline-offset-2 cursor-pointer"
         >
           What is RedCircle?
         </button>
