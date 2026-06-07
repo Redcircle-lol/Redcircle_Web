@@ -69,9 +69,10 @@ export default function InfoModal({ open, onClose }: InfoModalProps) {
 
               <button
                 onClick={onClose}
-                className="w-full rounded-2xl bg-[#FF4500] hover:bg-[#FF4500]/85 text-white font-bold py-3 text-sm transition-all"
+                className="w-full rounded-2xl bg-[#FF4500] hover:bg-[#FF4500]/85 text-white font-bold py-3 text-sm transition-all flex items-center justify-center gap-2"
               >
-                let's go 🔴
+                <img src="/logo.png" alt="" className="w-5 h-5 rounded-full" />
+                let's go
               </button>
             </div>
           </motion.div>
