@@ -14,74 +14,66 @@ export default function InfoModal({ open, onClose }: InfoModalProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center px-4"
+          className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center"
         >
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-            onClick={onClose}
-          />
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
-          {/* Modal */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 12 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 12 }}
-            transition={{ duration: 0.2 }}
-            className="relative w-full max-w-sm rounded-3xl border border-white/10 bg-[#09090b] shadow-2xl overflow-y-auto max-h-[90vh]"
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 40 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            className="relative w-full sm:max-w-md bg-[#09090b] sm:rounded-3xl rounded-t-3xl border border-white/10 shadow-2xl"
           >
-            {/* Close */}
             <button
               onClick={onClose}
-              className="absolute top-4 right-4 text-white/30 hover:text-white transition-colors z-10"
+              className="absolute top-3 right-3 text-white/30 hover:text-white transition-colors z-10"
             >
               <X className="w-4 h-4" />
             </button>
 
-            <div className="px-7 py-8 text-center space-y-8">
+            <div className="px-5 sm:px-8 pt-5 sm:pt-8 pb-5 sm:pb-6 space-y-3 sm:space-y-5">
               {/* Header */}
-              <div className="space-y-1">
-                <h2 className="text-2xl font-bold text-[#FF4500] tracking-tight">RedCircle</h2>
-                <p className="text-sm text-white/40">The Reddit token economy</p>
+              <div className="text-center">
+                <h2 className="text-lg sm:text-2xl font-bold text-[#FF4500]">RedCircle</h2>
+                <p className="text-xs sm:text-sm text-white/40 mt-0.5">The Reddit token economy</p>
               </div>
 
-              {/* What is RedCircle */}
-              <div className="space-y-2">
-                <h3 className="text-lg font-bold text-[#FF4500]">What is RedCircle?</h3>
-                <p className="text-sm text-white/70 leading-relaxed">
+              {/* What is */}
+              <div className="text-center">
+                <h3 className="text-sm sm:text-lg font-bold text-[#FF4500] mb-1">What is RedCircle?</h3>
+                <p className="text-xs sm:text-sm text-white/70 leading-relaxed">
                   RedCircle turns viral Reddit posts into tradeable Solana tokens.
-                  The best posts get tokenized, original creators earn USDC, and
-                  anyone can trade on Jupiter DEX.
+                  Creators earn USDC, curators get rewarded, and anyone can trade on Jupiter DEX.
                 </p>
               </div>
 
               {/* How it works */}
-              <div className="space-y-3">
-                <h3 className="text-lg font-bold text-[#FF4500]">How it works</h3>
-                <div className="space-y-2.5 text-sm text-white/70">
-                  <p>Browse hot Reddit posts and launch a token with one click</p>
-                  <p>Server pays the gas — no SOL needed to launch</p>
-                  <p>Token goes live on Solana via a Meteora liquidity pool</p>
-                  <p>Trade instantly on Jupiter DEX with real price discovery</p>
-                </div>
+              <div>
+                <h3 className="text-sm sm:text-lg font-bold text-[#FF4500] text-center mb-1.5">How it works</h3>
+                <ul className="space-y-1 sm:space-y-1.5 text-xs sm:text-sm text-white/70">
+                  <li className="flex items-start gap-2"><span className="text-[#FF4500] shrink-0">→</span>Browse hot Reddit posts and launch a token in one click</li>
+                  <li className="flex items-start gap-2"><span className="text-[#FF4500] shrink-0">→</span>Server pays the gas — no SOL needed to launch</li>
+                  <li className="flex items-start gap-2"><span className="text-[#FF4500] shrink-0">→</span>Token goes live on Solana via a Meteora liquidity pool</li>
+                  <li className="flex items-start gap-2"><span className="text-[#FF4500] shrink-0">→</span>Trade instantly on Jupiter DEX with real price discovery</li>
+                </ul>
               </div>
 
-              {/* Fees & Rewards */}
-              <div className="space-y-3">
-                <h3 className="text-lg font-bold text-[#FF4500]">Fees & Rewards</h3>
-                <div className="space-y-2 text-sm text-white/70">
-                  <p className="font-bold text-white">2% fee on every buy and sell</p>
-                  <p>0.40% to original post creator (claimable as USDC)</p>
-                  <p>0.15% to curator (claimable as USDC)</p>
-                  <p>0.50% to RedCircle</p>
-                  <p>0.95% to protocol (Meteora + Orynth)</p>
-                </div>
+              {/* Fees */}
+              <div>
+                <h3 className="text-sm sm:text-lg font-bold text-[#FF4500] text-center mb-1.5">Fees & Rewards</h3>
+                <p className="text-xs sm:text-sm font-bold text-white text-center mb-1.5">2% fee on every buy and sell</p>
+                <ul className="space-y-1 sm:space-y-1.5 text-xs sm:text-sm text-white/70">
+                  <li className="flex items-center justify-between"><span>0.40% → Creator</span><span className="text-white/30 text-[10px] sm:text-xs">claimable USDC</span></li>
+                  <li className="flex items-center justify-between"><span>0.15% → Curator</span><span className="text-white/30 text-[10px] sm:text-xs">claimable USDC</span></li>
+                  <li className="flex items-center justify-between"><span>0.50% → RedCircle</span><span /></li>
+                  <li className="flex items-center justify-between"><span>0.95% → Protocol</span><span className="text-white/30 text-[10px] sm:text-xs">Meteora + Orynth</span></li>
+                </ul>
               </div>
 
-              {/* CTA */}
               <button
                 onClick={onClose}
-                className="w-full rounded-2xl bg-[#FF4500] hover:bg-[#FF4500]/85 text-white font-bold py-3.5 text-sm transition-all"
+                className="w-full rounded-2xl bg-[#FF4500] hover:bg-[#FF4500]/85 text-white font-bold py-3 text-sm transition-all"
               >
                 let's go 🔴
               </button>
