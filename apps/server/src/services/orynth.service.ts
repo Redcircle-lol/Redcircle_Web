@@ -32,12 +32,12 @@ export interface PrepareRequest {
 export type LaunchStatus = "prepared" | "submitted" | "launched" | "failed";
 
 export interface FeeConfig {
-  totalTradingFeeBps: number;       // 250
-  orynthFeeBps: number;             // 116
-  partnerFeeBps: number;            // 134
+  totalTradingFeeBps: number;       // 200 — 2.0% total trading fee
+  orynthFeeBps: number;             // 55  — 0.55% Orynth protocol fee
+  partnerFeeBps: number;            // 105 — 1.05% RedCircle partner bucket
   partnerBucketIncludesCreatorPayouts: boolean;
-  suggestedPartnerShareBps: number; // 67
-  suggestedCreatorShareBps: number; // 67
+  suggestedPartnerShareBps: number; // legacy Orynth suggestion — RedCircle uses fixed 50/40/15 split
+  suggestedCreatorShareBps: number; // legacy Orynth suggestion — RedCircle uses fixed 50/40/15 split
   onChain?: {
     meteoraProtocolFeeBps: number;
     orynthFeeClaimerBps: number;

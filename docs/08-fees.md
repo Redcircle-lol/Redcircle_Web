@@ -1,15 +1,15 @@
 # Fee model
 
-Launching a token is free. Trading carries a **2.0% fee per trade**, split between the protocols that power RedCircle, the creator who made the content, and the curator who surfaced it. Standard Solana network fees also apply to any on-chain action.
+Launching a token is free. Trading carries a **2.0% fee per trade**, split between the protocols that power RedCircle and the people behind the content. Standard Solana network fees also apply to any on-chain action.
 
 | Recipient          | Share | What it covers                                          |
 | ------------------ | ----- | ------------------------------------------------------- |
 | Launch cost        | Free  | Covered by RedCircle — free and gasless for users.      |
-| Orynth             | 0.55% | Launch & pool infrastructure partner fee.               |
 | Meteora            | 0.40% | Liquidity / AMM protocol fee.                           |
-| Creator rewards    | 0.35% | Paid to the original Reddit post author.                |
-| Curator rewards    | 0.15% | Paid to the wallet that surfaced and launched the post. |
-| RedCircle          | 0.55% | Platform fee that sustains the service.                 |
+| Orynth             | 0.55% | Launch & pool infrastructure partner.                   |
+| RedCircle          | 0.50% | Platform fee that sustains the service.                 |
+| Creator            | 0.40% | Paid to the original Reddit post author.                |
+| Curator            | 0.15% | Paid to the wallet registered at launch (new posts).    |
 | **Total per trade**| **2.0%** | On top of standard Solana network fees.             |
 
-> **Note:** Fee amounts may change over time. The current quote is always shown before you confirm a launch or a trade.
+> **Note:** Older tokenized posts launched before curator rewards may use a different stored partner-bucket split and have no curator payout. Fee amounts may change over time; the current quote is always shown before you confirm a launch or a trade.

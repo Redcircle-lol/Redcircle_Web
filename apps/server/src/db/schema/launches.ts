@@ -59,11 +59,13 @@ export const launches = pgTable("launches", {
   status: launchStatusEnum("status").default("preparing").notNull(),
   errorMessage: text("error_message"),
 
-  // Earnings ledger (bps of trading volume, within the 1.05% partner bucket)
-  partnerFeeBps: integer("partner_fee_bps").default(105),  // 1.05% — full partner bucket
-  creatorFeeBps: integer("creator_fee_bps").default(40),   // 0.40% — Reddit post author
-  curatorFeeBps: integer("curator_fee_bps").default(15),   // 0.15% — curator (tokenizer)
-  platformFeeBps: integer("platform_fee_bps").default(50), // 0.50% — Redcircle platform
+  // Partner bucket split (bps of trade volume; partnerFeeBps from Orynth on launch).
+  // New model: 50 platform + 40 creator + 15 curator = 105 bps (1.05%).
+  // Old launches may have different stored splits and no curator.
+  partnerFeeBps: integer("partner_fee_bps").default(105),
+  platformFeeBps: integer("platform_fee_bps").default(50),
+  creatorFeeBps: integer("creator_fee_bps").default(40),
+  curatorFeeBps: integer("curator_fee_bps").default(15),
 
   // Curator identity — wallet entered at launch time for later reward claims
   curatorWalletAddress: text("curator_wallet_address"),

@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "motion/react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
@@ -98,6 +98,7 @@ const PAGES = buildPages();
 // ──────────────────────────────────────────────────────────────────────────────
 
 function DocsPage() {
+  const mainRef = useRef<HTMLElement>(null);
   const [activeSlug, setActiveSlug] = useState<string>(
     () => PAGES[0]?.slug ?? "",
   );
@@ -124,11 +125,11 @@ function DocsPage() {
   const goTo = (slug: string) => {
     setActiveSlug(slug);
     window.history.replaceState(null, "", `#${slug}`);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    mainRef.current?.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-neutral-950 to-black text-white">
+    <div className="flex h-[calc(100dvh-4rem)] flex-col overflow-hidden bg-gradient-to-br from-black via-neutral-950 to-black text-white">
       {/* ambient glow */}
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
         <div className="absolute -top-32 left-1/4 h-96 w-96 rounded-full bg-orange-500/10 blur-3xl" />
@@ -136,7 +137,7 @@ function DocsPage() {
       </div>
 
       {/* Hero */}
-      <div className="border-b border-white/10">
+      <div className="shrink-0 border-b border-white/10">
         <div className="mx-auto max-w-7xl px-6 pt-8 pb-10 md:pt-12">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -156,7 +157,7 @@ function DocsPage() {
       </div>
 
       {/* Mobile page selector */}
-      <div className="border-b border-white/10 bg-black/40 px-6 py-3 lg:hidden">
+      <div className="shrink-0 border-b border-white/10 bg-black/40 px-6 py-3 lg:hidden">
         <label className="sr-only" htmlFor="docs-page-select">
           Select a page
         </label>
@@ -174,11 +175,11 @@ function DocsPage() {
         </select>
       </div>
 
-      {/* Body: sidebar + content */}
-      <div className="mx-auto flex max-w-7xl gap-12 px-6 py-12">
-        {/* Sidebar */}
-        <aside className="hidden w-64 shrink-0 lg:block">
-          <nav className="sticky top-24 space-y-1">
+      {/* Body: fixed sidebar + scrollable content */}
+      <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 gap-12 px-6">
+        {/* Sidebar — fixed in place; does not scroll with content */}
+        <aside className="hidden w-64 shrink-0 py-12 lg:block">
+          <nav className="space-y-1">
             <p className="mb-3 px-3 text-xs font-semibold uppercase tracking-wider text-neutral-500">
               Documentation
             </p>
@@ -207,8 +208,11 @@ function DocsPage() {
           </nav>
         </aside>
 
-        {/* Content */}
-        <main className="min-w-0 max-w-3xl flex-1">
+        {/* Content — only this panel scrolls on the y-axis */}
+        <main
+          ref={mainRef}
+          className="scrollbar-hide min-w-0 max-w-3xl flex-1 overflow-y-auto py-12"
+        >
           <motion.article
             key={active?.slug}
             initial={{ opacity: 0, y: 12 }}

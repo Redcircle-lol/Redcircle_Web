@@ -116,7 +116,7 @@ function TermsOfService() {
               </p>
               <ul className="list-disc list-inside space-y-2 ml-4 mt-4">
                 <li><strong>Launch cost:</strong> covered by Redcircle — launching a token is free for users</li>
-                <li><strong>Trading fee:</strong> 2.0% of each trade — 0.40% Meteora, 0.55% Orynth, 0.55% Redcircle, 0.50% to the post creator</li>
+                <li><strong>Trading fee:</strong> 2.0% of each trade — 0.40% Meteora, 0.55% Orynth, 0.50% Redcircle, 0.40% to the post creator, 0.15% to the curator</li>
                 <li><strong>Network fees:</strong> standard Solana transaction fees apply to all on-chain actions</li>
               </ul>
               <p className="mt-4">Fee amounts may change. The current quote is always shown before you confirm a launch.</p>

@@ -112,10 +112,9 @@ router.post("/", authenticateToken, async (req: Request, res: Response) => {
     }
 
     const claimableUsdc = parseFloat(earning.claimableUsdc ?? "0");
-    const creatorBps    = launch.creatorFeeBps ?? 50;
+    const creatorBps    = launch.creatorFeeBps ?? 40;
     const partnerBps    = launch.partnerFeeBps ?? 105;
-    const share         = partnerBps > 0 ? creatorBps / partnerBps : 0.5;
-    const creatorUsdc   = claimableUsdc * share;
+    const creatorUsdc   = partnerBps > 0 ? claimableUsdc * (creatorBps / partnerBps) : 0;
 
     const alreadyPaid  = parseFloat(post.creatorRewards ?? "0");
     const amountToSend = Math.max(0, creatorUsdc - alreadyPaid);

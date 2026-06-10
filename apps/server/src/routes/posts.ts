@@ -481,7 +481,9 @@ router.get("/:id", async (req, res) => {
 /**
  * GET /api/posts/:id/creator-earnings
  * Returns the creator's USDC earnings for the token associated with this post.
- * Creator share = 50% of the partner bucket (67/134 bps).
+ * Splits the Orynth partner bucket using bps stored on the launch record.
+ * New launches: 0.50% platform, 0.40% creator, 0.15% curator (of trade volume).
+ * Old launches: use stored bps (no curator wallet → curator earnings are 0).
  */
 router.get("/:id/creator-earnings", async (req, res) => {
   try {

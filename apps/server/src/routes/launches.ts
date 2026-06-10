@@ -264,8 +264,9 @@ router.post("/prepare", async (req: Request, res: Response) => {
       preparedTxHex:         fullySigned,
       feeConfig:             JSON.stringify(orynthLaunch.feeConfig),
       partnerFeeBps:         orynthLaunch.feeConfig.partnerFeeBps,
-      creatorFeeBps:         orynthLaunch.feeConfig.suggestedCreatorShareBps,
-      platformFeeBps:        orynthLaunch.feeConfig.suggestedPartnerShareBps,
+      platformFeeBps:        50,
+      creatorFeeBps:         40,
+      curatorFeeBps:         15,
       curatorWalletAddress:  body.curatorWalletAddress ?? null,
       status:                "submitting",
     })
@@ -397,8 +398,9 @@ router.get("/:launchId/status", async (req, res) => {
         createdAt:      launch.createdAt,
         feeBps: {
           partner:  launch.partnerFeeBps,
-          creator:  launch.creatorFeeBps,
           platform: launch.platformFeeBps,
+          creator:  launch.creatorFeeBps,
+          curator:  launch.curatorFeeBps,
         },
       },
     });
