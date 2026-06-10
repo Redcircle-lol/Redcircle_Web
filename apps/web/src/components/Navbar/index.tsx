@@ -9,6 +9,7 @@ const navLinks = [
   { label: "Leaderboard", to: "/leaderboard" },
   { label: "Hot", to: "/hot", icon: Flame },
   { label: "Social", to: "/social" },
+  { label: "Docs", to: "/docs" },
 ];
 
 function Avatar({ src, alt, className }: { src?: string | null; alt: string; className: string }) {

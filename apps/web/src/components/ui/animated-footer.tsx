@@ -106,6 +106,7 @@ export function AnimatedFooter() {
           <MotionCol title="Platform" links={[
             { label: "Feed", href: "/home" },
             { label: "Leaderboard", href: "/leaderboard" },
+            { label: "Docs", href: "/docs" },
           ]} delay={0.05} />
           <MotionCol title="Legal" links={[
             { label: "Privacy Policy", href: "/privacy" },

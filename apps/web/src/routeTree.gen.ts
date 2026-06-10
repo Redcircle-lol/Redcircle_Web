@@ -20,6 +20,7 @@ import { Route as LaunchRouteImport } from './routes/launch'
 import { Route as HotRouteImport } from './routes/hot'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as FeedRouteImport } from './routes/feed'
+import { Route as DocsRouteImport } from './routes/docs'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
@@ -80,6 +81,11 @@ const FeedRoute = FeedRouteImport.update({
   path: '/feed',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DocsRoute = DocsRouteImport.update({
+  id: '/docs',
+  path: '/docs',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -105,6 +111,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/dashboard': typeof DashboardRoute
+  '/docs': typeof DocsRoute
   '/feed': typeof FeedRoute
   '/home': typeof HomeRoute
   '/hot': typeof HotRoute
@@ -122,6 +129,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/dashboard': typeof DashboardRoute
+  '/docs': typeof DocsRoute
   '/feed': typeof FeedRoute
   '/home': typeof HomeRoute
   '/hot': typeof HotRoute
@@ -140,6 +148,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/dashboard': typeof DashboardRoute
+  '/docs': typeof DocsRoute
   '/feed': typeof FeedRoute
   '/home': typeof HomeRoute
   '/hot': typeof HotRoute
@@ -159,6 +168,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/dashboard'
+    | '/docs'
     | '/feed'
     | '/home'
     | '/hot'
@@ -176,6 +186,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/dashboard'
+    | '/docs'
     | '/feed'
     | '/home'
     | '/hot'
@@ -193,6 +204,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/dashboard'
+    | '/docs'
     | '/feed'
     | '/home'
     | '/hot'
@@ -211,6 +223,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
   DashboardRoute: typeof DashboardRoute
+  DocsRoute: typeof DocsRoute
   FeedRoute: typeof FeedRoute
   HomeRoute: typeof HomeRoute
   HotRoute: typeof HotRoute
@@ -304,6 +317,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FeedRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/docs': {
+      id: '/docs'
+      path: '/docs'
+      fullPath: '/docs'
+      preLoaderRoute: typeof DocsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard': {
       id: '/dashboard'
       path: '/dashboard'
@@ -339,6 +359,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
   DashboardRoute: DashboardRoute,
+  DocsRoute: DocsRoute,
   FeedRoute: FeedRoute,
   HomeRoute: HomeRoute,
   HotRoute: HotRoute,
