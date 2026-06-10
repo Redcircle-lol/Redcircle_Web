@@ -8,11 +8,11 @@ A **Red post** is a tokenized Reddit post — an SPL token (with the `red` suffi
 
 ## Creator
 
-The original Reddit author of the post. They can prove their identity by signing in with Reddit and claim their share of trading fees — even if someone else launched the token.
+The original Reddit author of the post. They earn **0.40% of every trade**, claimable in USDC. Sign in with Reddit to verify you are the author and claim your creator fee — even if someone else launched the token.
 
 ## Curator
 
-The person who surfaces and launches a post. By registering a Solana wallet at launch time, the curator earns a configurable share of fees for spotting the content early.
+The person who surfaces and launches a post. By registering a Solana wallet at launch time, the curator earns **0.15% of every trade** for spotting the content early.
 
 ## Pool
 
