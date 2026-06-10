@@ -129,7 +129,7 @@ function DocsPage() {
   };
 
   return (
-    <div className="flex h-[calc(100dvh-4rem)] flex-col overflow-hidden bg-gradient-to-br from-black via-neutral-950 to-black text-white">
+    <div className="flex h-[calc(100dvh-4rem)] flex-col overflow-hidden bg-gradient-to-br from-black via-neutral-950 to-black text-white [&_a]:cursor-pointer [&_button]:cursor-pointer [&_select]:cursor-pointer">
       {/* ambient glow */}
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
         <div className="absolute -top-32 left-1/4 h-96 w-96 rounded-full bg-orange-500/10 blur-3xl" />
@@ -351,7 +351,7 @@ const MD: Components = {
       <a
         href={href}
         {...(external ? { target: "_blank", rel: "noreferrer" } : {})}
-        className="text-orange-400 underline-offset-2 hover:underline"
+        className="cursor-pointer text-orange-400 underline-offset-2 hover:underline"
       >
         {children}
       </a>
