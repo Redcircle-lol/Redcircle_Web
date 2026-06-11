@@ -114,6 +114,18 @@ function DocsPage() {
     return () => window.removeEventListener("hashchange", apply);
   }, []);
 
+  // Lock page scroll — only the docs content panel scrolls.
+  useEffect(() => {
+    const prevHtml = document.documentElement.style.overflow;
+    const prevBody = document.body.style.overflow;
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.documentElement.style.overflow = prevHtml;
+      document.body.style.overflow = prevBody;
+    };
+  }, []);
+
   const activeIndex = Math.max(
     0,
     PAGES.findIndex((p) => p.slug === activeSlug),
@@ -129,7 +141,7 @@ function DocsPage() {
   };
 
   return (
-    <div className="flex h-[calc(100dvh-4rem)] flex-col overflow-hidden bg-gradient-to-br from-black via-neutral-950 to-black text-white [&_a]:cursor-pointer [&_button]:cursor-pointer [&_select]:cursor-pointer">
+    <div className="fixed inset-x-0 top-16 bottom-0 flex flex-col overflow-hidden bg-gradient-to-br from-black via-neutral-950 to-black pb-[env(safe-area-inset-bottom)] text-white [&_a]:cursor-pointer [&_button]:cursor-pointer [&_select]:cursor-pointer">
       {/* ambient glow */}
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
         <div className="absolute -top-32 left-1/4 h-96 w-96 rounded-full bg-orange-500/10 blur-3xl" />
@@ -138,34 +150,33 @@ function DocsPage() {
 
       {/* Hero */}
       <div className="shrink-0 border-b border-white/10">
-        <div className="mx-auto max-w-7xl px-6 pt-8 pb-10 md:pt-12">
+        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-5 lg:py-6">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.4 }}
           >
-            <h1 className="font-satoshi text-4xl font-bold tracking-tight md:text-6xl">
+            <h1 className="font-satoshi text-2xl font-bold tracking-tight sm:text-3xl md:text-4xl">
               RedCircle Docs
             </h1>
-            <p className="mt-5 max-w-2xl text-lg leading-relaxed text-neutral-400">
-              Everything you need to know about turning viral Reddit posts into
-              tradeable Solana tokens — launching, trading, earning rewards, and
-              the public Partner API.
+            <p className="mt-2 max-w-3xl text-sm leading-relaxed text-neutral-400 sm:mt-3 sm:text-base md:text-lg">
+              Turn viral Reddit posts into tradeable Solana tokens — launch, trade,
+              earn rewards, and use the Partner API.
             </p>
           </motion.div>
         </div>
       </div>
 
       {/* Mobile page selector */}
-      <div className="shrink-0 border-b border-white/10 bg-black/40 px-6 py-3 lg:hidden">
-        <label className="sr-only" htmlFor="docs-page-select">
-          Select a page
+      <div className="shrink-0 border-b border-white/10 bg-black/40 px-4 py-3 sm:px-6 lg:hidden">
+        <label htmlFor="docs-page-select" className="mb-1.5 block text-xs font-medium text-neutral-500">
+          Jump to section
         </label>
         <select
           id="docs-page-select"
           value={activeSlug}
           onChange={(e) => goTo(e.target.value)}
-          className="w-full rounded-lg border border-white/10 bg-neutral-900 px-3 py-2 text-sm text-white outline-none focus:border-white/30"
+          className="w-full rounded-lg border border-white/10 bg-neutral-900 px-3 py-3 text-base text-white outline-none focus:border-white/30"
         >
           {PAGES.map((p) => (
             <option key={p.slug} value={p.slug}>
@@ -176,9 +187,9 @@ function DocsPage() {
       </div>
 
       {/* Body: fixed sidebar + scrollable content */}
-      <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 gap-12 px-6">
+      <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col gap-0 px-4 sm:px-6 lg:flex-row lg:gap-12">
         {/* Sidebar — fixed in place; does not scroll with content */}
-        <aside className="hidden w-64 shrink-0 py-12 lg:block">
+        <aside className="hidden w-64 shrink-0 py-6 lg:block">
           <nav className="space-y-1">
             <p className="mb-3 px-3 text-xs font-semibold uppercase tracking-wider text-neutral-500">
               Documentation
@@ -211,7 +222,7 @@ function DocsPage() {
         {/* Content — only this panel scrolls on the y-axis */}
         <main
           ref={mainRef}
-          className="scrollbar-hide min-w-0 max-w-3xl flex-1 overflow-y-auto py-12"
+          className="scrollbar-hide min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-y-contain py-4 sm:py-6 lg:max-w-none lg:pr-2 [-webkit-overflow-scrolling:touch]"
         >
           <motion.article
             key={active?.slug}
@@ -225,11 +236,11 @@ function DocsPage() {
           </motion.article>
 
           {/* Prev / Next pager */}
-          <div className="mt-16 grid grid-cols-1 gap-4 border-t border-white/10 pt-8 sm:grid-cols-2">
+          <div className="mt-8 grid grid-cols-1 gap-3 border-t border-white/10 pt-6 sm:mt-12 sm:gap-4 sm:pt-8 md:grid-cols-2">
             {prev ? (
               <button
                 onClick={() => goTo(prev.slug)}
-                className="group flex flex-col items-start gap-1 rounded-xl border border-white/10 bg-white/[0.03] p-4 text-left transition-colors hover:border-white/20 hover:bg-white/[0.06]"
+                className="group flex w-full flex-col items-start gap-1 rounded-xl border border-white/10 bg-white/[0.03] p-4 text-left transition-colors hover:border-white/20 hover:bg-white/[0.06] active:bg-white/[0.08]"
               >
                 <span className="flex items-center gap-1 text-xs text-neutral-500">
                   <ArrowLeft className="h-3 w-3" /> Previous
@@ -237,12 +248,12 @@ function DocsPage() {
                 <span className="font-medium text-white">{prev.title}</span>
               </button>
             ) : (
-              <span />
+              <span className="hidden md:block" />
             )}
             {next && (
               <button
                 onClick={() => goTo(next.slug)}
-                className="group flex flex-col items-end gap-1 rounded-xl border border-white/10 bg-white/[0.03] p-4 text-right transition-colors hover:border-white/20 hover:bg-white/[0.06] sm:col-start-2"
+                className="group flex w-full flex-col items-start gap-1 rounded-xl border border-white/10 bg-white/[0.03] p-4 text-left transition-colors hover:border-white/20 hover:bg-white/[0.06] active:bg-white/[0.08] md:items-end md:text-right md:col-start-2"
               >
                 <span className="flex items-center gap-1 text-xs text-neutral-500">
                   Next <ArrowRight className="h-3 w-3" />
@@ -253,8 +264,8 @@ function DocsPage() {
           </div>
 
           {/* footer note */}
-          <div className="mt-12 border-t border-white/10 pt-8">
-            <p className="text-sm text-neutral-500">
+          <div className="mt-8 border-t border-white/10 pt-6 pb-4 sm:mt-10 sm:pt-8 sm:pb-6">
+            <p className="text-sm leading-relaxed text-neutral-500">
               Questions or feedback? Reach us at{" "}
               <a
                 href="mailto:hello@redcircle.lol"
@@ -302,7 +313,7 @@ function CodeBlock({ children }: { children: React.ReactNode }) {
     <div className="group relative my-5">
       <button
         onClick={copy}
-        className="absolute right-3 top-3 z-10 flex items-center gap-1 rounded-md border border-white/10 bg-black/60 px-2 py-1 text-xs text-neutral-400 opacity-0 transition-opacity hover:text-white group-hover:opacity-100"
+        className="absolute right-2 top-2 z-10 flex items-center gap-1 rounded-md border border-white/10 bg-black/60 px-2 py-1 text-xs text-neutral-400 opacity-100 transition-opacity hover:text-white sm:right-3 sm:top-3 sm:opacity-0 sm:group-hover:opacity-100"
       >
         {copied ? (
           <Check className="h-3 w-3 text-green-400" />
@@ -311,7 +322,7 @@ function CodeBlock({ children }: { children: React.ReactNode }) {
         )}
         {copied ? "Copied" : "Copy"}
       </button>
-      <pre className="overflow-x-auto rounded-xl border border-white/10 bg-black/60 p-4 text-sm leading-relaxed">
+      <pre className="overflow-x-auto rounded-xl border border-white/10 bg-black/60 p-3 text-xs leading-relaxed sm:p-4 sm:text-sm">
         {children}
       </pre>
     </div>
@@ -330,20 +341,22 @@ function extractText(node: React.ReactNode): string {
 
 const MD: Components = {
   h1: ({ children }) => (
-    <h1 className="font-satoshi text-3xl font-bold tracking-tight text-white md:text-4xl">
+    <h1 className="font-satoshi text-2xl font-bold tracking-tight text-white sm:text-3xl md:text-4xl">
       {children}
     </h1>
   ),
   h2: ({ children }) => (
-    <h2 className="font-satoshi mt-10 text-2xl font-bold tracking-tight text-white">
+    <h2 className="font-satoshi mt-6 text-xl font-bold tracking-tight text-white sm:mt-8 sm:text-2xl">
       {children}
     </h2>
   ),
   h3: ({ children }) => (
-    <h3 className="mt-8 text-lg font-semibold text-white">{children}</h3>
+    <h3 className="mt-5 text-base font-semibold text-white sm:mt-6 sm:text-lg">{children}</h3>
   ),
   p: ({ children }) => (
-    <p className="mt-4 leading-relaxed text-neutral-300">{children}</p>
+    <p className="mt-3 text-[15px] leading-relaxed text-neutral-300 sm:mt-4 sm:text-base md:text-[17px] md:leading-7">
+      {children}
+    </p>
   ),
   a: ({ href, children }) => {
     const external = !!href && /^https?:\/\//.test(href);
@@ -358,12 +371,12 @@ const MD: Components = {
     );
   },
   ul: ({ children }) => (
-    <ul className="mt-4 list-disc space-y-2 pl-6 text-neutral-300 marker:text-neutral-600">
+    <ul className="mt-3 list-disc space-y-2 pl-5 text-[15px] text-neutral-300 marker:text-neutral-600 sm:mt-4 sm:pl-6 sm:text-base md:text-[17px] md:leading-7">
       {children}
     </ul>
   ),
   ol: ({ children }) => (
-    <ol className="mt-4 list-decimal space-y-2 pl-6 text-neutral-300 marker:text-neutral-500">
+    <ol className="mt-3 list-decimal space-y-2 pl-5 text-[15px] text-neutral-300 marker:text-neutral-500 sm:mt-4 sm:pl-6 sm:text-base md:text-[17px] md:leading-7">
       {children}
     </ol>
   ),
@@ -372,9 +385,9 @@ const MD: Components = {
     <strong className="font-semibold text-white">{children}</strong>
   ),
   em: ({ children }) => <em className="italic text-neutral-200">{children}</em>,
-  hr: () => <hr className="my-10 border-white/10" />,
+  hr: () => <hr className="my-6 border-white/10 sm:my-8" />,
   blockquote: ({ children }) => (
-    <blockquote className="my-5 rounded-xl border border-blue-500/25 bg-blue-500/10 px-4 py-1 text-neutral-200 [&>p]:text-neutral-200">
+    <blockquote className="my-4 rounded-xl border border-blue-500/25 bg-blue-500/10 px-3 py-1 text-[15px] text-neutral-200 sm:my-5 sm:px-4 sm:text-base md:text-[17px] md:leading-7 [&>p]:text-neutral-200">
       {children}
     </blockquote>
   ),
@@ -396,14 +409,14 @@ const MD: Components = {
       );
     }
     return (
-      <code className="rounded-md border border-white/10 bg-white/5 px-1.5 py-0.5 font-mono text-[0.85em] text-orange-300">
+      <code className="break-all rounded-md border border-white/10 bg-white/5 px-1.5 py-0.5 font-mono text-[0.85em] text-orange-300 sm:break-normal">
         {children}
       </code>
     );
   },
   table: ({ children }) => (
-    <div className="my-6 overflow-x-auto rounded-2xl border border-white/10">
-      <table className="w-full text-left text-sm">{children}</table>
+    <div className="-mx-1 my-5 overflow-x-auto rounded-2xl border border-white/10 sm:mx-0 sm:my-6">
+      <table className="min-w-[520px] w-full text-left text-sm sm:text-base">{children}</table>
     </div>
   ),
   thead: ({ children }) => (
@@ -414,9 +427,9 @@ const MD: Components = {
   ),
   tr: ({ children }) => <tr>{children}</tr>,
   th: ({ children }) => (
-    <th className="px-4 py-3 font-medium">{children}</th>
+    <th className="px-3 py-2.5 font-medium sm:px-4 sm:py-3">{children}</th>
   ),
   td: ({ children }) => (
-    <td className="px-4 py-3 text-neutral-300">{children}</td>
+    <td className="px-3 py-2.5 text-neutral-300 sm:px-4 sm:py-3">{children}</td>
   ),
 };
