@@ -87,8 +87,17 @@ export default function TickerBar() {
 
   return (
     <div className="fixed top-16 left-0 right-0 z-50 h-8 overflow-hidden border-b border-white/[0.04] bg-black/90 backdrop-blur-md">
+      {/* LIVE tag */}
+      <div className="absolute left-0 top-0 bottom-0 z-20 flex items-center gap-1.5 bg-black pl-4 pr-3 border-r border-white/[0.06]">
+        <span className="relative flex h-1.5 w-1.5">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00FFD1] opacity-60" />
+          <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#00FFD1]" />
+        </span>
+        <span className="text-[9px] font-mono font-bold tracking-[0.2em] text-[#00FFD1]/80">LIVE</span>
+      </div>
+
       {/* Left fade */}
-      <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-12 z-10 bg-gradient-to-r from-black/90 to-transparent" />
+      <div className="pointer-events-none absolute left-[72px] top-0 bottom-0 w-12 z-10 bg-gradient-to-r from-black/90 to-transparent" />
       {/* Right fade */}
       <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-12 z-10 bg-gradient-to-l from-black/90 to-transparent" />
 

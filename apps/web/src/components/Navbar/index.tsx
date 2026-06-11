@@ -65,7 +65,7 @@ export default function Navbar() {
                 to={link.to}
                 onClick={link.label === "Feed" ? handleFeedClick : undefined}
                 className="flex items-center gap-1.5 text-sm text-white/70 hover:text-white transition-colors"
-                activeProps={{ className: "flex items-center gap-1.5 text-sm text-white font-semibold" }}
+                activeProps={{ className: "flex items-center gap-1.5 text-sm text-[#FF5535] font-semibold" }}
               >
                 {link.icon && <link.icon className="w-3.5 h-3.5 text-orange-400" />}
                 {link.label}

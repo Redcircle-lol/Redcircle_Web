@@ -26,7 +26,7 @@ type SearchBarProps = {
 
 export default function SearchBar({
   onSearch,
-  placeholder = "Search posts, tokens, subreddits...",
+  placeholder = "search the trenches — posts, tokens, subreddits…",
   showFilters = true,
   className,
 }: SearchBarProps) {
@@ -80,13 +80,13 @@ export default function SearchBar({
       {/* Search row */}
       <div className="flex items-center gap-3">
         <div className="relative flex-1 group">
-          <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30 group-focus-within:text-white/60 transition-colors" />
+          <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30 group-focus-within:text-[#E8431C] transition-colors" />
           <Input
             type="text"
             placeholder={placeholder}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="h-12 rounded-2xl border-white/5 bg-neutral-900/60 pl-11 pr-11 text-sm text-white placeholder:text-white/25 focus:border-white/10 focus:bg-neutral-900 focus:ring-0 transition-all"
+            className="h-12 rounded-xl border-white/[0.08] bg-[#0d0d0d] pl-11 pr-11 text-sm font-mono text-white placeholder:text-white/20 focus:border-[#E8431C]/40 focus:shadow-[0_0_0_1px_rgba(232,67,28,0.15),0_0_20px_rgba(232,67,28,0.08)] focus:ring-0 transition-all"
           />
           {query && (
             <button
@@ -103,9 +103,9 @@ export default function SearchBar({
             onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
             variant="ghost"
             className={cn(
-              "h-12 rounded-2xl border border-white/5 bg-neutral-900/60 px-5 text-sm text-white/50 hover:bg-neutral-900 hover:text-white hover:border-white/10 transition-all gap-2",
-              showAdvancedFilters && "bg-neutral-900 border-white/10 text-white",
-              hasActiveFilters && "text-[#E8431C] border-[#E8431C]/20 bg-[#E8431C]/5",
+              "h-12 rounded-xl border border-white/[0.08] bg-[#0d0d0d] px-5 text-sm font-mono text-white/50 hover:bg-[#141414] hover:text-white hover:border-[#E8431C]/40 transition-all gap-2 cursor-pointer",
+              showAdvancedFilters && "bg-[#141414] border-[#E8431C]/40 text-white",
+              hasActiveFilters && "text-[#E8431C] border-[#E8431C]/30 bg-[#E8431C]/5",
             )}
           >
             <Filter className="h-4 w-4" />

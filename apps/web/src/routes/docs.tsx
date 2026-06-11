@@ -188,8 +188,8 @@ function DocsPage() {
 
       {/* Body: fixed sidebar + scrollable content */}
       <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col gap-0 px-4 sm:px-6 lg:flex-row lg:gap-12">
-        {/* Sidebar — fixed in place; does not scroll with content */}
-        <aside className="hidden w-64 shrink-0 py-6 lg:block">
+        {/* Sidebar — scrolls independently when nav overflows short viewports */}
+        <aside className="scrollbar-hide hidden min-h-0 w-64 shrink-0 overflow-y-auto py-6 lg:block">
           <nav className="space-y-1">
             <p className="mb-3 px-3 text-xs font-semibold uppercase tracking-wider text-neutral-500">
               Documentation

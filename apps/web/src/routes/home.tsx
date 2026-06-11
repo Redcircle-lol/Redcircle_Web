@@ -70,7 +70,7 @@ function HomeComponent() {
             <span className="text-white">Turn Reddit Posts Into</span>
             <br />
             <span
-              className="bg-clip-text text-transparent"
+              className="bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(232,67,28,0.35)]"
               style={{
                 backgroundImage:
                   "linear-gradient(135deg, #E8431C 0%, #FF5535 50%, #FFA500 100%)",
@@ -83,6 +83,9 @@ function HomeComponent() {
           <p className="text-white/40 text-sm sm:text-base md:text-lg max-w-sm sm:max-w-xl mx-auto px-2 leading-relaxed mb-5">
             Paste any Reddit post, launch a Solana market, and let people trade
             the attention around it.
+            <span className="block mt-1.5 font-mono text-xs sm:text-sm text-white/25">
+              no code · no gas · <span className="text-[#E8431C]">straight to the trenches</span>
+            </span>
           </p>
 
           <CopyCA />

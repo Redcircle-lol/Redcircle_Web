@@ -68,11 +68,11 @@ const STEP_STATUS: Record<LaunchStep, string> = {
 // Rocket particle positions
 const PARTICLES = [
   { x: -40, y: -30, color: "#E8431C" },
-  { x: 40,  y: -20, color: "#00FFD1" },
+  { x: 40,  y: -20, color: "#00FFA3" },
   { x: -25, y: 20,  color: "#FFA500" },
   { x: 35,  y: 25,  color: "#a78bfa" },
   { x: 0,   y: -50, color: "#E8431C" },
-  { x: -50, y: 0,   color: "#00FFD1" },
+  { x: -50, y: 0,   color: "#00FFA3" },
 ];
 
 export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
@@ -227,8 +227,8 @@ export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
           <motion.div
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="relative rounded-2xl border border-[#00FFD1]/15 bg-black overflow-hidden"
-            style={{ boxShadow: "0 0 60px -20px rgba(0,255,209,0.15), inset 0 0 40px -20px rgba(0,255,209,0.04)" }}
+            className="relative rounded-2xl border border-[#00FFA3]/15 bg-black overflow-hidden"
+            style={{ boxShadow: "0 0 60px -20px rgba(0,255,163,0.15), inset 0 0 40px -20px rgba(0,255,163,0.04)" }}
           >
             {/* Terminal header */}
             <TerminalHeader />
@@ -261,7 +261,7 @@ export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 1.2, type: "spring", stiffness: 200 }}
                 >
-                  <CheckCircle className="w-14 h-14 text-[#00FFD1]" />
+                  <CheckCircle className="w-14 h-14 text-[#00FFA3]" />
                 </motion.div>
               </div>
 
@@ -273,14 +273,14 @@ export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
               >
                 <h2 className="text-xl font-bold text-white font-mono tracking-wide">TOKEN_LAUNCHED</h2>
                 <p className="text-xs text-white/40 font-mono">
-                  mint: <span className="text-[#00FFD1]/80 break-all">{mintAddress}</span>
+                  mint: <span className="text-[#00FFA3]/80 break-all">{mintAddress}</span>
                 </p>
                 <div className="flex flex-col sm:flex-row justify-center gap-2 pt-2">
                   <a
                     href={`https://solscan.io/token/${mintAddress}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center justify-center gap-2 px-5 py-2 rounded-lg border border-[#00FFD1]/20 bg-[#00FFD1]/5 hover:bg-[#00FFD1]/10 text-[#00FFD1] text-sm font-mono transition-all"
+                    className="inline-flex items-center justify-center gap-2 px-5 py-2 rounded-lg border border-[#00FFA3]/20 bg-[#00FFA3]/5 hover:bg-[#00FFA3]/10 text-[#00FFA3] text-sm font-mono transition-all"
                   >
                     <ExternalLink className="w-3.5 h-3.5" /> Solscan
                   </a>
@@ -303,9 +303,11 @@ export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="relative rounded-2xl border border-white/[0.08] bg-[#080808] overflow-hidden"
-          style={{ boxShadow: "0 0 0 1px rgba(0,255,209,0.03), 0 40px 80px -20px rgba(0,0,0,0.8)" }}
+          className="relative rounded-2xl border border-[#E8431C]/20 bg-gradient-to-b from-[#111111] to-[#080808] overflow-hidden"
+          style={{ boxShadow: "0 0 60px -15px rgba(232,67,28,0.25), inset 0 1px 0 rgba(255,255,255,0.05), 0 40px 80px -20px rgba(0,0,0,0.8)" }}
         >
+          {/* Top accent line */}
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#E8431C]/60 to-transparent z-10" />
           {/* Terminal header */}
           <TerminalHeader />
 
@@ -376,18 +378,18 @@ export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
                     <div className="flex flex-col items-center gap-1 shrink-0">
                       <div className={cn(
                         "w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all duration-500",
-                        isDone   && "border-[#00FFD1]/60 bg-[#00FFD1]/10 shadow-[0_0_10px_rgba(0,255,209,0.2)]",
+                        isDone   && "border-[#00FFA3]/60 bg-[#00FFA3]/10 shadow-[0_0_10px_rgba(0,255,163,0.2)]",
                         isActive && "border-[#E8431C]/70 bg-[#E8431C]/10 shadow-[0_0_10px_rgba(232,67,28,0.3)]",
                         !isDone && !isActive && "border-white/10 bg-white/[0.02]",
                       )}>
                         {isDone
-                          ? <Check className="w-3 h-3 text-[#00FFD1]" />
+                          ? <Check className="w-3 h-3 text-[#00FFA3]" />
                           : <span className={cn("text-[9px] font-mono font-bold", isActive ? "text-[#E8431C]" : "text-white/20")}>{i + 1}</span>
                         }
                       </div>
                       <span className={cn(
                         "text-[9px] font-mono uppercase tracking-widest whitespace-nowrap transition-colors",
-                        isDone   && "text-[#00FFD1]/60",
+                        isDone   && "text-[#00FFA3]/60",
                         isActive && "text-[#E8431C]/80",
                         !isDone && !isActive && "text-white/20",
                       )}>{label}</span>
@@ -396,7 +398,7 @@ export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
                       <div className="flex-1 mt-3.5 mx-1">
                         <div className="h-px w-full bg-white/[0.05] relative overflow-hidden">
                           <motion.div
-                            className="absolute inset-y-0 left-0 bg-[#00FFD1]/40"
+                            className="absolute inset-y-0 left-0 bg-[#00FFA3]/40"
                             initial={{ width: "0%" }}
                             animate={{ width: isDone ? "100%" : "0%" }}
                             transition={{ duration: 0.5 }}
@@ -420,7 +422,7 @@ export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
                 Reddit Post Link
               </label>
               <div className="flex flex-col sm:flex-row gap-2">
-                <div className="flex-1 flex items-center gap-2 bg-black/60 border border-white/[0.07] rounded-lg px-3 py-2.5 focus-within:border-[#E8431C]/30 focus-within:shadow-[0_0_0_1px_rgba(232,67,28,0.1)] transition-all">
+                <div className="flex-1 flex items-center gap-2 bg-black/60 border border-white/[0.08] rounded-xl px-3.5 py-3 focus-within:border-[#E8431C]/50 focus-within:shadow-[0_0_0_1px_rgba(232,67,28,0.2),0_0_20px_rgba(232,67,28,0.1)] transition-all">
                   <span className="text-[#E8431C]/60 font-mono text-xs shrink-0">›</span>
                   <input
                     value={url}
@@ -433,7 +435,7 @@ export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
                 <button
                   onClick={handleFetchPost}
                   disabled={!url || isBusy}
-                  className="h-11 px-5 rounded-lg bg-[#E8431C] hover:bg-[#FF5535] text-black font-mono font-bold text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap shadow-[0_0_20px_rgba(232,67,28,0.25)]"
+                  className="h-12 px-6 rounded-xl bg-[#E8431C] hover:bg-[#FF5535] text-black font-mono font-black text-sm uppercase tracking-wide transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 whitespace-nowrap shadow-[0_0_24px_rgba(232,67,28,0.4)] hover:shadow-[0_0_36px_rgba(232,67,28,0.6)] hover:-translate-y-px cursor-pointer"
                 >
                   {step === "fetching"
                     ? <><Loader2 className="w-4 h-4 animate-spin" /> Fetching</>
@@ -556,7 +558,7 @@ export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
                       )}
                       <p className="text-[10px] font-mono text-white/25 leading-relaxed px-0.5">
                         Connecting identifies you as the curator.
-                        <span className="text-[#00FFD1]/50"> No funds will be deducted</span> — only used
+                        <span className="text-[#00FFA3]/50"> No funds will be deducted</span> — only used
                         to send you your 0.15% curator reward from trading fees.
                       </p>
                     </div>
@@ -577,10 +579,10 @@ export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
                       disabled={isBusy || !tokenName || !tokenSymbol}
                       title={!tokenName || !tokenSymbol ? "Fill in token details" : undefined}
                       className={cn(
-                        "px-8 py-2.5 rounded-lg font-mono font-bold text-sm transition-all flex items-center justify-center gap-2",
-                        "bg-[#E8431C] hover:bg-[#FF5535] text-black",
+                        "px-8 py-2.5 rounded-xl font-mono font-black text-sm uppercase tracking-wide transition-all flex items-center justify-center gap-2 cursor-pointer",
+                        "bg-[#E8431C] hover:bg-[#FF5535] text-black hover:-translate-y-px",
                         "disabled:opacity-40 disabled:cursor-not-allowed",
-                        "shadow-[0_0_20px_rgba(232,67,28,0.3)] hover:shadow-[0_0_30px_rgba(232,67,28,0.5)]",
+                        "shadow-[0_0_24px_rgba(232,67,28,0.4)] hover:shadow-[0_0_36px_rgba(232,67,28,0.6)]",
                       )}
                     >
                       {isBusy ? (
@@ -600,18 +602,43 @@ export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
   );
 }
 
+function SolanaLogo({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 397.7 311.7" className={className} aria-label="Solana">
+      <defs>
+        <linearGradient id="sol-a" gradientUnits="userSpaceOnUse" x1="360.879" y1="351.455" x2="141.213" y2="-69.294" gradientTransform="matrix(1 0 0 -1 0 314)">
+          <stop offset="0" stopColor="#00FFA3" />
+          <stop offset="1" stopColor="#DC1FFF" />
+        </linearGradient>
+        <linearGradient id="sol-b" gradientUnits="userSpaceOnUse" x1="264.829" y1="401.601" x2="45.163" y2="-19.148" gradientTransform="matrix(1 0 0 -1 0 314)">
+          <stop offset="0" stopColor="#00FFA3" />
+          <stop offset="1" stopColor="#DC1FFF" />
+        </linearGradient>
+        <linearGradient id="sol-c" gradientUnits="userSpaceOnUse" x1="312.548" y1="376.688" x2="92.882" y2="-44.061" gradientTransform="matrix(1 0 0 -1 0 314)">
+          <stop offset="0" stopColor="#00FFA3" />
+          <stop offset="1" stopColor="#DC1FFF" />
+        </linearGradient>
+      </defs>
+      <path fill="url(#sol-a)" d="M64.6 237.9c2.4-2.4 5.7-3.8 9.2-3.8h317.4c5.8 0 8.7 7 4.6 11.1l-62.7 62.7c-2.4 2.4-5.7 3.8-9.2 3.8H6.5c-5.8 0-8.7-7-4.6-11.1l62.7-62.7z" />
+      <path fill="url(#sol-b)" d="M64.6 3.8C67.1 1.4 70.4 0 73.8 0h317.4c5.8 0 8.7 7 4.6 11.1l-62.7 62.7c-2.4 2.4-5.7 3.8-9.2 3.8H6.5c-5.8 0-8.7-7-4.6-11.1L64.6 3.8z" />
+      <path fill="url(#sol-c)" d="M333.1 120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8 0-8.7 7-4.6 11.1l62.7 62.7c2.4 2.4 5.7 3.8 9.2 3.8h317.4c5.8 0 8.7-7 4.6-11.1l-62.7-62.7z" />
+    </svg>
+  );
+}
+
 function TerminalHeader() {
   return (
-    <div className="flex items-center gap-3 px-5 py-3 border-b border-white/[0.05] bg-black/60">
-      <div className="flex gap-1.5">
-        <div className="w-3 h-3 rounded-full bg-red-500/50" />
-        <div className="w-3 h-3 rounded-full bg-yellow-500/50" />
-        <div className="w-3 h-3 rounded-full bg-[#00FFD1]/50" />
+    <div className="flex items-center justify-between px-5 py-3 border-b border-white/[0.06] bg-gradient-to-r from-[#E8431C]/[0.07] via-transparent to-transparent">
+      <div className="flex items-center gap-2.5">
+        <img src="/favicon-circle.png" alt="" className="w-5 h-5 drop-shadow-[0_0_8px_rgba(232,67,28,0.5)]" />
+        <span className="text-[11px] font-mono font-black text-white/90 tracking-[0.3em] uppercase">
+          Launchpad
+        </span>
       </div>
-      <span className="flex-1 text-center text-[10px] font-mono text-white/20 tracking-[0.3em] uppercase">
-        Mint Terminal
-      </span>
-      <div className="w-12" />
+      <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1">
+        <SolanaLogo className="h-2.5 w-2.5" />
+        <span className="text-[9px] font-mono font-bold tracking-[0.2em] text-white/60 uppercase">Solana</span>
+      </div>
     </div>
   );
 }

@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { Link } from "@tanstack/react-router";
 import { cn, tokenSlug } from "@/lib/utils";
-import { ArrowUp, MessageSquare, TrendingUp, ExternalLink, BarChart2, Copy, Check, TrendingDown } from "lucide-react";
+import { ArrowUp, MessageSquare, ExternalLink, Copy, Check, Flame, Zap } from "lucide-react";
 
 export type FeedPost = {
   id: string;
@@ -83,6 +83,7 @@ export default function FeedCard({ post, className, index = 0 }: FeedCardProps) 
   const hasMcap = mcapDisplay !== "—";
   const initial = (post.subreddit ?? "R").slice(0, 1).toUpperCase();
   const isNew = Date.now() - new Date(post.createdAt).getTime() < 24 * 60 * 60 * 1000;
+  const isUp = h24Change == null || h24Change >= 0;
 
   return (
     <Link to="/token/$tokenId" params={{ tokenId: tokenSlug(post.tokenSymbol, post.tokenMintAddress) || post.id }}>
@@ -91,20 +92,16 @@ export default function FeedCard({ post, className, index = 0 }: FeedCardProps) 
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, ease: "easeOut", delay: Math.min(index, 8) * 0.055 }}
         className={cn(
-          "group relative flex flex-col overflow-hidden rounded-2xl border border-white/[0.07] bg-[#0c0c0c] cursor-pointer h-full transition-all duration-300",
-          "hover:border-[#E8431C]/25 hover:shadow-[0_0_0_1px_rgba(232,67,28,0.1),0_20px_60px_-12px_rgba(232,67,28,0.12),0_0_0_0_transparent]",
-          "hover:-translate-y-0.5",
+          "group relative flex flex-col overflow-hidden rounded-xl border border-white/[0.08] bg-gradient-to-b from-[#111111] to-[#0a0a0a] cursor-pointer h-full transition-all duration-200",
+          "hover:border-[#E8431C]/50 hover:shadow-[0_0_24px_-4px_rgba(232,67,28,0.35),inset_0_1px_0_rgba(255,255,255,0.06)]",
+          "hover:-translate-y-1",
           className,
         )}
       >
-        {/* Top-edge accent line — only visible on hover */}
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#E8431C]/0 to-transparent group-hover:via-[#E8431C]/40 transition-all duration-500 z-10" />
-
-        {/* ── Image header — full-width, edge-to-edge ── */}
-        <div className="relative overflow-hidden bg-neutral-900" style={{ height: "12rem" }}>
+        {/* ── Image ── */}
+        <div className="relative overflow-hidden bg-neutral-900 h-40">
           {post.imageUrl ? (
             <>
-              {/* Blurred ambient background so letterboxed images don't show hard black bars */}
               <div
                 className="absolute inset-0 scale-110 blur-xl opacity-40"
                 style={{ backgroundImage: `url(${post.imageUrl})`, backgroundSize: "cover", backgroundPosition: "center" }}
@@ -112,98 +109,111 @@ export default function FeedCard({ post, className, index = 0 }: FeedCardProps) 
               <img
                 src={post.imageUrl}
                 alt="Post media"
-                className="relative h-full w-full object-contain transition-transform duration-500 group-hover:scale-105"
+                className="relative h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.06]"
                 loading="lazy"
               />
             </>
           ) : (
-            <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-neutral-800/70 via-neutral-850 to-neutral-900/90">
-              <span className="text-7xl font-black text-white/[0.03] select-none">{initial}</span>
+            <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-[#1a120e] via-neutral-900 to-black">
+              <span className="text-7xl font-black text-[#E8431C]/[0.08] select-none">{initial}</span>
             </div>
           )}
 
-          {/* Gradient overlay for readability */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f0f] via-transparent to-transparent pointer-events-none" />
+          {/* Bottom gradient */}
+          <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/90 to-transparent pointer-events-none" />
 
-          {/* Subreddit + time — bottom-left */}
-          <div className="absolute bottom-2.5 left-3 flex items-center gap-1.5">
-            <span className="flex items-center justify-center w-4 h-4 rounded-full bg-[#E8431C]/20 text-[#E8431C] text-[7px] font-black flex-shrink-0">r/</span>
-            <span className="text-[11px] font-medium text-white/60 drop-shadow-sm">{post.subreddit}</span>
-            <span className="text-white/25 text-[10px]">·</span>
-            <span className="text-[10px] text-white/35 drop-shadow-sm">{timeAgo}</span>
-          </div>
-
-          {/* Badges — top-right */}
-          <div className="absolute top-2.5 right-2.5 flex flex-col items-end gap-1.5">
-            {post.tokenSymbol && (
-              <span className="text-[10px] font-bold text-white/80 bg-black/60 backdrop-blur-md border border-white/15 rounded-md px-2 py-0.5 tracking-wide">
-                ${post.tokenSymbol}
-              </span>
-            )}
-            {h24Change != null && (
-              <span className={cn(
-                "inline-flex items-center gap-0.5 rounded-md backdrop-blur-md px-1.5 py-0.5 text-[9px] font-bold font-mono border",
-                h24Change >= 0
-                  ? "bg-[#00FFD1]/10 border-[#00FFD1]/25 text-[#00FFD1]"
-                  : "bg-red-500/15 border-red-500/25 text-red-400",
-              )}>
-                {h24Change >= 0 ? <TrendingUp className="h-2 w-2" /> : <TrendingDown className="h-2 w-2" />}
-                {h24Change >= 0 ? "+" : ""}{h24Change.toFixed(1)}%
-              </span>
-            )}
+          {/* Status badges — top-left */}
+          <div className="absolute top-2 left-2 flex items-center gap-1.5">
             {isNew && (
-              <span className="inline-flex items-center rounded-md bg-violet-500/15 border border-violet-500/30 backdrop-blur-md px-1.5 py-0.5 text-[9px] font-bold text-violet-400 shadow-[0_0_8px_rgba(139,92,246,0.25)] tracking-wider">
-                NEW
+              <span className="inline-flex items-center gap-1 rounded-md bg-[#00FFA3]/90 px-1.5 py-0.5 text-[9px] font-black text-black uppercase tracking-wider shadow-[0_0_12px_rgba(0,255,163,0.5)]">
+                <Zap className="h-2.5 w-2.5 fill-black" /> New
               </span>
             )}
             {post.isTrending && !isNew && (
-              <span className="inline-flex items-center gap-0.5 rounded-full bg-[#E8431C]/20 border border-[#E8431C]/35 backdrop-blur-md px-1.5 py-0.5 text-[9px] font-semibold text-[#E8431C] shadow-[0_0_8px_rgba(232,67,28,0.3)]">
-                <TrendingUp className="h-2 w-2" /> Hot
+              <span className="inline-flex items-center gap-1 rounded-md bg-[#E8431C]/90 px-1.5 py-0.5 text-[9px] font-black text-white uppercase tracking-wider shadow-[0_0_12px_rgba(232,67,28,0.5)]">
+                <Flame className="h-2.5 w-2.5 fill-white" /> Hot
               </span>
             )}
+          </div>
+
+          {/* 24h change — top-right */}
+          {h24Change != null && (
+            <span className={cn(
+              "absolute top-2 right-2 rounded-md px-1.5 py-0.5 text-[10px] font-bold font-mono backdrop-blur-md border",
+              isUp
+                ? "bg-[#00FFA3]/10 border-[#00FFA3]/30 text-[#00FFA3]"
+                : "bg-red-500/10 border-red-500/30 text-red-400",
+            )}>
+              {isUp ? "▲" : "▼"} {Math.abs(h24Change).toFixed(1)}%
+            </span>
+          )}
+
+          {/* Subreddit + time — bottom-left over gradient */}
+          <div className="absolute bottom-2 left-3 flex items-center gap-1.5">
+            <span className="text-[10px] font-bold text-[#E8431C]">r/</span>
+            <span className="text-[11px] font-semibold text-white/80">{post.subreddit}</span>
+            <span className="text-white/30 text-[10px]">·</span>
+            <span className="text-[10px] font-mono text-white/40">{timeAgo}</span>
           </div>
         </div>
 
-        {/* ── Content ── */}
-        <div className="flex flex-col flex-1 px-4 pt-3.5 pb-4">
-          {/* Title */}
-          <h3 className="line-clamp-2 text-[13.5px] font-semibold leading-snug text-white/80 group-hover:text-white/95 transition-colors flex-1">
+        {/* ── Ticker row ── */}
+        <div className="flex items-center justify-between px-3.5 pt-3">
+          {post.tokenSymbol ? (
+            <span className="text-base font-black tracking-tight text-white leading-none">
+              <span className="text-[#E8431C]">$</span>{post.tokenSymbol}
+            </span>
+          ) : (
+            <span className="text-base font-black tracking-tight text-white/30 leading-none">—</span>
+          )}
+          <div className="flex items-center gap-2.5 font-mono text-[10px] text-white/35">
+            <span className="flex items-center gap-0.5">
+              <ArrowUp className="h-3 w-3 text-[#00FFA3]/60" />
+              {Intl.NumberFormat("en-US", { notation: "compact" }).format(post.upvotes)}
+            </span>
+            <span className="flex items-center gap-0.5">
+              <MessageSquare className="h-2.5 w-2.5" />
+              {Intl.NumberFormat("en-US", { notation: "compact" }).format(post.comments)}
+            </span>
+          </div>
+        </div>
+
+        {/* ── Title ── */}
+        <div className="px-3.5 pt-1.5 flex-1">
+          <h3 className="line-clamp-2 text-[12.5px] leading-snug text-white/55 group-hover:text-white/85 transition-colors">
             {post.title}
           </h3>
+        </div>
 
-          {/* MCap + Reddit row */}
-          <div className="flex items-center justify-between mt-3.5 mb-2.5">
-            <div className="flex items-center gap-2">
-              <BarChart2 className="h-3 w-3 text-white/20" />
-              <span className="text-[10px] font-medium text-white/25 uppercase tracking-wider">MCap</span>
-              <span
-                className={cn(
-                  "text-sm font-bold tabular-nums leading-none",
-                  hasMcap ? "text-white/90" : "text-white/20",
-                )}
-              >
+        {/* ── MCap row ── */}
+        <div className="flex items-end justify-between px-3.5 pt-3">
+          <div>
+            <div className="text-[8.5px] font-bold uppercase tracking-[0.18em] text-white/25">Market Cap</div>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              {hasMcap && (
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00FFA3] opacity-60" />
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#00FFA3]" />
+                </span>
+              )}
+              <span className={cn(
+                "text-lg font-bold font-mono tabular-nums leading-none",
+                hasMcap ? "text-[#00FFA3] drop-shadow-[0_0_8px_rgba(0,255,163,0.25)]" : "text-white/20",
+              )}>
                 {mcapDisplay}
               </span>
             </div>
-
-            {post.redditUrl && (
-              <a
-                href={post.redditUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#E8431C]/8 hover:bg-[#E8431C]/15 border border-[#E8431C]/15 hover:border-[#E8431C]/30 text-[#E8431C]/70 hover:text-[#E8431C] text-[10px] font-medium transition-all"
-              >
-                <ExternalLink className="h-2.5 w-2.5" />
-                Reddit
-              </a>
-            )}
           </div>
+          {post.author && (
+            <span className="text-[10px] font-mono text-white/20 truncate max-w-[100px] pb-px">u/{post.author}</span>
+          )}
+        </div>
 
-          {/* CA row */}
+        {/* ── Footer: CA + Reddit ── */}
+        <div className="flex items-center gap-2 px-3.5 pt-3 pb-3.5">
           {post.tokenMintAddress && (
             <div
-              className="flex items-center gap-2 mb-2.5 px-2.5 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 flex-1 min-w-0 px-2 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.06] hover:border-white/15 hover:bg-white/[0.07] transition-all cursor-pointer"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -213,31 +223,27 @@ export default function FeedCard({ post, className, index = 0 }: FeedCardProps) 
               }}
               title="Copy contract address"
             >
-              <span className="text-[9px] font-bold text-white/30 uppercase tracking-wider shrink-0">CA</span>
               <span className="text-[10px] font-mono text-white/40 truncate flex-1">
-                {post.tokenMintAddress.slice(0, 8)}…{post.tokenMintAddress.slice(-6)}
+                {post.tokenMintAddress.slice(0, 6)}…{post.tokenMintAddress.slice(-4)}
               </span>
               {copied
-                ? <Check className="h-3 w-3 text-green-400 shrink-0" />
+                ? <Check className="h-3 w-3 text-[#00FFA3] shrink-0" />
                 : <Copy className="h-3 w-3 text-white/25 shrink-0" />
               }
             </div>
           )}
-
-          {/* Stats row */}
-          <div className="flex items-center gap-3 pt-2.5 border-t border-white/[0.05] text-[10px] text-white/25 font-medium">
-            <span className="flex items-center gap-1">
-              <ArrowUp className="h-2.5 w-2.5" />
-              {Intl.NumberFormat("en-US", { notation: "compact" }).format(post.upvotes)}
-            </span>
-            <span className="flex items-center gap-1">
-              <MessageSquare className="h-2.5 w-2.5" />
-              {Intl.NumberFormat("en-US", { notation: "compact" }).format(post.comments)}
-            </span>
-            {post.author && (
-              <span className="ml-auto text-white/15 truncate max-w-[90px]">u/{post.author}</span>
-            )}
-          </div>
+          {post.redditUrl && (
+            <a
+              href={post.redditUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center justify-center h-[30px] w-[30px] shrink-0 rounded-lg bg-[#E8431C]/10 hover:bg-[#E8431C]/25 border border-[#E8431C]/20 hover:border-[#E8431C]/50 text-[#E8431C]/70 hover:text-[#E8431C] transition-all"
+              title="View on Reddit"
+            >
+              <ExternalLink className="h-3 w-3" />
+            </a>
+          )}
         </div>
       </motion.article>
     </Link>

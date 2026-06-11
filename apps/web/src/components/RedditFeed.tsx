@@ -78,14 +78,14 @@ function FilterDropdown<T extends string>({
       <button
         onClick={() => setOpen((p) => !p)}
         className={cn(
-          "flex items-center gap-1 sm:gap-2 rounded-xl border px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium text-white transition-all min-w-0 flex-1 justify-between whitespace-nowrap",
+          "flex items-center gap-1 sm:gap-2 rounded-lg border px-2 sm:px-3 py-2 text-[11px] sm:text-xs font-mono font-semibold uppercase tracking-wide text-white/80 transition-all min-w-0 flex-1 justify-between whitespace-nowrap cursor-pointer",
           open
-            ? "border-[#E8431C]/70 bg-[#0d0d14] shadow-[0_0_0_1px_rgba(232,67,28,0.3),0_0_16px_rgba(232,67,28,0.15)]"
-            : "border-[#E8431C]/30 bg-[#0d0d14] hover:border-[#E8431C]/60",
+            ? "border-[#E8431C]/70 bg-[#120b09] text-white shadow-[0_0_16px_rgba(232,67,28,0.2)]"
+            : "border-white/10 bg-[#0d0d0d] hover:border-[#E8431C]/50 hover:text-white",
         )}
       >
         {label}
-        <ChevronDown className={cn("h-3 w-3 sm:h-3.5 sm:w-3.5 text-white/50 transition-transform shrink-0", open && "rotate-180")} />
+        <ChevronDown className={cn("h-3 w-3 sm:h-3.5 sm:w-3.5 text-white/40 transition-transform shrink-0", open && "rotate-180 text-[#E8431C]")} />
       </button>
 
       <AnimatePresence>
@@ -95,17 +95,17 @@ function FilterDropdown<T extends string>({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.12 }}
-            className="absolute left-0 top-full z-50 mt-1.5 w-full min-w-[150px] rounded-xl border border-white/10 bg-[#111118] py-1 shadow-xl"
+            className="absolute left-0 top-full z-50 mt-1.5 w-full min-w-[160px] rounded-lg border border-white/10 bg-[#0d0d0d] py-1 shadow-[0_12px_40px_rgba(0,0,0,0.8)]"
           >
             {options.map((opt) => (
               <button
                 key={opt.value}
                 onClick={() => { onChange(opt.value); setOpen(false); }}
                 className={cn(
-                  "flex w-full items-center gap-2 px-4 py-2.5 text-sm transition-colors text-left",
+                  "flex w-full items-center gap-2 px-3.5 py-2.5 text-xs font-mono transition-colors text-left cursor-pointer",
                   opt.value === value
-                    ? "bg-white/[0.07] text-white font-medium"
-                    : "text-white/60 hover:bg-white/[0.04] hover:text-white",
+                    ? "bg-[#E8431C]/[0.08] text-white font-semibold"
+                    : "text-white/50 hover:bg-white/[0.04] hover:text-white",
                 )}
               >
                 <span className="w-4 flex-shrink-0">
@@ -295,6 +295,20 @@ export default function RedditFeed() {
     <section className="relative mx-auto w-full max-w-6xl">
       {/* Header controls */}
       <div className="mb-6 space-y-3">
+        {/* Section header */}
+        <div className="flex items-center gap-2.5 pb-1">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#E8431C] opacity-60" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#E8431C]" />
+          </span>
+          <h2 className="text-sm sm:text-base font-mono font-black uppercase tracking-[0.25em] text-white">
+            The Trenches
+          </h2>
+          <span className="hidden sm:inline text-[10px] font-mono text-white/25 mt-px">
+            // every post is a market
+          </span>
+        </div>
+
         {/* Search */}
         <SearchBar onSearch={handleSearch} showFilters />
 
@@ -309,7 +323,7 @@ export default function RedditFeed() {
           <button
             onClick={handleRefresh}
             disabled={isRefreshing || loading}
-            className="flex items-center justify-center h-9 w-9 rounded-xl border border-white/5 bg-neutral-900/60 text-white/40 hover:text-white hover:bg-neutral-900 transition-all disabled:opacity-40"
+            className="flex items-center justify-center h-9 w-9 rounded-lg border border-white/10 bg-[#0d0d0d] text-white/40 hover:text-[#E8431C] hover:border-[#E8431C]/50 transition-all disabled:opacity-40 cursor-pointer"
             title="Refresh"
           >
             <RefreshCw className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")} />
@@ -329,12 +343,13 @@ export default function RedditFeed() {
             className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3"
           >
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="flex flex-col overflow-hidden rounded-2xl border border-white/5 bg-[#0f0f0f]">
-                <div className="h-48 animate-pulse bg-white/[0.04]" />
-                <div className="flex flex-col gap-3 p-4">
+              <div key={i} className="flex flex-col overflow-hidden rounded-xl border border-white/[0.08] bg-gradient-to-b from-[#111111] to-[#0a0a0a]">
+                <div className="h-40 animate-pulse bg-white/[0.04]" />
+                <div className="flex flex-col gap-3 p-3.5">
+                  <div className="h-4 w-1/3 animate-pulse rounded-md bg-white/[0.05]" />
                   <div className="h-3 w-3/4 animate-pulse rounded-full bg-white/[0.04]" />
-                  <div className="h-3 w-1/2 animate-pulse rounded-full bg-white/[0.04]" />
-                  <div className="mt-1 h-2 w-1/3 animate-pulse rounded-full bg-white/[0.03]" />
+                  <div className="h-5 w-1/4 animate-pulse rounded-md bg-[#00FFA3]/[0.05]" />
+                  <div className="h-7 w-full animate-pulse rounded-lg bg-white/[0.03]" />
                 </div>
               </div>
             ))}
@@ -356,9 +371,9 @@ export default function RedditFeed() {
         {/* Empty */}
         {!loading && !error && posts.length === 0 && (
           <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-            className="rounded-2xl border border-white/5 bg-white/[0.02] p-12 text-center">
-            <p className="text-white/50">No tokenized posts yet</p>
-            <p className="mt-1 text-xs text-white/30">Be the first to tokenize a Reddit post!</p>
+            className="rounded-xl border border-white/[0.08] bg-[#0d0d0d] p-12 text-center">
+            <p className="font-mono text-white/50">the trenches are empty…</p>
+            <p className="mt-1.5 font-mono text-xs text-white/30">be the first to launch. <span className="text-[#E8431C]">glory awaits</span> ↑</p>
           </motion.div>
         )}
 
@@ -381,15 +396,15 @@ export default function RedditFeed() {
 
             {loadingMore && (
               <div className="mt-8 flex justify-center">
-                <div className="flex items-center gap-2.5 rounded-xl border border-white/5 bg-white/5 px-5 py-2.5">
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/15 border-t-white/60" />
-                  <span className="text-xs text-white/50">Loading more…</span>
+                <div className="flex items-center gap-2.5 rounded-lg border border-white/10 bg-[#0d0d0d] px-5 py-2.5">
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/15 border-t-[#E8431C]" />
+                  <span className="text-xs font-mono text-white/50">loading more…</span>
                 </div>
               </div>
             )}
 
             {!hasMore && !loadingMore && posts.length > 0 && (
-              <p className="mt-8 text-center text-xs text-white/25">You've seen everything</p>
+              <p className="mt-8 text-center text-xs font-mono text-white/25">— you've reached the bottom of the trenches —</p>
             )}
           </motion.div>
         )}
