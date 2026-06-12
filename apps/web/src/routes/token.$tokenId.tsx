@@ -193,6 +193,8 @@ function TokenDetailsPage() {
   useEffect(() => {
     if (!post?.tokenMintAddress) return;
     const interval = setInterval(() => {
+      // Don't burn API calls while the tab is in the background
+      if (document.hidden) return;
       fetchTokenPrice(post.tokenMintAddress!).then(setDex);
     }, 30_000);
     return () => clearInterval(interval);

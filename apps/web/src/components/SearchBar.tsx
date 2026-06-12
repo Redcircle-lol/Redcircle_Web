@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Search, Filter, X } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { Input } from "@/components/ui/input";
@@ -43,8 +43,14 @@ export default function SearchBar({
     [onSearch],
   );
 
-  // Debounced search on query change
+  // Debounced search on query change — skip the mount run: it would emit an
+  // empty search identical to the feed's own initial load (a duplicate fetch)
+  const mountedRef = useRef(false);
   useEffect(() => {
+    if (!mountedRef.current) {
+      mountedRef.current = true;
+      return;
+    }
     const timer = setTimeout(() => emitSearch(query, filters), 500);
     return () => clearTimeout(timer);
   }, [query, filters]);

@@ -1,8 +1,16 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "motion/react";
 import { Link } from "@tanstack/react-router";
 import { cn, tokenSlug } from "@/lib/utils";
 import { ArrowUp, MessageSquare, ExternalLink, Copy, Check, Flame, Zap } from "lucide-react";
+
+// Live price data fetched in batch by the parent (RedditFeed) — one request
+// per page of cards instead of one request per card.
+export type LivePair = {
+  fdv?: number;
+  marketCap?: number;
+  priceChange?: { h24?: number | null };
+} | null;
 
 export type FeedPost = {
   id: string;
@@ -32,6 +40,7 @@ type FeedCardProps = {
   className?: string;
   onTrade?: (post: FeedPost) => void;
   index?: number;
+  livePair?: LivePair;
 };
 
 function formatUsd(value: number): string {
@@ -40,9 +49,7 @@ function formatUsd(value: number): string {
   return `$${value.toFixed(2)}`;
 }
 
-export default function FeedCard({ post, className, index = 0 }: FeedCardProps) {
-  const [liveMcap, setLiveMcap] = useState<string | null>(null);
-  const [h24Change, setH24Change] = useState<number | null>(null);
+export default function FeedCard({ post, className, index = 0, livePair }: FeedCardProps) {
   const [copied, setCopied] = useState(false);
 
   const timeAgo = useMemo(() => {
@@ -54,29 +61,10 @@ export default function FeedCard({ post, className, index = 0 }: FeedCardProps) 
     return `${Math.floor(diffHr / 24)}d`;
   }, [post.createdAt]);
 
-  // Fetch live MCap from DexScreener via our proxy
-  useEffect(() => {
-    if (!post.tokenMintAddress) return;
-    let cancelled = false;
-
-    const fetchMcap = async () => {
-      try {
-        const { getApiUrl } = await import("@/lib/auth");
-        const res = await fetch(`${getApiUrl()}/api/tokens/${post.tokenMintAddress}/price`);
-        const data = await res.json() as { pair?: { fdv?: number; marketCap?: number } };
-        if (cancelled) return;
-        const value = data.pair?.fdv ?? data.pair?.marketCap;
-        if (value && value > 0) setLiveMcap(formatUsd(value));
-        const ch = (data.pair as any)?.priceChange?.h24;
-        if (ch != null) setH24Change(ch);
-      } catch {
-        // silently fail — card still renders without MCap
-      }
-    };
-
-    fetchMcap();
-    return () => { cancelled = true; };
-  }, [post.tokenMintAddress]);
+  // Live values come from the parent's batch fetch; DB values are the fallback
+  const liveValue = livePair?.fdv ?? livePair?.marketCap;
+  const liveMcap = liveValue && liveValue > 0 ? formatUsd(liveValue) : null;
+  const h24Change = livePair?.priceChange?.h24 ?? null;
 
   const dbMcap = post.marketCap && post.marketCap > 0 ? formatUsd(post.marketCap) : null;
   const mcapDisplay = liveMcap ?? dbMcap ?? "—";

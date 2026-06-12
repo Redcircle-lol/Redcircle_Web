@@ -1,81 +1,101 @@
 import { db, posts } from "../db";
 import { eq, isNotNull, and } from "drizzle-orm";
 
-const DEXSCREENER_BASE = "https://api.dexscreener.com/latest/dex/tokens";
+// GeckoTerminal indexes fresh Meteora DBC launches that DexScreener misses,
+// and matches the data source used by the API's price endpoints.
+const GECKO_MULTI_BASE = "https://api.geckoterminal.com/api/v2/networks/solana/tokens/multi";
 const SYNC_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
-const REQUEST_DELAY_MS = 600; // be polite to the free API
+const REQUEST_DELAY_MS = 2_500; // stay within GeckoTerminal's ~30 req/min free tier
+const BATCH_SIZE = 30; // max addresses per multi-token request
 
 function sleep(ms: number) {
   return new Promise<void>((resolve) => setTimeout(resolve, ms));
 }
 
-type DexPair = {
+type TokenStats = {
   priceUsd?: string;
   marketCap?: number;
   fdv?: number;
-  volume?: { h24?: number };
-  liquidity?: { usd?: number };
+  volumeH24?: number;
 };
 
-async function fetchBestPair(mintAddress: string): Promise<DexPair | null> {
+// One request covers up to 30 tokens; returns stats keyed by mint address.
+async function fetchTokenStats(mintAddresses: string[]): Promise<Map<string, TokenStats>> {
+  const stats = new Map<string, TokenStats>();
   try {
-    const res = await fetch(`${DEXSCREENER_BASE}/${mintAddress}`, {
+    const res = await fetch(`${GECKO_MULTI_BASE}/${mintAddresses.join(",")}`, {
       headers: { Accept: "application/json" },
       signal: AbortSignal.timeout(10_000),
     });
-    if (!res.ok) return null;
+    if (!res.ok) return stats;
 
-    const data = await res.json() as { pairs?: DexPair[] };
-    if (!data.pairs?.length) return null;
-
-    return data.pairs.sort(
-      (a, b) => (b.liquidity?.usd ?? 0) - (a.liquidity?.usd ?? 0),
-    )[0] ?? null;
+    const data = await res.json() as { data?: any[] };
+    for (const token of data.data ?? []) {
+      const attrs = token?.attributes;
+      if (!attrs?.address) continue;
+      stats.set(attrs.address, {
+        priceUsd:  attrs.price_usd ?? undefined,
+        fdv:       attrs.fdv_usd != null ? parseFloat(attrs.fdv_usd) : undefined,
+        marketCap: attrs.market_cap_usd != null ? parseFloat(attrs.market_cap_usd) : undefined,
+        volumeH24: attrs.volume_usd?.h24 != null ? parseFloat(attrs.volume_usd.h24) : undefined,
+      });
+    }
   } catch {
-    return null;
+    // network/timeout — skip this batch, try again next cycle
   }
+  return stats;
 }
 
 async function runSync() {
   const activePosts = await db
-    .select({ id: posts.id, tokenMintAddress: posts.tokenMintAddress })
+    .select({
+      id: posts.id,
+      tokenMintAddress: posts.tokenMintAddress,
+      marketCap: posts.marketCap,
+      totalVolume: posts.totalVolume,
+      currentPrice: posts.currentPrice,
+    })
     .from(posts)
     .where(and(eq(posts.status, "active"), isNotNull(posts.tokenMintAddress)));
 
-  if (!activePosts.length) return;
+  const withMint = activePosts.filter((p) => p.tokenMintAddress);
+  if (!withMint.length) return;
 
-  console.log(`🔄 [PriceSync] Syncing ${activePosts.length} token(s)…`);
+  console.log(`🔄 [PriceSync] Syncing ${withMint.length} token(s)…`);
 
   let updated = 0;
 
-  for (const post of activePosts) {
-    if (!post.tokenMintAddress) continue;
+  for (let i = 0; i < withMint.length; i += BATCH_SIZE) {
+    const batch = withMint.slice(i, i + BATCH_SIZE);
 
-    const pair = await fetchBestPair(post.tokenMintAddress);
-    if (!pair) {
-      await sleep(REQUEST_DELAY_MS);
-      continue;
+    const statsByMint = await fetchTokenStats(batch.map((p) => p.tokenMintAddress!));
+
+    for (const post of batch) {
+      const stats = statsByMint.get(post.tokenMintAddress!);
+      if (!stats) continue;
+
+      const mcap = stats.marketCap ?? stats.fdv;
+      const volume = stats.volumeH24;
+      const price = stats.priceUsd;
+
+      // Only update fields that came back from the API
+      const updates: Partial<typeof posts.$inferInsert> = {};
+      if (mcap != null && String(mcap) !== post.marketCap) updates.marketCap = String(mcap);
+      if (volume != null && String(volume) !== post.totalVolume) updates.totalVolume = String(volume);
+      if (price != null && String(price) !== post.currentPrice) updates.currentPrice = String(price);
+
+      // Nothing changed since last cycle — skip the write entirely
+      if (!Object.keys(updates).length) continue;
+
+      updates.updatedAt = new Date();
+      await db.update(posts).set(updates).where(eq(posts.id, post.id));
+      updated++;
     }
 
-    const mcap = pair.marketCap ?? pair.fdv;
-    const volume = pair.volume?.h24;
-    const price = pair.priceUsd;
-
-    // Only update fields that came back from DexScreener
-    const updates: Partial<typeof posts.$inferInsert> = {
-      updatedAt: new Date(),
-    };
-    if (mcap != null) updates.marketCap = String(mcap);
-    if (volume != null) updates.totalVolume = String(volume);
-    if (price != null) updates.currentPrice = String(price);
-
-    await db.update(posts).set(updates).where(eq(posts.id, post.id));
-    updated++;
-
-    await sleep(REQUEST_DELAY_MS);
+    if (i + BATCH_SIZE < withMint.length) await sleep(REQUEST_DELAY_MS);
   }
 
-  console.log(`✅ [PriceSync] Updated ${updated}/${activePosts.length} token(s)`);
+  console.log(`✅ [PriceSync] Updated ${updated}/${withMint.length} token(s)`);
 }
 
 export function startPriceSyncJob() {

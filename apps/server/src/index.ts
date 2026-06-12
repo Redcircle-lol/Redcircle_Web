@@ -34,6 +34,15 @@ app.use(
 	}),
 );
 
+// Public GET responses are identical for all users — let browsers/CDNs cache
+// them briefly instead of re-hitting the backend on every page view.
+app.use((req, res, next) => {
+	if (req.method === "GET" && /^\/api\/(posts|leaderboard|trending)/.test(req.path)) {
+		res.setHeader("Cache-Control", "public, max-age=30, stale-while-revalidate=60");
+	}
+	next();
+});
+
 // Routes
 app.use(redditAuthRoutes);
 app.use("/api/posts", postsRoutes);
@@ -52,7 +61,8 @@ app.use("/api/v1", partnerRoutes);
 // ── DexScreener proxy (avoids browser CORS restrictions) ──────────────────────
 // Pool address cache — TTL 10 minutes
 const poolCache  = new Map<string, { address: string | null; at: number }>();
-// Price cache — TTL 30 seconds
+// Price cache — TTL 60 seconds
+const PRICE_TTL_MS = 60_000;
 const priceCache = new Map<string, { pair: any; at: number }>();
 
 app.get("/api/tokens/:mint/pool", async (req, res) => {
@@ -74,13 +84,81 @@ app.get("/api/tokens/:mint/pool", async (req, res) => {
   }
 });
 
+// Batch price lookup — one request per feed page instead of one per card.
+// Uses GeckoTerminal's multi-token endpoint (30 addresses per call): unlike
+// DexScreener it indexes fresh Meteora DBC launches, and it's the same source
+// as the single-token endpoint so values stay consistent across the app.
+app.get("/api/tokens/prices", async (req, res) => {
+  const raw = typeof req.query.mints === "string" ? req.query.mints : "";
+  const mints = [...new Set(raw.split(",").map((m) => m.trim()).filter(Boolean))].slice(0, 60);
+  if (!mints.length) return res.json({ pairs: {} });
+
+  const result: Record<string, any> = {};
+  const misses: string[] = [];
+  for (const mint of mints) {
+    const cached = priceCache.get(mint);
+    if (cached && Date.now() - cached.at < PRICE_TTL_MS) result[mint] = cached.pair;
+    else misses.push(mint);
+  }
+
+  for (let i = 0; i < misses.length; i += 30) {
+    const chunk = misses.slice(i, i + 30);
+    try {
+      const r = await fetch(
+        `https://api.geckoterminal.com/api/v2/networks/solana/tokens/multi/${chunk.join(",")}?include=top_pools`,
+        { headers: { Accept: "application/json" }, signal: AbortSignal.timeout(8000) },
+      );
+      const d = await r.json() as { data?: any[]; included?: any[] };
+
+      // Pool id → pool attributes (for 24h change + pool address)
+      const poolsById = new Map<string, any>();
+      for (const p of d.included ?? []) poolsById.set(p.id, p.attributes);
+
+      const byMint = new Map<string, any>();
+      for (const t of d.data ?? []) {
+        const attrs = t?.attributes;
+        if (!attrs?.address) continue;
+        const topPoolId = t.relationships?.top_pools?.data?.[0]?.id;
+        byMint.set(attrs.address, { attrs, pool: topPoolId ? poolsById.get(topPoolId) : null });
+      }
+
+      for (const mint of chunk) {
+        const hit = byMint.get(mint);
+        if (hit) {
+          const { attrs, pool } = hit;
+          const pair = {
+            priceUsd:    attrs.price_usd ?? "0",
+            fdv:         parseFloat(attrs.fdv_usd ?? "0"),
+            marketCap:   parseFloat(attrs.market_cap_usd ?? attrs.fdv_usd ?? "0"),
+            volume:      { h24: parseFloat(attrs.volume_usd?.h24 ?? "0") },
+            priceChange: { h24: pool?.price_change_percentage?.h24 != null ? parseFloat(pool.price_change_percentage.h24) : null },
+            liquidity:   { usd: parseFloat(attrs.total_reserve_in_usd ?? "0") },
+            poolAddress: pool?.address ?? null,
+            pairAddress: pool?.address ?? null,
+          };
+          priceCache.set(mint, { pair, at: Date.now() });
+          result[mint] = pair;
+        } else {
+          result[mint] = priceCache.get(mint)?.pair ?? null;
+        }
+      }
+    } catch {
+      // Serve stale cache for this chunk rather than failing the whole batch
+      for (const mint of chunk) result[mint] = priceCache.get(mint)?.pair ?? null;
+    }
+  }
+
+  res.setHeader("Cache-Control", "public, max-age=30");
+  res.json({ pairs: result });
+});
+
 app.get("/api/tokens/:mint/price", async (req, res) => {
   const { mint } = req.params;
   try {
 
     // Serve from cache if fresh
     const cached = priceCache.get(mint);
-    if (cached && Date.now() - cached.at < 30_000) {
+    if (cached && Date.now() - cached.at < PRICE_TTL_MS) {
       return res.json({ pair: cached.pair });
     }
 

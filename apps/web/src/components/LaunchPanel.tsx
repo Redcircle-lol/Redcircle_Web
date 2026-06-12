@@ -96,10 +96,17 @@ export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
 
   // Name/symbol are set directly in handleFetchPost after AI suggestion; this is a no-op safety fallback
 
-  // Poll for confirmation
+  // Poll for confirmation — 3s while fresh, back off to 10s after 30s so a
+  // slow confirmation doesn't hammer the API indefinitely
   useEffect(() => {
     if (step !== "polling" || !launchId) return;
-    const interval = setInterval(async () => {
+    let attempts = 0;
+    let stopped = false;
+    let timer: ReturnType<typeof setTimeout>;
+
+    const poll = async () => {
+      if (stopped) return;
+      attempts++;
       try {
         const apiUrl = getApiUrl();
         const res  = await fetch(`${apiUrl}/api/launches/${launchId}/status`);
@@ -107,15 +114,18 @@ export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
         if (data.launch?.status === "confirmed") {
           setMintAddress(data.launch.mintAddress);
           setStep("done");
-          clearInterval(interval);
+          return;
         } else if (data.launch?.status === "failed") {
           setError("Launch failed on-chain. Please try again.");
           setStep("error");
-          clearInterval(interval);
+          return;
         }
       } catch { /* continue polling */ }
-    }, 3000);
-    return () => clearInterval(interval);
+      if (!stopped) timer = setTimeout(poll, attempts < 10 ? 3000 : 10_000);
+    };
+
+    timer = setTimeout(poll, 3000);
+    return () => { stopped = true; clearTimeout(timer); };
   }, [step, launchId]);
 
   // Trigger rocket-gone after animation completes

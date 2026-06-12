@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { RefreshCw, ChevronDown, Check } from "lucide-react";
-import FeedCard, { type FeedPost } from "@/components/FeedCard";
+import FeedCard, { type FeedPost, type LivePair } from "@/components/FeedCard";
 import SearchBar, { type SearchFilters } from "@/components/SearchBar";
 import { getApiUrl } from "@/lib/auth";
 import { cn } from "@/lib/utils";
@@ -158,6 +158,21 @@ export default function RedditFeed() {
   const [sortField,  setSortField]  = useState<SortField>("totalVolume");
   const [sortOrder,  setSortOrder]  = useState<SortOrder>("desc");
   const [timeWindow, setTimeWindow] = useState<TimeWindow>("all");
+  const [livePairs, setLivePairs] = useState<Record<string, LivePair>>({});
+
+  // One batched request for all visible cards instead of one request per card
+  const fetchPrices = useCallback(async (mints: string[]) => {
+    const unique = [...new Set(mints.filter(Boolean))];
+    if (!unique.length) return;
+    try {
+      const apiUrl = getApiUrl();
+      const res = await fetch(`${apiUrl}/api/tokens/prices?mints=${unique.join(",")}`);
+      const data = await res.json() as { pairs?: Record<string, LivePair> };
+      if (data.pairs) setLivePairs((prev) => ({ ...prev, ...data.pairs }));
+    } catch {
+      // cards fall back to DB market cap
+    }
+  }, []);
 
   const fetchPosts = useCallback(
     async (opts: {
@@ -218,6 +233,8 @@ export default function RedditFeed() {
           setOffset((prev) => prev + transformed.length);
         }
         setHasMore(data.hasMore || false);
+
+        void fetchPrices(transformed.map((p) => p.tokenMintAddress!).filter(Boolean));
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load posts");
       } finally {
@@ -225,7 +242,7 @@ export default function RedditFeed() {
         setIsRefreshing(false);
       }
     },
-    [searchFilters, sortField, sortOrder, timeWindow],
+    [searchFilters, sortField, sortOrder, timeWindow, fetchPrices],
   );
 
   // Initial load
@@ -387,7 +404,12 @@ export default function RedditFeed() {
           >
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
               {posts.map((post, i) => (
-                <FeedCard key={post.id} post={post} index={i} />
+                <FeedCard
+                  key={post.id}
+                  post={post}
+                  index={i}
+                  livePair={post.tokenMintAddress ? livePairs[post.tokenMintAddress] : null}
+                />
               ))}
             </div>
 
