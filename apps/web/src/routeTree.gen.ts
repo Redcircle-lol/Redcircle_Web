@@ -9,28 +9,18 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TransactionsRouteImport } from './routes/transactions'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SocialRouteImport } from './routes/social'
 import { Route as SigninRouteImport } from './routes/signin'
-import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as LeaderboardRouteImport } from './routes/leaderboard'
-import { Route as LaunchRouteImport } from './routes/launch'
 import { Route as HotRouteImport } from './routes/hot'
 import { Route as HomeRouteImport } from './routes/home'
-import { Route as FeedRouteImport } from './routes/feed'
 import { Route as DocsRouteImport } from './routes/docs'
-import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TokenTokenIdRouteImport } from './routes/token.$tokenId'
 
-const TransactionsRoute = TransactionsRouteImport.update({
-  id: '/transactions',
-  path: '/transactions',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
@@ -46,11 +36,6 @@ const SigninRoute = SigninRouteImport.update({
   path: '/signin',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ProfileRoute = ProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
@@ -59,11 +44,6 @@ const PrivacyRoute = PrivacyRouteImport.update({
 const LeaderboardRoute = LeaderboardRouteImport.update({
   id: '/leaderboard',
   path: '/leaderboard',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LaunchRoute = LaunchRouteImport.update({
-  id: '/launch',
-  path: '/launch',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HotRoute = HotRouteImport.update({
@@ -76,19 +56,9 @@ const HomeRoute = HomeRouteImport.update({
   path: '/home',
   getParentRoute: () => rootRouteImport,
 } as any)
-const FeedRoute = FeedRouteImport.update({
-  id: '/feed',
-  path: '/feed',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const DocsRoute = DocsRouteImport.update({
   id: '/docs',
   path: '/docs',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DashboardRoute = DashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -110,56 +80,41 @@ const TokenTokenIdRoute = TokenTokenIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
-  '/dashboard': typeof DashboardRoute
   '/docs': typeof DocsRoute
-  '/feed': typeof FeedRoute
   '/home': typeof HomeRoute
   '/hot': typeof HotRoute
-  '/launch': typeof LaunchRoute
   '/leaderboard': typeof LeaderboardRoute
   '/privacy': typeof PrivacyRoute
-  '/profile': typeof ProfileRoute
   '/signin': typeof SigninRoute
   '/social': typeof SocialRoute
   '/terms': typeof TermsRoute
-  '/transactions': typeof TransactionsRoute
   '/token/$tokenId': typeof TokenTokenIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
-  '/dashboard': typeof DashboardRoute
   '/docs': typeof DocsRoute
-  '/feed': typeof FeedRoute
   '/home': typeof HomeRoute
   '/hot': typeof HotRoute
-  '/launch': typeof LaunchRoute
   '/leaderboard': typeof LeaderboardRoute
   '/privacy': typeof PrivacyRoute
-  '/profile': typeof ProfileRoute
   '/signin': typeof SigninRoute
   '/social': typeof SocialRoute
   '/terms': typeof TermsRoute
-  '/transactions': typeof TransactionsRoute
   '/token/$tokenId': typeof TokenTokenIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
-  '/dashboard': typeof DashboardRoute
   '/docs': typeof DocsRoute
-  '/feed': typeof FeedRoute
   '/home': typeof HomeRoute
   '/hot': typeof HotRoute
-  '/launch': typeof LaunchRoute
   '/leaderboard': typeof LeaderboardRoute
   '/privacy': typeof PrivacyRoute
-  '/profile': typeof ProfileRoute
   '/signin': typeof SigninRoute
   '/social': typeof SocialRoute
   '/terms': typeof TermsRoute
-  '/transactions': typeof TransactionsRoute
   '/token/$tokenId': typeof TokenTokenIdRoute
 }
 export interface FileRouteTypes {
@@ -167,86 +122,59 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
-    | '/dashboard'
     | '/docs'
-    | '/feed'
     | '/home'
     | '/hot'
-    | '/launch'
     | '/leaderboard'
     | '/privacy'
-    | '/profile'
     | '/signin'
     | '/social'
     | '/terms'
-    | '/transactions'
     | '/token/$tokenId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/admin'
-    | '/dashboard'
     | '/docs'
-    | '/feed'
     | '/home'
     | '/hot'
-    | '/launch'
     | '/leaderboard'
     | '/privacy'
-    | '/profile'
     | '/signin'
     | '/social'
     | '/terms'
-    | '/transactions'
     | '/token/$tokenId'
   id:
     | '__root__'
     | '/'
     | '/admin'
-    | '/dashboard'
     | '/docs'
-    | '/feed'
     | '/home'
     | '/hot'
-    | '/launch'
     | '/leaderboard'
     | '/privacy'
-    | '/profile'
     | '/signin'
     | '/social'
     | '/terms'
-    | '/transactions'
     | '/token/$tokenId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
-  DashboardRoute: typeof DashboardRoute
   DocsRoute: typeof DocsRoute
-  FeedRoute: typeof FeedRoute
   HomeRoute: typeof HomeRoute
   HotRoute: typeof HotRoute
-  LaunchRoute: typeof LaunchRoute
   LeaderboardRoute: typeof LeaderboardRoute
   PrivacyRoute: typeof PrivacyRoute
-  ProfileRoute: typeof ProfileRoute
   SigninRoute: typeof SigninRoute
   SocialRoute: typeof SocialRoute
   TermsRoute: typeof TermsRoute
-  TransactionsRoute: typeof TransactionsRoute
   TokenTokenIdRoute: typeof TokenTokenIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/transactions': {
-      id: '/transactions'
-      path: '/transactions'
-      fullPath: '/transactions'
-      preLoaderRoute: typeof TransactionsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/terms': {
       id: '/terms'
       path: '/terms'
@@ -268,13 +196,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SigninRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/profile': {
-      id: '/profile'
-      path: '/profile'
-      fullPath: '/profile'
-      preLoaderRoute: typeof ProfileRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/privacy': {
       id: '/privacy'
       path: '/privacy'
@@ -287,13 +208,6 @@ declare module '@tanstack/react-router' {
       path: '/leaderboard'
       fullPath: '/leaderboard'
       preLoaderRoute: typeof LeaderboardRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/launch': {
-      id: '/launch'
-      path: '/launch'
-      fullPath: '/launch'
-      preLoaderRoute: typeof LaunchRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/hot': {
@@ -310,25 +224,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HomeRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/feed': {
-      id: '/feed'
-      path: '/feed'
-      fullPath: '/feed'
-      preLoaderRoute: typeof FeedRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/docs': {
       id: '/docs'
       path: '/docs'
       fullPath: '/docs'
       preLoaderRoute: typeof DocsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dashboard': {
-      id: '/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -358,19 +258,14 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
-  DashboardRoute: DashboardRoute,
   DocsRoute: DocsRoute,
-  FeedRoute: FeedRoute,
   HomeRoute: HomeRoute,
   HotRoute: HotRoute,
-  LaunchRoute: LaunchRoute,
   LeaderboardRoute: LeaderboardRoute,
   PrivacyRoute: PrivacyRoute,
-  ProfileRoute: ProfileRoute,
   SigninRoute: SigninRoute,
   SocialRoute: SocialRoute,
   TermsRoute: TermsRoute,
-  TransactionsRoute: TransactionsRoute,
   TokenTokenIdRoute: TokenTokenIdRoute,
 }
 export const routeTree = rootRouteImport

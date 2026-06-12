@@ -4,7 +4,7 @@ Launching tokenizes a Reddit post into a tradeable market. The entire on-chain c
 
 ## 1. Pick a post
 
-Choose a post from the hot/trending feed or paste a Reddit URL on the [Launch](/launch) page.
+Choose a post from the hot/trending feed or paste a Reddit URL into the launchpad on the [home](/home) page.
 
 ## 2. Name your token
 
