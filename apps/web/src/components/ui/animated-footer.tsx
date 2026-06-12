@@ -132,7 +132,7 @@ export function AnimatedFooter() {
           <div className="flex items-center gap-3 font-mono text-xs">
             <span>© {new Date().getFullYear()} RedCircle</span>
             <span className="text-neutral-700">·</span>
-            <span className="text-neutral-600">Powered by <a href="https://orynth.com" target="_blank" rel="noopener noreferrer" className="hover:text-[#E8431C] transition-colors">Orynth</a></span>
+            <span className="text-neutral-600">Powered by <a href="https://www.orynth.dev" target="_blank" rel="noopener noreferrer" className="hover:text-[#E8431C] transition-colors">Orynth</a></span>
           </div>
           <div className="flex items-center gap-3">
             <span className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-neutral-600">CA</span>
