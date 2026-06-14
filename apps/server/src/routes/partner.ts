@@ -5,7 +5,7 @@ import { db } from "../db";
 import { posts } from "../db";
 import { getPoolCreatorPublicKey } from "../services/orynth.service";
 
-const router = Router();
+const router: import("express").Router = Router();
 
 const TAG = "[Partner API]";
 
@@ -39,8 +39,6 @@ router.get("/tokens", async (req: Request, res: Response) => {
     console.warn(`${TAG} GET /tokens — invalid sort="${sort}" ip=${ip}`);
     return res.status(400).json({ success: false, error: `sort must be one of: ${validSorts.join(", ")}` });
   }
-
-  console.log(`${TAG} GET /tokens — limit=${limit} offset=${offset} sort=${sort} ip=${ip}`);
 
   try {
     const sortCol = sort === "volume"    ? desc(posts.totalVolume)
@@ -91,8 +89,6 @@ router.get("/tokens", async (req: Request, res: Response) => {
         mintedAt:    r.mintedAt,
       }));
 
-    console.log(`${TAG} GET /tokens — returned ${tokens.length} tokens (${rows.length - tokens.length} filtered without mintAddress) ip=${ip}`);
-
     res.json({
       success: true,
       tokens,
@@ -115,8 +111,6 @@ router.get("/tokens/:mintAddress", async (req: Request, res: Response) => {
     return res.status(400).json({ success: false, error: "mintAddress is required" });
   }
 
-  console.log(`${TAG} GET /tokens/${mintAddress} ip=${ip}`);
-
   try {
     const rows = await db
       .select()
@@ -135,7 +129,6 @@ router.get("/tokens/:mintAddress", async (req: Request, res: Response) => {
     }
 
     const r = rows[0]!;
-    console.log(`${TAG} GET /tokens/${mintAddress} — found symbol=${r.tokenSymbol} ip=${ip}`);
 
     res.json({
       success: true,
@@ -167,10 +160,7 @@ router.get("/tokens/:mintAddress", async (req: Request, res: Response) => {
 
 // ─── GET /api/v1/info ─────────────────────────────────────────────────────────
 
-router.get("/info", (req: Request, res: Response) => {
-  const ip = req.headers["x-forwarded-for"] ?? req.socket.remoteAddress ?? "unknown";
-  console.log(`${TAG} GET /info ip=${ip}`);
-
+router.get("/info", (_req: Request, res: Response) => {
   try {
     const deployerWallet = getPoolCreatorPublicKey();
     res.json({
@@ -185,7 +175,7 @@ router.get("/info", (req: Request, res: Response) => {
       },
     });
   } catch (err) {
-    console.error(`${TAG} GET /info — failed to get deployer wallet ip=${ip}`, err instanceof Error ? err.message : err);
+    console.error(`${TAG} GET /info — failed to get deployer wallet`, err instanceof Error ? err.message : err);
     res.status(500).json({ success: false, error: "Failed to fetch platform info" });
   }
 });

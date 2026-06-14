@@ -1,32 +1,9 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import LaunchPanel from "@/components/LaunchPanel";
 import RedditFeed from "@/components/RedditFeed";
+import CopyCA from "@/components/CopyCA";
 import { AnimatedFooter } from "@/components/ui/animated-footer";
-import { Copy, Check } from "lucide-react";
-
-const CA = "BUCUTDnUZteDkMDWyqYtavDhvAFEFVn9YKD3jj6qvory";
-
-function CopyCA() {
-  const [copied, setCopied] = useState(false);
-  const copy = () => {
-    navigator.clipboard.writeText(CA);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-  return (
-    <button
-      onClick={copy}
-      className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 px-4 py-1.5 text-xs text-white/50 hover:text-white/80 transition-all backdrop-blur-sm"
-    >
-      <span className="text-white/30 uppercase tracking-widest text-[9px] font-semibold">CA</span>
-      <span className="font-mono text-white/60">{CA.slice(0, 6)}…{CA.slice(-4)}</span>
-      {copied
-        ? <Check className="w-3 h-3 text-emerald-400" />
-        : <Copy className="w-3 h-3 text-white/30" />}
-    </button>
-  );
-}
 
 export const Route = createFileRoute("/home")({
   component: HomeComponent,

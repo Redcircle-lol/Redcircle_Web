@@ -26,10 +26,10 @@ router.get("/launches", async (_req: Request, res: Response) => {
 // Polls Orynth GET /api/v1/launches/{launchId} for every non-final launch.
 // Updates status, mintAddress, poolAddress, launchSignature, launchedAt in DB.
 
-function subredditFromUrl(url: string | null): string {
+function subredditFromUrl(url: string | null | undefined): string {
   if (!url) return "reddit";
   const m = url.match(/reddit\.com\/r\/([^/?#]+)/i);
-  return m ? m[1] : "reddit";
+  return m ? m[1] ?? "reddit" : "reddit";
 }
 
 router.post("/sync", async (_req: Request, res: Response) => {
@@ -72,7 +72,11 @@ router.post("/sync", async (_req: Request, res: Response) => {
         await db.update(launches).set(updates).where(eq(launches.id, launch.id));
 
         // Sync to feed if newly confirmed
-        if (newStatus === "confirmed" && launch.mintAddress) {
+        if (
+          newStatus === "confirmed" &&
+          launch.mintAddress && launch.sourceId &&
+          launch.sourceUrl && launch.sourceTitle && launch.creatorUsername
+        ) {
           try {
             await db.insert(posts).values({
               redditPostId:     launch.sourceId,
@@ -189,7 +193,6 @@ router.post("/claims", async (req: Request, res: Response) => {
     let prepared: Orynth.ClaimPrepareResponse;
     try {
       prepared = await Orynth.prepareEarningsClaim(poolAddresses);
-      console.log("[Admin/claims] prepare response:", JSON.stringify(prepared));
     } catch (err) {
       await db.update(claims)
         .set({ status: "failed", errorMessage: err instanceof Error ? err.message : "Prepare failed", updatedAt: new Date() })
@@ -243,7 +246,6 @@ router.post("/claims", async (req: Request, res: Response) => {
     let submitted: Orynth.ClaimSubmitResponse;
     try {
       submitted = await Orynth.submitEarningsClaim(orynthBatchId, signedTransactions);
-      console.log("[Admin/claims] submit response:", JSON.stringify(submitted));
     } catch (err) {
       for (const pool of activePools) {
         await db.update(claims)

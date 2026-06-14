@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useHotPosts, type HotPost } from "@/hooks/useHotPosts";
-import { tokenSlug } from "@/lib/utils";
+import { timeAgo, tokenSlug } from "@/lib/utils";
 
 export const Route = createFileRoute("/hot")({
   component: HotPage,
@@ -22,15 +22,6 @@ function formatCount(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
   return String(n);
-}
-
-function timeAgo(ms: number): string {
-  const diff = Date.now() - ms;
-  const hours = Math.floor(diff / 3_600_000);
-  const minutes = Math.floor((diff % 3_600_000) / 60_000);
-  if (hours > 0) return `${hours}h ago`;
-  if (minutes > 0) return `${minutes}m ago`;
-  return "just now";
 }
 
 function HotPopup({ onDismiss }: { onDismiss: () => void }) {
@@ -306,7 +297,7 @@ function HotPage() {
           <div className="flex items-center gap-2 sm:gap-3">
             {cachedAt !== null && (
               <span className="hidden xs:block sm:block text-xs sm:text-sm text-white/40">
-                Updated {timeAgo(cachedAt)}
+                Updated {timeAgo(cachedAt)} ago
               </span>
             )}
             <button

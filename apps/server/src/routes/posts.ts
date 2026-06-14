@@ -8,7 +8,7 @@ import { authenticateToken } from "../middleware/auth";
 import { resolvePostById } from "../db/helpers";
 
 const { posts, launches } = schema;
-const router = Router();
+const router: import("express").Router = Router();
 
 /**
  * POST /api/posts/fetch-reddit
@@ -21,8 +21,6 @@ router.post("/fetch-reddit", async (req, res) => {
     if (!url) {
       return res.status(400).json({ error: "Reddit URL is required" });
     }
-
-    console.log(`📥 Fetch request for URL: ${url}`);
 
     // Fetch post from Reddit
     const redditPost = await RedditService.fetchPost(url);
@@ -179,17 +177,15 @@ router.get("/search", async (req, res) => {
       offset = 0,
     } = req.query;
 
-    console.log(`🔍 Search request:`, { q, subreddit, author, sortBy });
-
     // Fetch all posts first (we'll filter in JS for flexibility)
     let query = db.select().from(posts);
-    
+
     // Build conditions array
     const conditions: any[] = [];
-    
+
     // Status filter
     if (status && status !== "all") {
-      conditions.push(eq(posts.status, status as string));
+      conditions.push(eq(posts.status, status as any));
     }
     
     // Subreddit — case-insensitive partial match
@@ -347,8 +343,6 @@ router.get("/", async (req, res) => {
       since,                  // "1h" | "4h" | "24h" | "7d" | "30d"
     } = req.query;
 
-    console.log(`📋 Fetching posts: status=${status}, limit=${limit}, offset=${offset}, sortBy=${sortBy}, order=${order}, since=${since}`);
-
     const dir = (col: any) => order === "asc" ? asc(col) : desc(col);
 
     // Build query based on filters
@@ -357,7 +351,7 @@ router.get("/", async (req, res) => {
     // Apply filters
     const conditions: any[] = [];
     if (status && status !== "all") {
-      conditions.push(eq(posts.status, status));
+      conditions.push(eq(posts.status, status as any));
     }
     if (subreddit) {
       conditions.push(ilike(posts.subreddit, `%${subreddit}%`));

@@ -23,7 +23,8 @@ interface TrendingCache {
 const caches = new Map<string, TrendingCache>();
 
 export async function refreshTrendingCache(category = "all"): Promise<void> {
-  const cat = CATEGORIES[category] ?? CATEGORIES.all;
+  const cat = CATEGORIES[category] ?? CATEGORIES["all"];
+  if (!cat) return;
   try {
     const posts = await RedditService.fetchHotPosts(cat.subreddit, 25);
     caches.set(category, {

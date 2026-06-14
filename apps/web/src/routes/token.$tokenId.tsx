@@ -3,12 +3,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchWithAuth } from "@/lib/auth";
 import { useAuth } from "@/contexts/AuthContext";
 import { motion, AnimatePresence } from "motion/react";
-import { ArrowLeft, ArrowRightLeft, RefreshCw, TrendingUp, TrendingDown, Copy, Check, Wallet, X, AlertCircle } from "lucide-react";
+import { ArrowLeft, ArrowRightLeft, Copy, Check, Wallet, X, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import TradingModal from "@/components/TradingModal";
 import PriceChart from "@/components/PriceChart";
 import type { FeedPost } from "@/components/FeedCard";
-import { cn } from "@/lib/utils";
+import { cn, formatUsd } from "@/lib/utils";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 
@@ -34,12 +34,6 @@ async function fetchTokenPrice(mintAddress: string): Promise<TokenPair | null> {
   }
 }
 
-function fmt(n: number | null | undefined, prefix = "$") {
-  if (n == null) return "—";
-  if (n >= 1_000_000) return `${prefix}${(n / 1_000_000).toFixed(2)}M`;
-  if (n >= 1_000) return `${prefix}${(n / 1_000).toFixed(1)}K`;
-  return `${prefix}${n.toFixed(2)}`;
-}
 
 export const Route = createFileRoute("/token/$tokenId")({
   component: TokenDetailsPage,
@@ -304,9 +298,6 @@ function TokenDetailsPage() {
     );
   }
 
-  // Only show price change when DexScreener has real h24 data
-  const priceChange = typeof dex?.priceChange.h24 === "number" ? dex.priceChange.h24 : null;
-  const isPositive = (priceChange ?? 0) >= 0;
   const isOnChain = !!post.tokenMintAddress;
 
   return (
@@ -337,27 +328,6 @@ function TokenDetailsPage() {
             </div>
           </div>
 
-          {/* Price — only when DexScreener has data */}
-          {(dex || dexLoading) && (
-            <div className="flex items-end gap-2 sm:text-right">
-              <div>
-                <div className="flex items-baseline gap-2">
-                  {dex && (
-                    <span className="text-2xl sm:text-3xl font-bold text-white tabular-nums">
-                      ${parseFloat(dex.priceUsd).toFixed(6)}
-                    </span>
-                  )}
-                  {dexLoading && <RefreshCw className="h-3 w-3 animate-spin text-white/30" />}
-                </div>
-                {priceChange !== null && (
-                  <div className={cn("flex items-center gap-1 text-xs sm:text-sm font-semibold", isPositive ? "text-green-400" : "text-red-400")}>
-                    {isPositive ? <TrendingUp className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> : <TrendingDown className="h-3 w-3 sm:h-3.5 sm:w-3.5" />}
-                    {isPositive ? "+" : ""}{priceChange.toFixed(2)}% (24h)
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
         </motion.div>
 
 
@@ -684,7 +654,7 @@ function TokenDetailsPage() {
                 {dex?.fdv ? (
                   <div>
                     <p className="text-[10px] text-white/30 mb-0.5">FDV</p>
-                    <p className="text-xs font-semibold text-white">{fmt(dex.fdv)}</p>
+                    <p className="text-xs font-semibold text-white">{formatUsd(dex.fdv)}</p>
                   </div>
                 ) : null}
               </div>

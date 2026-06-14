@@ -4,7 +4,6 @@ import { eq } from "drizzle-orm";
 import { randomBytes } from "node:crypto";
 import { db } from "../db";
 import { launches, posts } from "../db";
-import { authenticateToken } from "../middleware/auth";
 import * as Orynth from "../services/orynth.service";
 import { RedditService } from "../services/reddit.service";
 import { broadcastLaunch } from "../services/ws.service";
@@ -27,17 +26,16 @@ function mapOrynthStatus(o: Orynth.LaunchStatus): DbStatus {
 
 // ─── Sync confirmed launch → posts table (feed) ──────────────────────────────
 // Parses subreddit from a reddit URL like https://www.reddit.com/r/solana/...
-function subredditFromUrl(url: string): string {
+function subredditFromUrl(url: string | null | undefined): string {
+  if (!url) return "reddit";
   const m = url.match(/reddit\.com\/r\/([^/?#]+)/i);
-  return m ? m[1] : "reddit";
+  return m ? m[1] ?? "reddit" : "reddit";
 }
 
 async function syncLaunchToFeed(launch: LaunchRow) {
-  if (!launch.mintAddress) return;
+  if (!launch.mintAddress || !launch.sourceId || !launch.sourceUrl || !launch.sourceTitle || !launch.creatorUsername) return;
   try {
-    const redditData = launch.sourceUrl
-      ? await RedditService.fetchPost(launch.sourceUrl).catch(() => null)
-      : null;
+    const redditData = await RedditService.fetchPost(launch.sourceUrl).catch(() => null);
     await db.insert(posts).values({
       ...(launch.postId ? { id: launch.postId } : {}),
       redditPostId:     launch.sourceId,

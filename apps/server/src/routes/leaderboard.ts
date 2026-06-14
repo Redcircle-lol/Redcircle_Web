@@ -6,7 +6,7 @@ import { getEarnings } from "../services/orynth.service";
 
 const { launches, users } = schema;
 
-const router = Router();
+const router: import("express").Router = Router();
 
 /**
  * GET /api/leaderboard

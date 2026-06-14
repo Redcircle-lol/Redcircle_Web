@@ -6,7 +6,7 @@ import {
   isCacheStale,
 } from "../services/trending.service";
 
-const router = Router();
+const router: import("express").Router = Router();
 
 router.get("/", async (req, res) => {
   try {

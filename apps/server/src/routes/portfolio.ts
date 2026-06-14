@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm";
 
 const { holdings, posts } = schema;
 
-const router = Router();
+const router: import("express").Router = Router();
 
 /**
  * GET /api/portfolio
@@ -15,8 +15,6 @@ const router = Router();
 router.get("/", authenticateToken, async (req, res) => {
   try {
     const userId = (req as any).userId;
-
-    console.log(`\n📊 Fetching portfolio for user: ${userId}`);
 
     // Get all holdings for user with post details
     const userHoldings = await db
@@ -27,8 +25,6 @@ router.get("/", authenticateToken, async (req, res) => {
       .from(holdings)
       .leftJoin(posts, eq(holdings.postId, posts.id))
       .where(eq(holdings.userId, userId));
-
-    console.log(`✅ Found ${userHoldings.length} holdings`);
 
     // Calculate portfolio stats
     let totalInvested = 0;
