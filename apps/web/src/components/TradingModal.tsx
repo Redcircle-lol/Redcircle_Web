@@ -368,8 +368,12 @@ export default function TradingModal({ post, isOpen, onClose }: TradingModalProp
             {post.title}
           </h3>
           <div className="flex items-center gap-3 text-xs text-white/55">
-            <span>r/{post.subreddit}</span>
-            <span>u/{post.author}</span>
+            {post.platform === "x" ? (
+              <span>𝕏 post</span>
+            ) : (
+              <span>r/{post.subreddit}</span>
+            )}
+            <span>{post.platform === "x" ? "@" : "u/"}{post.author}</span>
           </div>
 
           {loadingStats ? (

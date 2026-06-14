@@ -163,8 +163,6 @@ router.post("/fetch-x", async (req, res) => {
       return res.status(400).json({ error: "X (Twitter) URL is required" });
     }
 
-    console.log(`📥 Fetch request for X URL: ${url}`);
-
     // Fetch tweet from X
     const xPost = await XService.fetchPost(url);
 
@@ -471,6 +469,7 @@ router.get("/", async (req, res) => {
       limit = 50,
       offset = 0,
       subreddit,
+      platform,               // "reddit" | "x" — omit for all
       sortBy = "tokenizedAt", // tokenizedAt, upvotes, marketCap, totalVolume, currentPrice
       order = "desc",         // asc | desc
       since,                  // "1h" | "4h" | "24h" | "7d" | "30d"
@@ -488,6 +487,9 @@ router.get("/", async (req, res) => {
     }
     if (subreddit) {
       conditions.push(ilike(posts.subreddit, `%${subreddit}%`));
+    }
+    if (platform && (platform === "reddit" || platform === "x")) {
+      conditions.push(eq(posts.platform, platform));
     }
 
     // Time window filter on tokenizedAt

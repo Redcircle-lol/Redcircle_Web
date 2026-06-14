@@ -29,8 +29,8 @@ function TermsOfService() {
             <section>
               <h2 className="text-2xl font-semibold text-white mb-4 font-satoshi">2. Description of Service</h2>
               <p>
-                RedCircle is a Web3 platform that tokenizes viral Reddit posts on the Solana blockchain.
-                The Platform allows users to create, trade, and manage tokens representing Reddit content.
+                RedCircle is a Web3 platform that tokenizes viral posts from Reddit and X (Twitter) on the Solana blockchain.
+                The Platform allows users to create, trade, and manage tokens representing social media content.
                 Token launches are processed through Orynth (orynth.dev), our third-party infrastructure partner.
               </p>
             </section>
@@ -49,7 +49,7 @@ function TermsOfService() {
                 <div>
                   <h3 className="text-xl font-medium text-white mb-2">4.1 Account Security</h3>
                   <p>
-                    You are responsible for maintaining the security of your Reddit account credentials and Solana wallet private keys. 
+                    You are responsible for maintaining the security of your social media account credentials and Solana wallet private keys. 
                     You agree to notify us immediately of any unauthorized access to your account.
                   </p>
                 </div>
@@ -66,7 +66,7 @@ function TermsOfService() {
                   <ul className="list-disc list-inside space-y-2 ml-4 mt-2">
                     <li>Use the Platform for any illegal or fraudulent purpose</li>
                     <li>Manipulate token prices or engage in market manipulation</li>
-                    <li>Violate Reddit's Terms of Service</li>
+                    <li>Violate Reddit's or X's Terms of Service</li>
                     <li>Attempt to gain unauthorized access to the Platform or other users' accounts</li>
                     <li>Interfere with or disrupt the Platform's functionality</li>
                   </ul>
@@ -80,8 +80,8 @@ function TermsOfService() {
                 <div>
                   <h3 className="text-xl font-medium text-white mb-2">5.1 Token Creation</h3>
                   <p>
-                    Tokens created on the Platform represent engagement with Reddit posts and do not confer ownership, 
-                    rights, or control over the underlying Reddit content.
+                    Tokens created on the Platform represent engagement with social media posts and do not confer ownership,
+                    rights, or control over the underlying content.
                   </p>
                 </div>
                 <div>
@@ -126,8 +126,8 @@ function TermsOfService() {
               <h2 className="text-2xl font-semibold text-white mb-4 font-satoshi">8. Intellectual Property</h2>
               <p>
                 The Platform and its original content, features, and functionality are owned by RedCircle and are protected by 
-                international copyright, trademark, and other intellectual property laws. Reddit content tokenized through the Platform 
-                remains the property of its original creators and Reddit.
+                international copyright, trademark, and other intellectual property laws. Content tokenized through the Platform
+                remains the property of its original creators and the respective platforms (Reddit, X).
               </p>
             </section>
 

@@ -44,7 +44,7 @@ function HomeComponent() {
         <div className="mb-8 sm:mb-12 text-center">
 
           <h1 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight leading-[1.05] mb-4 sm:mb-5">
-            <span className="text-white">Turn Reddit Posts Into</span>
+            <span className="text-white">Turn Posts Into</span>
             <br />
             <span
               className="bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(232,67,28,0.35)]"
@@ -58,7 +58,7 @@ function HomeComponent() {
           </h1>
 
           <p className="text-white/40 text-sm sm:text-base md:text-lg max-w-sm sm:max-w-xl mx-auto px-2 leading-relaxed mb-5">
-            Paste any Reddit post, launch a Solana market, and let people trade
+            Paste any Reddit or X post, launch a Solana market, and let people trade
             the attention around it.
             <span className="block mt-1.5 font-mono text-xs sm:text-sm text-white/25">
               no code · no gas · <span className="text-[#E8431C]">straight to the trenches</span>

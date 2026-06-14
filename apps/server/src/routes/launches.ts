@@ -33,69 +33,68 @@ function subredditFromUrl(url: string | null | undefined): string {
   return m?.[1] ?? "reddit";
 }
 
-async function syncLaunchToFeed(launch: LaunchRow) {
+// Shared insert payload for both platforms
+function buildFeedInsert(launch: LaunchRow, platform: string, subreddit: string, upvotes: number, comments: number) {
+  return {
+    ...(launch.postId ? { id: launch.postId } : {}),
+    platform,
+    redditPostId:     launch.sourceId!,
+    redditUrl:        launch.sourceUrl!,
+    title:            launch.sourceTitle!,
+    author:           launch.creatorUsername!,
+    subreddit,
+    thumbnail:        launch.tokenImageUrl ?? undefined,
+    upvotes,
+    comments,
+    tokenSupply:      1_000_000_000,
+    initialPrice:     "0",
+    currentPrice:     "0",
+    tokenMintAddress: launch.mintAddress!,
+    tokenSymbol:      launch.tokenSymbol,
+    tokenSlug:        launch.tokenSlug ?? undefined,
+    description:      launch.tokenDescription ?? undefined,
+    status:           "active" as const,
+    creatorId:        launch.launcherId ?? null,
+  };
+}
+
+async function syncRedditLaunchToFeed(launch: LaunchRow) {
   if (!launch.mintAddress || !launch.sourceId || !launch.sourceUrl || !launch.sourceTitle || !launch.creatorUsername) return;
   try {
-    const isReddit = launch.sourcePlatform === "reddit";
-
-    // Refresh engagement metrics from the source platform (best-effort).
-    // Reddit: upvotes/comments. X: likes→upvotes, replies→comments (so the feed's
-    // existing two metric slots stay populated without a schema change).
-    let upvotes = 0;
-    let comments = 0;
-    if (isReddit) {
-      const redditData = await RedditService.fetchPost(launch.sourceUrl).catch(() => null);
-      upvotes  = redditData?.upvotes ?? 0;
-      comments = redditData?.num_comments ?? 0;
-    } else {
-      const xData = await XService.fetchPost(launch.sourceUrl).catch(() => null);
-      upvotes  = xData?.likes ?? 0;
-      comments = xData?.replies ?? 0;
-    }
-
-    // r/<subreddit> for reddit; the platform name (e.g. "x") otherwise.
-    const subreddit = isReddit ? subredditFromUrl(launch.sourceUrl) : (launch.sourcePlatform ?? "x");
-
-    await db.insert(posts).values({
-      ...(launch.postId ? { id: launch.postId } : {}),
-      redditPostId:     launch.sourceId,
-      redditUrl:        launch.sourceUrl,
-      title:            launch.sourceTitle ?? "Untitled",
-      author:           launch.creatorUsername ?? "unknown",
-      subreddit,
-      thumbnail:        launch.tokenImageUrl ?? undefined,
-      upvotes,
-      comments,
-      tokenSupply:      1_000_000_000,
-      initialPrice:     "0",
-      currentPrice:     "0",
-      tokenMintAddress: launch.mintAddress,
-      tokenSymbol:      launch.tokenSymbol,
-      tokenSlug:        launch.tokenSlug ?? undefined,
-      description:      launch.tokenDescription ?? undefined,
-      status:           "active",
-      creatorId:        launch.launcherId ?? null,
-    }).onConflictDoUpdate({
+    const redditData = await RedditService.fetchPost(launch.sourceUrl).catch(() => null);
+    const upvotes    = redditData?.upvotes ?? 0;
+    const comments   = redditData?.num_comments ?? 0;
+    const values     = buildFeedInsert(launch, "reddit", subredditFromUrl(launch.sourceUrl), upvotes, comments);
+    await db.insert(posts).values(values).onConflictDoUpdate({
       target: posts.redditPostId,
-      set: {
-        tokenMintAddress: launch.mintAddress,
-        tokenSymbol:      launch.tokenSymbol,
-        tokenSlug:        launch.tokenSlug ?? undefined,
-        status:           "active",
-        upvotes,
-        comments,
-        updatedAt:        new Date(),
-      },
+      set: { tokenMintAddress: launch.mintAddress, tokenSymbol: launch.tokenSymbol, tokenSlug: launch.tokenSlug ?? undefined, status: "active", upvotes, comments, updatedAt: new Date() },
     });
-  } catch (e) {
-  }
+  } catch { /* feed sync is best-effort; never throws to caller */ }
+}
+
+async function syncXLaunchToFeed(launch: LaunchRow) {
+  if (!launch.mintAddress || !launch.sourceId || !launch.sourceUrl || !launch.sourceTitle || !launch.creatorUsername) return;
+  try {
+    const xData   = await XService.fetchPost(launch.sourceUrl).catch(() => null);
+    const upvotes = xData?.likes ?? 0;
+    const comments = xData?.replies ?? 0;
+    const values   = buildFeedInsert(launch, "x", "x", upvotes, comments);
+    await db.insert(posts).values(values).onConflictDoUpdate({
+      target: posts.redditPostId,
+      set: { tokenMintAddress: launch.mintAddress, tokenSymbol: launch.tokenSymbol, tokenSlug: launch.tokenSlug ?? undefined, status: "active", upvotes, comments, updatedAt: new Date() },
+    });
+  } catch { /* feed sync is best-effort; never throws to caller */ }
 }
 
 // ─── Fire-on-confirmation side effects ───────────────────────────────────────
 // Called exactly once when a launch transitions to `confirmed`. Syncs the feed
 // and broadcasts to WebSocket consumers (e.g. the auto-buy Telegram bot).
 async function onLaunchConfirmed(launch: LaunchRow) {
-  await syncLaunchToFeed(launch);
+  if (launch.sourcePlatform === "x") {
+    await syncXLaunchToFeed(launch);
+  } else {
+    await syncRedditLaunchToFeed(launch);
+  }
   if (!launch.mintAddress) return;
   broadcastLaunch({
     type:            "launch.confirmed",

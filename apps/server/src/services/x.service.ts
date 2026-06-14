@@ -126,7 +126,6 @@ export class XService {
     }
 
     this.cachedToken = data.access_token;
-    console.log("✅ X app-only bearer token acquired");
     return this.cachedToken;
   }
 
@@ -158,8 +157,6 @@ export class XService {
     }
 
     const bearerToken = await this.getBearerToken();
-
-    console.log(`🔍 Fetching X post: ${tweetId}`);
 
     const params = new URLSearchParams({
       "tweet.fields": "created_at,public_metrics,lang,attachments,author_id",
@@ -258,7 +255,6 @@ export class XService {
       lang: tweet.lang,
     };
 
-    console.log(`✅ X post fetched: "${post.text.slice(0, 60)}..." by @${post.author}`);
     return post;
   }
 

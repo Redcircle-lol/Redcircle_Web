@@ -211,12 +211,17 @@ app.get("/api/tokens/:mint/price", async (req, res) => {
 
 // ── Image proxy (avoids CORS on Reddit/external images) ───────────────────────
 const ALLOWED_IMAGE_HOSTS = new Set([
+  // Reddit
   "www.redditstatic.com",
   "redditstatic.com",
   "external-preview.redd.it",
   "preview.redd.it",
   "i.redd.it",
   "styles.redditmedia.com",
+  // X (Twitter)
+  "pbs.twimg.com",
+  "abs-0.twimg.com",
+  "ton.twimg.com",
 ]);
 
 app.get("/api/image-proxy", async (req, res) => {
