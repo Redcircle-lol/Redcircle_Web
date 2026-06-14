@@ -10,18 +10,32 @@ import { cn } from "@/lib/utils";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 
-interface RedditPostPreview {
-  redditPostId: string;
+type Platform = "reddit" | "x";
+
+// Normalized preview that covers both Reddit and X posts.
+interface PostPreview {
+  platform: Platform;
+  postId: string;          // redditPostId or xPostId
   title: string;
-  author: string;
-  subreddit: string;
-  upvotes: number;
-  comments: number;
+  author: string;          // reddit username / x handle (no @)
+  authorName?: string;     // x display name
+  subreddit?: string;      // reddit only
+  upvotes?: number;        // reddit
+  comments?: number;       // reddit
+  likes?: number;          // x
+  retweets?: number;       // x
   thumbnail?: string;
   url: string;
   content?: string;
   createdAt: string;
   age: string;
+}
+
+// Detect which platform a pasted URL belongs to.
+function detectPlatform(url: string): Platform | null {
+  if (/(?:reddit\.com|redd\.it)/i.test(url)) return "reddit";
+  if (/(?:x\.com|twitter\.com)/i.test(url)) return "x";
+  return null;
 }
 
 interface Quote {
@@ -53,7 +67,7 @@ function getActiveStage(step: LaunchStep): number {
 }
 
 const STEP_STATUS: Record<LaunchStep, string> = {
-  idle:       "> awaiting reddit url_",
+  idle:       "> awaiting reddit / x url_",
   fetching:   "> fetching post metadata…",
   previewing: "> post loaded. configure token details_",
   quoting:    "> fetching launch quote…",
@@ -79,7 +93,7 @@ export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
   const { connected, publicKey, disconnect } = useWallet();
   const { setVisible: openWalletModal } = useWalletModal();
   const [url, setUrl]               = useState(initialUrl || "");
-  const [postPreview, setPostPreview] = useState<RedditPostPreview | null>(null);
+  const [postPreview, setPostPreview] = useState<PostPreview | null>(null);
   const [quote, setQuote]           = useState<Quote | null>(null);
   const [tokenName, setTokenName]   = useState("");
   const [tokenSymbol, setTokenSymbol] = useState("");
@@ -89,7 +103,7 @@ export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
   const [launchId, setLaunchId]     = useState<string | null>(null);
   const [mintAddress, setMintAddress] = useState<string | null>(null);
   const [rocketGone, setRocketGone] = useState(false);
-  const [fetchLabel, setFetchLabel] = useState("Fetching Reddit post");
+  const [fetchLabel, setFetchLabel] = useState("Fetching post");
 
 
   const activeStage = getActiveStage(step);
@@ -138,7 +152,7 @@ export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
   }, [step]);
 
   useEffect(() => {
-    if (step !== "fetching") { setFetchLabel("Fetching Reddit post"); return; }
+    if (step !== "fetching") { setFetchLabel("Fetching post"); return; }
     const t = setTimeout(() => setFetchLabel("Generating Token Details"), 3000);
     return () => clearTimeout(t);
   }, [step]);
@@ -151,28 +165,57 @@ export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
   }, []);
 
   const handleFetchPost = async () => {
-    const targetUrl = url;
+    const targetUrl = url.trim();
     if (!targetUrl) return;
+
+    const platform = detectPlatform(targetUrl);
+    if (!platform) {
+      setError("Paste a valid Reddit or X (Twitter) post link.");
+      setStep("idle");
+      return;
+    }
+
     setError("");
     setStep("fetching");
     setPostPreview(null);
     setQuote(null);
     try {
-      const apiUrl = getApiUrl();
-      const res  = await fetch(`${apiUrl}/api/posts/fetch-reddit`, {
+      const apiUrl   = getApiUrl();
+      const endpoint = platform === "x" ? "/api/posts/fetch-x" : "/api/posts/fetch-reddit";
+      const res  = await fetch(`${apiUrl}${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: targetUrl }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to fetch Reddit post");
-      const post = data.post;
+      if (!res.ok) throw new Error(data.error || `Failed to fetch ${platform === "x" ? "X" : "Reddit"} post`);
+      const raw = data.post;
+
+      // Normalize Reddit / X response shapes into one preview object
+      const post: PostPreview = {
+        platform,
+        postId:     platform === "x" ? raw.xPostId : raw.redditPostId,
+        title:      raw.title,
+        author:     raw.author,
+        authorName: raw.authorName,
+        subreddit:  raw.subreddit,
+        upvotes:    raw.upvotes,
+        comments:   raw.comments,
+        likes:      raw.likes,
+        retweets:   raw.retweets,
+        thumbnail:  raw.thumbnail,
+        url:        raw.url,
+        content:    raw.content,
+        createdAt:  raw.createdAt,
+        age:        raw.age,
+      };
       setPostPreview(post);
       setStep("previewing");
 
       // Use AI-suggested name/symbol (server falls back to heuristic if Gemini fails)
+      const fallbackSym = (platform === "x" ? post.author : post.subreddit ?? post.author) ?? "TOKEN";
       const name   = (data.suggestedName   || post.title.split(" ").slice(0, 3).join(" ")).slice(0, 32);
-      const symbol = (data.suggestedSymbol || post.subreddit.toUpperCase().replace(/[^A-Z0-9]/g, "")).slice(0, 8);
+      const symbol = (data.suggestedSymbol || fallbackSym.toUpperCase().replace(/[^A-Z0-9]/g, "")).slice(0, 8);
       setTokenName(name);
       setTokenSymbol(symbol);
       if (data.suggestedDescription) setDescription(data.suggestedDescription);
@@ -196,7 +239,8 @@ export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          redditPostId:         postPreview.redditPostId,
+          platform:             postPreview.platform,
+          redditPostId:         postPreview.postId,
           redditUrl:            postPreview.url,
           redditTitle:          postPreview.title,
           redditAuthor:         postPreview.author,
@@ -429,7 +473,7 @@ export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
             {activeStage === 0 && (
             <div className="space-y-3 max-w-xl mx-auto">
               <label className="block text-[12px] font-mono uppercase tracking-widest text-white ml-0.5">
-                Reddit Post Link
+                Reddit &amp; X Post Link
               </label>
               <div className="flex flex-col sm:flex-row gap-2">
                 <div className="flex-1 flex items-center gap-2 bg-black/60 border border-white/[0.08] rounded-xl px-3.5 py-3 focus-within:border-[#E8431C]/50 focus-within:shadow-[0_0_0_1px_rgba(232,67,28,0.2),0_0_20px_rgba(232,67,28,0.1)] transition-all">
@@ -437,7 +481,7 @@ export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
                   <input
                     value={url}
                     onChange={(e) => { setUrl(e.target.value); setPostPreview(null); setError(""); setStep("idle"); }}
-                    placeholder="https://reddit.com/r/..."
+                    placeholder="https://reddit.com/r/...  or  https://x.com/..."
                     disabled={isBusy}
                     className="flex-1 bg-transparent text-white/80 placeholder:text-white/15 focus:outline-none text-sm font-mono disabled:opacity-50"
                   />
@@ -500,13 +544,32 @@ export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
                           <div className="flex-1 min-w-0">
                             <h4 className="text-white/90 font-medium leading-snug mb-1 line-clamp-2 text-sm">{postPreview.title}</h4>
                             <div className="flex items-center gap-2 text-[10px] text-white/35 font-mono">
-                              <span className="text-white/50">r/{postPreview.subreddit}</span>
-                              <span>·</span>
-                              <span>u/{postPreview.author}</span>
+                              {postPreview.platform === "x" ? (
+                                <>
+                                  <span className="text-white/50">𝕏</span>
+                                  <span>·</span>
+                                  <span>@{postPreview.author}</span>
+                                </>
+                              ) : (
+                                <>
+                                  <span className="text-white/50">r/{postPreview.subreddit}</span>
+                                  <span>·</span>
+                                  <span>u/{postPreview.author}</span>
+                                </>
+                              )}
                             </div>
                             <div className="mt-1.5 flex gap-3 text-[10px] text-white/40">
-                              <span className="flex items-center gap-1"><TrendingUp className="w-2.5 h-2.5" />{postPreview.upvotes.toLocaleString()}</span>
-                              <span className="flex items-center gap-1"><Users className="w-2.5 h-2.5" />{postPreview.comments.toLocaleString()}</span>
+                              {postPreview.platform === "x" ? (
+                                <>
+                                  <span className="flex items-center gap-1"><TrendingUp className="w-2.5 h-2.5" />{(postPreview.likes ?? 0).toLocaleString()}</span>
+                                  <span className="flex items-center gap-1"><Users className="w-2.5 h-2.5" />{(postPreview.retweets ?? 0).toLocaleString()}</span>
+                                </>
+                              ) : (
+                                <>
+                                  <span className="flex items-center gap-1"><TrendingUp className="w-2.5 h-2.5" />{(postPreview.upvotes ?? 0).toLocaleString()}</span>
+                                  <span className="flex items-center gap-1"><Users className="w-2.5 h-2.5" />{(postPreview.comments ?? 0).toLocaleString()}</span>
+                                </>
+                              )}
                             </div>
                           </div>
                         </div>

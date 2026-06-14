@@ -4,9 +4,9 @@ import { eq } from "drizzle-orm";
 import { randomBytes } from "node:crypto";
 import { db } from "../db";
 import { launches, posts } from "../db";
-import { authenticateToken } from "../middleware/auth";
 import * as Orynth from "../services/orynth.service";
 import { RedditService } from "../services/reddit.service";
+import { XService } from "../services/x.service";
 import { broadcastLaunch } from "../services/ws.service";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
@@ -29,25 +29,42 @@ function mapOrynthStatus(o: Orynth.LaunchStatus): DbStatus {
 // Parses subreddit from a reddit URL like https://www.reddit.com/r/solana/...
 function subredditFromUrl(url: string): string {
   const m = url.match(/reddit\.com\/r\/([^/?#]+)/i);
-  return m ? m[1] : "reddit";
+  return m?.[1] ?? "reddit";
 }
 
 async function syncLaunchToFeed(launch: LaunchRow) {
-  if (!launch.mintAddress) return;
+  if (!launch.mintAddress || !launch.sourceId || !launch.sourceUrl) return;
   try {
-    const redditData = launch.sourceUrl
-      ? await RedditService.fetchPost(launch.sourceUrl).catch(() => null)
-      : null;
+    const isReddit = launch.sourcePlatform === "reddit";
+
+    // Refresh engagement metrics from the source platform (best-effort).
+    // Reddit: upvotes/comments. X: likes→upvotes, replies→comments (so the feed's
+    // existing two metric slots stay populated without a schema change).
+    let upvotes = 0;
+    let comments = 0;
+    if (isReddit) {
+      const redditData = await RedditService.fetchPost(launch.sourceUrl).catch(() => null);
+      upvotes  = redditData?.upvotes ?? 0;
+      comments = redditData?.num_comments ?? 0;
+    } else {
+      const xData = await XService.fetchPost(launch.sourceUrl).catch(() => null);
+      upvotes  = xData?.likes ?? 0;
+      comments = xData?.replies ?? 0;
+    }
+
+    // r/<subreddit> for reddit; the platform name (e.g. "x") otherwise.
+    const subreddit = isReddit ? subredditFromUrl(launch.sourceUrl) : (launch.sourcePlatform ?? "x");
+
     await db.insert(posts).values({
       ...(launch.postId ? { id: launch.postId } : {}),
       redditPostId:     launch.sourceId,
       redditUrl:        launch.sourceUrl,
-      title:            launch.sourceTitle,
-      author:           launch.creatorUsername,
-      subreddit:        subredditFromUrl(launch.sourceUrl),
+      title:            launch.sourceTitle ?? "Untitled",
+      author:           launch.creatorUsername ?? "unknown",
+      subreddit,
       thumbnail:        launch.tokenImageUrl ?? undefined,
-      upvotes:          redditData?.upvotes ?? 0,
-      comments:         redditData?.num_comments ?? 0,
+      upvotes,
+      comments,
       tokenSupply:      1_000_000_000,
       initialPrice:     "0",
       currentPrice:     "0",
@@ -64,8 +81,8 @@ async function syncLaunchToFeed(launch: LaunchRow) {
         tokenSymbol:      launch.tokenSymbol,
         tokenSlug:        launch.tokenSlug ?? undefined,
         status:           "active",
-        upvotes:          redditData?.upvotes ?? 0,
-        comments:         redditData?.num_comments ?? 0,
+        upvotes,
+        comments,
         updatedAt:        new Date(),
       },
     });
@@ -178,6 +195,9 @@ router.get("/quote", async (_req, res) => {
 router.post("/prepare", async (req: Request, res: Response) => {
   try {
     const body = z.object({
+      // Platform of the source post. Defaults to reddit for backward compatibility.
+      // The reddit* field names below carry the source data for both platforms.
+      platform:        z.enum(["reddit", "x"]).default("reddit"),
       redditPostId:    z.string().min(1),
       redditUrl:       z.string().url(),
       redditTitle:     z.string().min(1),
@@ -190,9 +210,19 @@ router.post("/prepare", async (req: Request, res: Response) => {
       curatorWalletAddress: z.string().min(32).max(44).optional(),
     }).parse(req.body);
 
-    // Server wallet pays — one token per Reddit post
+    const platform = body.platform;
+
+    // Server wallet pays — one token per source post.
+    // Namespace the externalId by platform so a reddit and x post can never collide
+    // (reddit keeps its legacy `redcircle:<id>` form for backward compatibility).
     const payerWalletAddress = Orynth.getPayerPublicKey();
-    const externalId = `redcircle:${body.redditPostId}`;
+    const externalId = platform === "reddit"
+      ? `redcircle:${body.redditPostId}`
+      : `redcircle:${platform}:${body.redditPostId}`;
+
+    const profileUrl = platform === "reddit"
+      ? `https://reddit.com/u/${body.redditAuthor}`
+      : `https://x.com/${body.redditAuthor}`;
 
     // Idempotency — if already on-chain, return existing launchId for polling
     const [existing] = await db.select().from(launches)
@@ -215,16 +245,16 @@ router.post("/prepare", async (req: Request, res: Response) => {
       externalId: orynthExternalId,
       payerWalletAddress,
       source: {
-        platform: "reddit",
+        platform,
         url:      body.redditUrl,
         id:       body.redditPostId,
         type:     "post",
       },
       creator: {
-        platform:       "reddit",
+        platform,
         username:       body.redditAuthor,
         platformUserId: body.redditAuthor,
-        profileUrl:     `https://reddit.com/u/${body.redditAuthor}`,
+        profileUrl,
       },
       name:        body.tokenName,
       symbol:      body.tokenSymbol.toUpperCase(),
@@ -249,7 +279,7 @@ router.post("/prepare", async (req: Request, res: Response) => {
       externalId,
       orynthLaunchId:        orynthLaunch.id,
       launcherId:            null,
-      sourcePlatform:        "reddit",
+      sourcePlatform:        platform,
       sourceId:              body.redditPostId,
       sourceUrl:             body.redditUrl,
       sourceTitle:           body.redditTitle,
