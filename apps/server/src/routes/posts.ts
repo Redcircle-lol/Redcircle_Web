@@ -9,7 +9,7 @@ import { authenticateToken } from "../middleware/auth";
 import { resolvePostById } from "../db/helpers";
 
 const { posts, launches } = schema;
-const router: Router = Router();
+const router: import("express").Router = Router();
 
 // Token-status values accepted by status filters (matches tokenizationStatusEnum).
 const POST_STATUSES = ["pending", "minting", "active", "failed", "delisted"] as const;
@@ -28,8 +28,6 @@ router.post("/fetch-reddit", async (req, res) => {
     if (!url) {
       return res.status(400).json({ error: "Reddit URL is required" });
     }
-
-    console.log(`📥 Fetch request for URL: ${url}`);
 
     // Fetch post from Reddit
     const redditPost = await RedditService.fetchPost(url);
@@ -312,14 +310,12 @@ router.get("/search", async (req, res) => {
       offset = 0,
     } = req.query;
 
-    console.log(`🔍 Search request:`, { q, subreddit, author, sortBy });
-
     // Fetch all posts first (we'll filter in JS for flexibility)
     let query = db.select().from(posts);
-    
+
     // Build conditions array
     const conditions: any[] = [];
-    
+
     // Status filter
     if (isPostStatus(status)) {
       conditions.push(eq(posts.status, status));
@@ -479,8 +475,6 @@ router.get("/", async (req, res) => {
       order = "desc",         // asc | desc
       since,                  // "1h" | "4h" | "24h" | "7d" | "30d"
     } = req.query;
-
-    console.log(`📋 Fetching posts: status=${status}, limit=${limit}, offset=${offset}, sortBy=${sortBy}, order=${order}, since=${since}`);
 
     const dir = (col: any) => order === "asc" ? asc(col) : desc(col);
 

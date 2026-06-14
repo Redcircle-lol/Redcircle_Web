@@ -99,7 +99,6 @@ export class RedditService {
       // Set expiry to 50 minutes (tokens last 1 hour, but refresh earlier)
       this.tokenExpiry = Date.now() + (50 * 60 * 1000);
       
-      console.log("✅ Reddit OAuth token acquired");
       return this.accessToken as string;
     } catch (error) {
       console.error("❌ Failed to get Reddit OAuth token:", error);
@@ -158,20 +157,15 @@ export class RedditService {
       throw new Error("Invalid Reddit URL. Please provide a valid Reddit post URL.");
     }
 
-    console.log(`🔍 Fetching Reddit post: ${postId}`);
-
     try {
       // Try OAuth first if credentials are available
       const accessToken = await this.getAccessToken();
-      
+
       let response;
-      let apiUrl;
-      
+
       if (accessToken) {
         // Use OAuth endpoint
-        apiUrl = `${this.OAUTH_BASE_URL}/comments/${postId}`;
-        console.log(`🔐 Using OAuth API: ${apiUrl}`);
-        
+        const apiUrl = `${this.OAUTH_BASE_URL}/comments/${postId}`;
         response = await fetch(apiUrl, {
           headers: {
             "Authorization": `Bearer ${accessToken}`,
@@ -180,9 +174,7 @@ export class RedditService {
         });
       } else {
         // Fallback to public JSON API
-        apiUrl = `${this.BASE_URL}/comments/${postId}.json`;
-        console.log(`🌐 Using public API: ${apiUrl}`);
-        
+        const apiUrl = `${this.BASE_URL}/comments/${postId}.json`;
         response = await fetch(apiUrl, {
           headers: {
             "User-Agent": this.USER_AGENT,
@@ -258,8 +250,6 @@ export class RedditService {
         preview: postData.preview as RedditPost["preview"],
       };
 
-      console.log(`✅ Reddit post fetched: "${post.title}" by u/${post.author}`);
-      
       return post;
     } catch (error) {
       if (error instanceof Error) {

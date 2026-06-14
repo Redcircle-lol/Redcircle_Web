@@ -57,7 +57,7 @@ export function authenticateToken(
  */
 export function optionalAuth(
   req: Request,
-  res: Response,
+  _res: Response,
   next: () => void
 ) {
   const authHeader = req.headers["authorization"];
@@ -75,9 +75,8 @@ export function optionalAuth(
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
     req.userId = decoded.userId;
-  } catch (error) {
+  } catch {
     // Don't fail, just continue without user
-    console.log("Optional auth failed, continuing without user");
   }
 
   next();

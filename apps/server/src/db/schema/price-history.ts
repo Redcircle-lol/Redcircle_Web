@@ -1,4 +1,4 @@
-import { pgTable, uuid, decimal, integer, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, uuid, decimal, timestamp } from "drizzle-orm/pg-core";
 import { posts } from "./posts";
 
 export const priceHistory = pgTable("price_history", {

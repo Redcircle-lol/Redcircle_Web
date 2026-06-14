@@ -5,7 +5,7 @@ import { z } from "zod";
 import { eq } from "drizzle-orm";
 
 const { waitlist } = schema;
-const router = Router();
+const router: import("express").Router = Router();
 
 // Validation schema
 const emailSchema = z.object({
@@ -21,7 +21,7 @@ router.post("/", async (req, res) => {
     if (!validation.success) {
       return res.status(400).json({
         error: "Validation failed",
-        details: validation.error.errors,
+        details: validation.error.issues,
       });
     }
 

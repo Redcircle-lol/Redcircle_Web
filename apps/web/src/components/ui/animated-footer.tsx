@@ -1,27 +1,8 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { motion } from "motion/react";
-import { TwitterIcon, GithubIcon, Copy, Check } from "lucide-react";
-
-const CA = "BUCUTDnUZteDkMDWyqYtavDhvAFEFVn9YKD3jj6qvory";
-
-function CopyCA() {
-  const [copied, setCopied] = useState(false);
-  const copy = () => {
-    navigator.clipboard.writeText(CA);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-  return (
-    <button
-      onClick={copy}
-      className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-neutral-400 hover:border-[#E8431C]/40 hover:text-white transition-all cursor-pointer"
-    >
-      <span className="font-mono">{CA.slice(0, 6)}…{CA.slice(-4)}</span>
-      {copied ? <Check className="w-3 h-3 text-[#00FFA3]" /> : <Copy className="w-3 h-3" />}
-    </button>
-  );
-}
+import { TwitterIcon, GithubIcon } from "lucide-react";
+import CopyCA from "@/components/CopyCA";
 
 export function AnimatedFooter() {
   const bandRef = useRef<HTMLDivElement>(null);
@@ -136,7 +117,7 @@ export function AnimatedFooter() {
           </div>
           <div className="flex items-center gap-3">
             <span className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-neutral-600">CA</span>
-            <CopyCA />
+            <CopyCA variant="compact" />
           </div>
           <div className="flex items-center gap-6 font-mono text-xs">
             <a href="/privacy" className="hover:text-white transition-colors">Privacy Policy</a>

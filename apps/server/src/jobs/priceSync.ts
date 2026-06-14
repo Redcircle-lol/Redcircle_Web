@@ -61,7 +61,8 @@ async function runSync() {
   const withMint = activePosts.filter((p) => p.tokenMintAddress);
   if (!withMint.length) return;
 
-  console.log(`🔄 [PriceSync] Syncing ${withMint.length} token(s)…`);
+  const verbose = process.env.LOG_LEVEL === "debug";
+  if (verbose) console.log(`🔄 [PriceSync] Syncing ${withMint.length} token(s)…`);
 
   let updated = 0;
 
@@ -95,7 +96,7 @@ async function runSync() {
     if (i + BATCH_SIZE < withMint.length) await sleep(REQUEST_DELAY_MS);
   }
 
-  console.log(`✅ [PriceSync] Updated ${updated}/${withMint.length} token(s)`);
+  if (verbose) console.log(`✅ [PriceSync] Updated ${updated}/${withMint.length} token(s)`);
 }
 
 export function startPriceSyncJob() {

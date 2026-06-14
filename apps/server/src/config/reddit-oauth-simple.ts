@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm";
 
 const { users } = schema;
 
-const router = Router();
+const router: import("express").Router = Router();
 
 // Reddit OAuth config - All values MUST come from environment variables
 const REDDIT_CLIENT_ID = process.env.REDDIT_CLIENT_ID;
@@ -30,7 +30,6 @@ if (isUserAuthEnabled && REDDIT_CLIENT_ID && REDDIT_CLIENT_SECRET && REDDIT_REDI
     // URL encode the redirect_uri to handle special characters
     const encodedRedirectUri = encodeURIComponent(REDDIT_REDIRECT_URI);
     const authUrl = `https://www.reddit.com/api/v1/authorize?client_id=${REDDIT_CLIENT_ID}&response_type=code&state=${state}&redirect_uri=${encodedRedirectUri}&duration=permanent&scope=identity`;
-    console.log("🔴 Redirecting to Reddit OAuth:", authUrl);
     res.redirect(authUrl);
   });
 
@@ -53,8 +52,8 @@ if (isUserAuthEnabled && REDDIT_CLIENT_ID && REDDIT_CLIENT_SECRET && REDDIT_REDI
       body: `grant_type=authorization_code&code=${code}&redirect_uri=${REDDIT_REDIRECT_URI}`,
     });
 
-    const tokenData = await tokenResponse.json();
-    
+    const tokenData = await tokenResponse.json() as any;
+
     if (!tokenData.access_token) {
       throw new Error("No access token received");
     }
@@ -67,7 +66,7 @@ if (isUserAuthEnabled && REDDIT_CLIENT_ID && REDDIT_CLIENT_SECRET && REDDIT_REDI
       },
     });
 
-    const redditUser = await userResponse.json();
+    const redditUser = await userResponse.json() as any;
 
     // Check if user exists in our database
     const existingUser = await db
@@ -76,16 +75,15 @@ if (isUserAuthEnabled && REDDIT_CLIENT_ID && REDDIT_CLIENT_SECRET && REDDIT_REDI
       .where(eq(users.redditId, redditUser.id))
       .limit(1);
 
-    let user;
+    let user: typeof existingUser[0] | undefined;
     if (existingUser.length > 0) {
       // Update last login
       const [updatedUser] = await db
         .update(users)
         .set({ lastLoginAt: new Date() })
-        .where(eq(users.id, existingUser[0].id))
+        .where(eq(users.id, existingUser[0]!.id))
         .returning();
       user = updatedUser;
-      console.log("✅ User logged in:", user.username);
     } else {
       // Create new user
       const [newUser] = await db
@@ -98,15 +96,16 @@ if (isUserAuthEnabled && REDDIT_CLIENT_ID && REDDIT_CLIENT_SECRET && REDDIT_REDI
         })
         .returning();
       user = newUser;
-      console.log("✅ New user created:", user.username);
     }
+
+    if (!user) throw new Error("Failed to create or retrieve user");
 
     // Generate JWT token
     const JWT_SECRET = process.env.JWT_SECRET;
     if (!JWT_SECRET) {
       throw new Error('❌ JWT_SECRET is not set in environment variables');
     }
-    
+
     const token = jwt.sign(
       { userId: user.id },
       JWT_SECRET,
@@ -123,7 +122,7 @@ if (isUserAuthEnabled && REDDIT_CLIENT_ID && REDDIT_CLIENT_SECRET && REDDIT_REDI
   }
 });
 } else {
-  console.log('ℹ️ Reddit user authentication routes disabled');
+  console.warn('⚠️ Reddit user authentication routes disabled');
 }
 
 export default router;

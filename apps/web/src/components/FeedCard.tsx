@@ -1,7 +1,7 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { motion } from "motion/react";
 import { Link } from "@tanstack/react-router";
-import { cn, tokenSlug } from "@/lib/utils";
+import { cn, formatUsd, timeAgo, tokenSlug } from "@/lib/utils";
 import { ArrowUp, MessageSquare, ExternalLink, Copy, Check, Flame, Zap } from "lucide-react";
 
 // Live price data fetched in batch by the parent (RedditFeed) — one request
@@ -43,23 +43,8 @@ type FeedCardProps = {
   livePair?: LivePair;
 };
 
-function formatUsd(value: number): string {
-  if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(2)}M`;
-  if (value >= 1_000) return `$${(value / 1_000).toFixed(2)}K`;
-  return `$${value.toFixed(2)}`;
-}
-
 export default function FeedCard({ post, className, index = 0, livePair }: FeedCardProps) {
   const [copied, setCopied] = useState(false);
-
-  const timeAgo = useMemo(() => {
-    const diffMs = Date.now() - new Date(post.createdAt).getTime();
-    const diffMin = Math.max(1, Math.floor(diffMs / (1000 * 60)));
-    if (diffMin < 60) return `${diffMin}m`;
-    const diffHr = Math.floor(diffMin / 60);
-    if (diffHr < 24) return `${diffHr}h`;
-    return `${Math.floor(diffHr / 24)}d`;
-  }, [post.createdAt]);
 
   // Live values come from the parent's batch fetch; DB values are the fallback
   const liveValue = livePair?.fdv ?? livePair?.marketCap;
@@ -141,7 +126,7 @@ export default function FeedCard({ post, className, index = 0, livePair }: FeedC
             <span className="text-[10px] font-bold text-[#E8431C]">r/</span>
             <span className="text-[11px] font-semibold text-white/80">{post.subreddit}</span>
             <span className="text-white/30 text-[10px]">·</span>
-            <span className="text-[10px] font-mono text-white/40">{timeAgo}</span>
+            <span className="text-[10px] font-mono text-white/40">{timeAgo(post.createdAt)}</span>
           </div>
         </div>
 

@@ -27,13 +27,14 @@ function mapOrynthStatus(o: Orynth.LaunchStatus): DbStatus {
 
 // ─── Sync confirmed launch → posts table (feed) ──────────────────────────────
 // Parses subreddit from a reddit URL like https://www.reddit.com/r/solana/...
-function subredditFromUrl(url: string): string {
+function subredditFromUrl(url: string | null | undefined): string {
+  if (!url) return "reddit";
   const m = url.match(/reddit\.com\/r\/([^/?#]+)/i);
   return m?.[1] ?? "reddit";
 }
 
 async function syncLaunchToFeed(launch: LaunchRow) {
-  if (!launch.mintAddress || !launch.sourceId || !launch.sourceUrl) return;
+  if (!launch.mintAddress || !launch.sourceId || !launch.sourceUrl || !launch.sourceTitle || !launch.creatorUsername) return;
   try {
     const isReddit = launch.sourcePlatform === "reddit";
 

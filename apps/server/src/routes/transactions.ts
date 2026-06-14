@@ -5,7 +5,7 @@ import * as schema from "../db";
 import { eq, desc, and, sql } from "drizzle-orm";
 
 const { transactions, posts } = schema;
-const router = Router();
+const router: import("express").Router = Router();
 
 /**
  * GET /api/transactions
@@ -16,7 +16,12 @@ router.get("/", authenticateToken, async (req, res) => {
     const userId = (req as any).userId;
     const { limit = 50, offset = 0, type } = req.query;
 
-    let query = db
+    const conditions = [eq(transactions.userId, userId)];
+    if (type && (type === 'buy' || type === 'sell')) {
+      conditions.push(eq(transactions.type, type as string));
+    }
+
+    const userTransactions = await db
       .select({
         // Transaction fields
         transactionId: transactions.id,
@@ -40,22 +45,10 @@ router.get("/", authenticateToken, async (req, res) => {
       })
       .from(transactions)
       .leftJoin(posts, eq(transactions.postId, posts.id))
-      .where(eq(transactions.userId, userId))
+      .where(and(...conditions))
       .orderBy(desc(transactions.createdAt))
       .limit(parseInt(limit as string))
       .offset(parseInt(offset as string));
-
-    // Filter by type if specified
-    if (type && (type === 'buy' || type === 'sell')) {
-      query = query.where(
-        and(
-          eq(transactions.userId, userId),
-          eq(transactions.type, type as string)
-        )
-      ) as any;
-    }
-
-    const userTransactions = await query;
 
     // Get total count
     const [countResult] = await db
@@ -131,7 +124,7 @@ router.get("/stats", authenticateToken, async (req, res) => {
 router.get("/:id", authenticateToken, async (req, res) => {
   try {
     const userId = (req as any).userId;
-    const { id } = req.params;
+    const id: string = req.params["id"]!;
 
     const [transaction] = await db
       .select({

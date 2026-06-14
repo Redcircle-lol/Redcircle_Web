@@ -10,7 +10,6 @@ import postsRoutes from "./routes/posts";
 import portfolioRoutes from "./routes/portfolio";
 import transactionsRoutes from "./routes/transactions";
 import leaderboardRoutes from "./routes/leaderboard";
-import priceHistoryRoutes from "./routes/price-history";
 import waitlistRoutes from "./routes/waitlist";
 import launchesRoutes from "./routes/launches";
 import adminRoutes from "./routes/admin";
@@ -25,13 +24,21 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// CORS configuration - Allow all origins for development
+// CORS — list allowed origins via ALLOWED_ORIGINS env var (comma-separated) or fall back to localhost
+const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
+  : ["http://localhost:3001", "http://localhost:5173", "http://localhost:3000"];
+
 app.use(
-	cors({
-		origin: true, // Allow all origins
-		credentials: true,
-		methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-	}),
+  cors({
+    origin: (origin, cb) => {
+      // Allow server-to-server requests (no origin) and listed origins
+      if (!origin || ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+      cb(new Error(`Origin ${origin} not allowed by CORS`));
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  }),
 );
 
 // Public GET responses are identical for all users — let browsers/CDNs cache
@@ -49,7 +56,6 @@ app.use("/api/posts", postsRoutes);
 app.use("/api/portfolio", portfolioRoutes);
 app.use("/api/transactions", transactionsRoutes);
 app.use("/api/leaderboard", leaderboardRoutes);
-app.use("/api/price-history", priceHistoryRoutes);
 app.use("/api/waitlist", waitlistRoutes);
 app.use("/api/launches", launchesRoutes);
 app.use("/api/admin", adminRoutes);
@@ -127,7 +133,7 @@ app.get("/api/tokens/prices", async (req, res) => {
         if (hit) {
           const { attrs, pool } = hit;
           const pair = {
-            priceUsd:    attrs.price_usd ?? "0",
+            priceUsd:    attrs.price_usd ?? pool?.base_token_price_usd ?? "0",
             fdv:         parseFloat(attrs.fdv_usd ?? "0"),
             marketCap:   parseFloat(attrs.market_cap_usd ?? attrs.fdv_usd ?? "0"),
             volume:      { h24: parseFloat(attrs.volume_usd?.h24 ?? "0") },
@@ -183,7 +189,7 @@ app.get("/api/tokens/:mint/price", async (req, res) => {
     const topPool = pools[0]?.attributes;
 
     const pair = {
-      priceUsd:    attrs.price_usd ?? "0",
+      priceUsd:    attrs.price_usd ?? topPool?.base_token_price_usd ?? "0",
       fdv:         parseFloat(attrs.fdv_usd ?? "0"),
       marketCap:   parseFloat(attrs.market_cap_usd ?? attrs.fdv_usd ?? "0"),
       volume:      { h24: parseFloat(attrs.volume_usd?.h24 ?? "0") },
