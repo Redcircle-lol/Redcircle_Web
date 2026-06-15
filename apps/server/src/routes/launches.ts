@@ -6,6 +6,7 @@ import { db } from "../db";
 import { launches, posts } from "../db";
 import * as Orynth from "../services/orynth.service";
 import { RedditService } from "../services/reddit.service";
+import { XService } from "../services/x.service";
 import { broadcastLaunch } from "../services/ws.service";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
@@ -29,53 +30,71 @@ function mapOrynthStatus(o: Orynth.LaunchStatus): DbStatus {
 function subredditFromUrl(url: string | null | undefined): string {
   if (!url) return "reddit";
   const m = url.match(/reddit\.com\/r\/([^/?#]+)/i);
-  return m ? m[1] ?? "reddit" : "reddit";
+  return m?.[1] ?? "reddit";
 }
 
-async function syncLaunchToFeed(launch: LaunchRow) {
+// Shared insert payload for both platforms
+function buildFeedInsert(launch: LaunchRow, platform: string, subreddit: string, upvotes: number, comments: number) {
+  return {
+    ...(launch.postId ? { id: launch.postId } : {}),
+    platform,
+    redditPostId:     launch.sourceId!,
+    redditUrl:        launch.sourceUrl!,
+    title:            launch.sourceTitle!,
+    author:           launch.creatorUsername!,
+    subreddit,
+    thumbnail:        launch.tokenImageUrl ?? undefined,
+    upvotes,
+    comments,
+    tokenSupply:      1_000_000_000,
+    initialPrice:     "0",
+    currentPrice:     "0",
+    tokenMintAddress: launch.mintAddress!,
+    tokenSymbol:      launch.tokenSymbol,
+    tokenSlug:        launch.tokenSlug ?? undefined,
+    description:      launch.tokenDescription ?? undefined,
+    status:           "active" as const,
+    creatorId:        launch.launcherId ?? null,
+  };
+}
+
+async function syncRedditLaunchToFeed(launch: LaunchRow) {
   if (!launch.mintAddress || !launch.sourceId || !launch.sourceUrl || !launch.sourceTitle || !launch.creatorUsername) return;
   try {
     const redditData = await RedditService.fetchPost(launch.sourceUrl).catch(() => null);
-    await db.insert(posts).values({
-      ...(launch.postId ? { id: launch.postId } : {}),
-      redditPostId:     launch.sourceId,
-      redditUrl:        launch.sourceUrl,
-      title:            launch.sourceTitle,
-      author:           launch.creatorUsername,
-      subreddit:        subredditFromUrl(launch.sourceUrl),
-      thumbnail:        launch.tokenImageUrl ?? undefined,
-      upvotes:          redditData?.upvotes ?? 0,
-      comments:         redditData?.num_comments ?? 0,
-      tokenSupply:      1_000_000_000,
-      initialPrice:     "0",
-      currentPrice:     "0",
-      tokenMintAddress: launch.mintAddress,
-      tokenSymbol:      launch.tokenSymbol,
-      tokenSlug:        launch.tokenSlug ?? undefined,
-      description:      launch.tokenDescription ?? undefined,
-      status:           "active",
-      creatorId:        launch.launcherId ?? null,
-    }).onConflictDoUpdate({
+    const upvotes    = redditData?.upvotes ?? 0;
+    const comments   = redditData?.num_comments ?? 0;
+    const values     = buildFeedInsert(launch, "reddit", subredditFromUrl(launch.sourceUrl), upvotes, comments);
+    await db.insert(posts).values(values).onConflictDoUpdate({
       target: posts.redditPostId,
-      set: {
-        tokenMintAddress: launch.mintAddress,
-        tokenSymbol:      launch.tokenSymbol,
-        tokenSlug:        launch.tokenSlug ?? undefined,
-        status:           "active",
-        upvotes:          redditData?.upvotes ?? 0,
-        comments:         redditData?.num_comments ?? 0,
-        updatedAt:        new Date(),
-      },
+      set: { tokenMintAddress: launch.mintAddress, tokenSymbol: launch.tokenSymbol, tokenSlug: launch.tokenSlug ?? undefined, status: "active", upvotes, comments, updatedAt: new Date() },
     });
-  } catch (e) {
-  }
+  } catch { /* feed sync is best-effort; never throws to caller */ }
+}
+
+async function syncXLaunchToFeed(launch: LaunchRow) {
+  if (!launch.mintAddress || !launch.sourceId || !launch.sourceUrl || !launch.sourceTitle || !launch.creatorUsername) return;
+  try {
+    const xData   = await XService.fetchPost(launch.sourceUrl).catch(() => null);
+    const upvotes = xData?.likes ?? 0;
+    const comments = xData?.replies ?? 0;
+    const values   = buildFeedInsert(launch, "x", "x", upvotes, comments);
+    await db.insert(posts).values(values).onConflictDoUpdate({
+      target: posts.redditPostId,
+      set: { tokenMintAddress: launch.mintAddress, tokenSymbol: launch.tokenSymbol, tokenSlug: launch.tokenSlug ?? undefined, status: "active", upvotes, comments, updatedAt: new Date() },
+    });
+  } catch { /* feed sync is best-effort; never throws to caller */ }
 }
 
 // ─── Fire-on-confirmation side effects ───────────────────────────────────────
 // Called exactly once when a launch transitions to `confirmed`. Syncs the feed
 // and broadcasts to WebSocket consumers (e.g. the auto-buy Telegram bot).
 async function onLaunchConfirmed(launch: LaunchRow) {
-  await syncLaunchToFeed(launch);
+  if (launch.sourcePlatform === "x") {
+    await syncXLaunchToFeed(launch);
+  } else {
+    await syncRedditLaunchToFeed(launch);
+  }
   if (!launch.mintAddress) return;
   broadcastLaunch({
     type:            "launch.confirmed",
@@ -176,6 +195,9 @@ router.get("/quote", async (_req, res) => {
 router.post("/prepare", async (req: Request, res: Response) => {
   try {
     const body = z.object({
+      // Platform of the source post. Defaults to reddit for backward compatibility.
+      // The reddit* field names below carry the source data for both platforms.
+      platform:        z.enum(["reddit", "x"]).default("reddit"),
       redditPostId:    z.string().min(1),
       redditUrl:       z.string().url(),
       redditTitle:     z.string().min(1),
@@ -188,9 +210,19 @@ router.post("/prepare", async (req: Request, res: Response) => {
       curatorWalletAddress: z.string().min(32).max(44).optional(),
     }).parse(req.body);
 
-    // Server wallet pays — one token per Reddit post
+    const platform = body.platform;
+
+    // Server wallet pays — one token per source post.
+    // Namespace the externalId by platform so a reddit and x post can never collide
+    // (reddit keeps its legacy `redcircle:<id>` form for backward compatibility).
     const payerWalletAddress = Orynth.getPayerPublicKey();
-    const externalId = `redcircle:${body.redditPostId}`;
+    const externalId = platform === "reddit"
+      ? `redcircle:${body.redditPostId}`
+      : `redcircle:${platform}:${body.redditPostId}`;
+
+    const profileUrl = platform === "reddit"
+      ? `https://reddit.com/u/${body.redditAuthor}`
+      : `https://x.com/${body.redditAuthor}`;
 
     // Idempotency — if already on-chain, return existing launchId for polling
     const [existing] = await db.select().from(launches)
@@ -213,16 +245,16 @@ router.post("/prepare", async (req: Request, res: Response) => {
       externalId: orynthExternalId,
       payerWalletAddress,
       source: {
-        platform: "reddit",
+        platform,
         url:      body.redditUrl,
         id:       body.redditPostId,
         type:     "post",
       },
       creator: {
-        platform:       "reddit",
+        platform,
         username:       body.redditAuthor,
         platformUserId: body.redditAuthor,
-        profileUrl:     `https://reddit.com/u/${body.redditAuthor}`,
+        profileUrl,
       },
       name:        body.tokenName,
       symbol:      body.tokenSymbol.toUpperCase(),
@@ -247,7 +279,7 @@ router.post("/prepare", async (req: Request, res: Response) => {
       externalId,
       orynthLaunchId:        orynthLaunch.id,
       launcherId:            null,
-      sourcePlatform:        "reddit",
+      sourcePlatform:        platform,
       sourceId:              body.redditPostId,
       sourceUrl:             body.redditUrl,
       sourceTitle:           body.redditTitle,

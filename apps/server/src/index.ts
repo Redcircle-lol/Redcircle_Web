@@ -6,6 +6,7 @@ import { startPriceSyncJob } from "./jobs/priceSync";
 import { initLaunchWebSocket } from "./services/ws.service";
 import { startTrendingSyncJob } from "./jobs/trendingSync";
 import redditAuthRoutes from "./config/reddit-oauth-simple";
+import xAuthRoutes from "./config/x-oauth";
 import postsRoutes from "./routes/posts";
 import portfolioRoutes from "./routes/portfolio";
 import transactionsRoutes from "./routes/transactions";
@@ -52,6 +53,7 @@ app.use((req, res, next) => {
 
 // Routes
 app.use(redditAuthRoutes);
+app.use(xAuthRoutes);
 app.use("/api/posts", postsRoutes);
 app.use("/api/portfolio", portfolioRoutes);
 app.use("/api/transactions", transactionsRoutes);
@@ -211,12 +213,17 @@ app.get("/api/tokens/:mint/price", async (req, res) => {
 
 // ── Image proxy (avoids CORS on Reddit/external images) ───────────────────────
 const ALLOWED_IMAGE_HOSTS = new Set([
+  // Reddit
   "www.redditstatic.com",
   "redditstatic.com",
   "external-preview.redd.it",
   "preview.redd.it",
   "i.redd.it",
   "styles.redditmedia.com",
+  // X (Twitter)
+  "pbs.twimg.com",
+  "abs-0.twimg.com",
+  "ton.twimg.com",
 ]);
 
 app.get("/api/image-proxy", async (req, res) => {

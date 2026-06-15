@@ -1,14 +1,21 @@
 import { Router } from "express";
 import { RedditService } from "../services/reddit.service";
+import { XService, XServiceError } from "../services/x.service";
 import { db } from "../db";
 import * as schema from "../db";
 import { eq, desc, asc, and, gte, ilike, inArray, or } from "drizzle-orm";
 import * as Orynth from "../services/orynth.service";
 import { authenticateToken } from "../middleware/auth";
-import { resolvePostById } from "../db/helpers";
+import { resolvePostById, matchesPostAuthor } from "../db/helpers";
 
 const { posts, launches } = schema;
 const router: import("express").Router = Router();
+
+// Token-status values accepted by status filters (matches tokenizationStatusEnum).
+const POST_STATUSES = ["pending", "minting", "active", "failed", "delisted"] as const;
+type PostStatus = (typeof POST_STATUSES)[number];
+const isPostStatus = (v: unknown): v is PostStatus =>
+  typeof v === "string" && (POST_STATUSES as readonly string[]).includes(v);
 
 /**
  * POST /api/posts/fetch-reddit
@@ -16,7 +23,7 @@ const router: import("express").Router = Router();
  */
 router.post("/fetch-reddit", async (req, res) => {
   try {
-    const { url } = req.body;
+    const url = typeof req.body?.url === "string" ? req.body.url.trim() : "";
 
     if (!url) {
       return res.status(400).json({ error: "Reddit URL is required" });
@@ -144,6 +151,130 @@ Reply with ONLY a JSON object, no markdown:
 });
 
 /**
+ * POST /api/posts/fetch-x
+ * Fetch X (Twitter) post details (preview before tokenization).
+ * Mirrors /fetch-reddit so the frontend can tokenize an X post the same way.
+ */
+router.post("/fetch-x", async (req, res) => {
+  try {
+    const url = typeof req.body?.url === "string" ? req.body.url.trim() : "";
+
+    if (!url) {
+      return res.status(400).json({ error: "X (Twitter) URL is required" });
+    }
+
+    // Fetch tweet from X
+    const xPost = await XService.fetchPost(url);
+
+    // Validate post
+    const validation = XService.validatePost(xPost);
+    if (!validation.valid) {
+      return res.status(400).json({
+        error: validation.reason || "Post is not valid for tokenization",
+      });
+    }
+
+    // Fallback values (used if Gemini is unavailable)
+    let suggestedName        = xPost.text.split(/\s+/).slice(0, 3).join(" ").slice(0, 32) || xPost.authorName.slice(0, 32);
+    let suggestedSymbol      = xPost.author.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8) || "XPOST";
+    let suggestedDescription = "";
+    let suggestedBy          = "fallback";
+
+    // Gemini name/ticker/pitch suggestion (best-effort, runs in parallel-friendly block)
+    const geminiKey = process.env.GEMINI_API_KEY;
+    const hasText   = !!xPost.text?.trim();
+    const hasImage  = !!xPost.thumbnail?.startsWith("https://");
+
+    if (geminiKey && (hasText || hasImage)) {
+      try {
+        const prompt = `You are a crypto memecoin naming expert. Create a viral, punchy Solana token name, ticker, and trading pitch for this X (Twitter) post.
+
+Rules:
+- name: max 32 chars, short and catchy (2-3 words max), memecoin energy, captures the vibe/joke/theme
+- symbol: max 8 chars, uppercase, no spaces, memorable (like DOGE, PEPE, SHIB, WIF)
+- description: answer "why should people trade this token?" in 1-2 punchy sentences — make it hype, fun, and reference the post's theme. Write it like a memecoin pitch, first person plural ("we", "this token")
+- Do NOT just copy the post words for the name — be creative, funny, or clever
+${hasImage ? "- Use the attached image to understand the visual vibe of the post" : ""}
+
+Post text: "${xPost.text}"
+Author: @${xPost.author} (${xPost.authorName})
+Likes: ${xPost.likes}, Retweets: ${xPost.retweets}
+
+Reply with ONLY a JSON object, no markdown:
+{"name":"<name>","symbol":"<SYMBOL>","description":"<trading pitch>"}`;
+
+        const imageBase64 = hasImage
+          ? await fetch(xPost.thumbnail!, { signal: AbortSignal.timeout(5000) })
+              .then(r => r.arrayBuffer())
+              .then(buf => Buffer.from(buf).toString("base64"))
+              .catch(() => null)
+          : null;
+
+        const parts: any[] = [{ text: prompt }];
+        if (imageBase64) parts.push({ inline_data: { mime_type: "image/jpeg", data: imageBase64 } });
+
+        const geminiRes = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${geminiKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ contents: [{ parts }] }),
+            signal: AbortSignal.timeout(15000),
+          }
+        );
+        const geminiData = await geminiRes.json() as any;
+        if (geminiRes.ok) {
+          const raw = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+          const jsonMatch = raw.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0]);
+            if (parsed.name)        suggestedName        = String(parsed.name).slice(0, 32);
+            if (parsed.symbol)      suggestedSymbol      = String(parsed.symbol).toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
+            if (parsed.description) suggestedDescription = String(parsed.description).slice(0, 300);
+            suggestedBy = "gemini";
+          }
+        } else {
+          console.warn("⚠️ Gemini error:", geminiRes.status, JSON.stringify(geminiData?.error ?? geminiData));
+        }
+      } catch (e) {
+        console.warn("⚠️ Gemini failed, using fallback:", e);
+      }
+    }
+
+    res.json({
+      success: true,
+      suggestedName,
+      suggestedSymbol,
+      suggestedDescription,
+      suggestedBy,
+      post: {
+        platform: "x",
+        xPostId: xPost.id,
+        title: (xPost.text || "").trim() || `Post by @${xPost.author}`,
+        author: xPost.author,
+        authorName: xPost.authorName,
+        url: xPost.url,
+        thumbnail: xPost.thumbnail,
+        content: xPost.text,
+        likes: xPost.likes,
+        retweets: xPost.retweets,
+        replies: xPost.replies,
+        views: xPost.views,
+        isVideo: xPost.isVideo,
+        createdAt: new Date(xPost.createdUtc * 1000).toISOString(),
+        age: XService.getPostAge(xPost.createdUtc),
+      },
+    });
+  } catch (error) {
+    // Relay the precise status from the service (400/404/429/5xx) when available.
+    const status  = error instanceof XServiceError ? error.statusCode : 500;
+    const message = error instanceof Error ? error.message : "Failed to fetch X post";
+    if (status >= 500) console.error("❌ Error fetching X post:", message);
+    res.status(status).json({ error: message });
+  }
+});
+
+/**
  * GET /api/posts/search
  * Advanced search with multiple filters
  * Query params:
@@ -184,10 +315,10 @@ router.get("/search", async (req, res) => {
     const conditions: any[] = [];
 
     // Status filter
-    if (status && status !== "all") {
-      conditions.push(eq(posts.status, status as any));
+    if (isPostStatus(status)) {
+      conditions.push(eq(posts.status, status));
     }
-    
+
     // Subreddit — case-insensitive partial match
     if (subreddit) {
       conditions.push(ilike(posts.subreddit, `%${subreddit}%`));
@@ -338,6 +469,7 @@ router.get("/", async (req, res) => {
       limit = 50,
       offset = 0,
       subreddit,
+      platform,               // "reddit" | "x" — omit for all
       sortBy = "tokenizedAt", // tokenizedAt, upvotes, marketCap, totalVolume, currentPrice
       order = "desc",         // asc | desc
       since,                  // "1h" | "4h" | "24h" | "7d" | "30d"
@@ -350,11 +482,14 @@ router.get("/", async (req, res) => {
 
     // Apply filters
     const conditions: any[] = [];
-    if (status && status !== "all") {
-      conditions.push(eq(posts.status, status as any));
+    if (isPostStatus(status)) {
+      conditions.push(eq(posts.status, status));
     }
     if (subreddit) {
       conditions.push(ilike(posts.subreddit, `%${subreddit}%`));
+    }
+    if (platform && (platform === "reddit" || platform === "x")) {
+      conditions.push(eq(posts.platform, platform));
     }
 
     // Time window filter on tokenizedAt
@@ -555,7 +690,7 @@ router.get("/:id/creator-earnings", async (req, res) => {
 
 /**
  * POST /api/posts/:id/claim-creator-earnings
- * Only the original Reddit post author (matched by Reddit username) can trigger this.
+ * Only the original post author can trigger this (Reddit username or X handle).
  * Calls Orynth to claim accrued USDC trading fees for the pool into the platform wallet.
  * (The /api/reward endpoint then handles forwarding the creator's share to their wallet.)
  */
@@ -574,8 +709,8 @@ router.post("/:id/claim-creator-earnings", authenticateToken, async (req, res) =
     const post = await resolvePostById(id);
     if (!post) return res.status(404).json({ success: false, error: "Post not found" });
 
-    // 3. Only the original Reddit post author can claim
-    if (!dbUser.username || dbUser.username.toLowerCase() !== post.author.toLowerCase()) {
+    // 3. Only the original post author can claim
+    if (!matchesPostAuthor(post, dbUser)) {
       return res.status(403).json({ success: false, error: "Only the original post creator can claim earnings" });
     }
 

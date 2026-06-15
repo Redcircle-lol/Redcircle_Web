@@ -20,6 +20,7 @@ export type FeedPost = {
   upvotes: number;
   comments: number;
   createdAt: string;
+  platform?: "reddit" | "x";
   imageUrl?: string;
   flair?: string;
   tokenPrice?: number;
@@ -54,7 +55,8 @@ export default function FeedCard({ post, className, index = 0, livePair }: FeedC
   const dbMcap = post.marketCap && post.marketCap > 0 ? formatUsd(post.marketCap) : null;
   const mcapDisplay = liveMcap ?? dbMcap ?? "—";
   const hasMcap = mcapDisplay !== "—";
-  const initial = (post.subreddit ?? "R").slice(0, 1).toUpperCase();
+  const isX = post.platform === "x";
+  const initial = isX ? "𝕏" : (post.subreddit ?? "R").slice(0, 1).toUpperCase();
   const isNew = Date.now() - new Date(post.createdAt).getTime() < 24 * 60 * 60 * 1000;
   const isUp = h24Change == null || h24Change >= 0;
 
@@ -121,10 +123,19 @@ export default function FeedCard({ post, className, index = 0, livePair }: FeedC
             </span>
           )}
 
-          {/* Subreddit + time — bottom-left over gradient */}
+          {/* Source platform + time — bottom-left over gradient */}
           <div className="absolute bottom-2 left-3 flex items-center gap-1.5">
-            <span className="text-[10px] font-bold text-[#E8431C]">r/</span>
-            <span className="text-[11px] font-semibold text-white/80">{post.subreddit}</span>
+            {isX ? (
+              <>
+                <span className="text-[11px] font-bold text-white/60">𝕏</span>
+                <span className="text-[11px] font-semibold text-white/80">@{post.author}</span>
+              </>
+            ) : (
+              <>
+                <span className="text-[10px] font-bold text-[#E8431C]">r/</span>
+                <span className="text-[11px] font-semibold text-white/80">{post.subreddit}</span>
+              </>
+            )}
             <span className="text-white/30 text-[10px]">·</span>
             <span className="text-[10px] font-mono text-white/40">{timeAgo(post.createdAt)}</span>
           </div>
@@ -178,7 +189,9 @@ export default function FeedCard({ post, className, index = 0, livePair }: FeedC
             </div>
           </div>
           {post.author && (
-            <span className="text-[10px] font-mono text-white/20 truncate max-w-[100px] pb-px">u/{post.author}</span>
+            <span className="text-[10px] font-mono text-white/20 truncate max-w-[100px] pb-px">
+              {isX ? `@${post.author}` : `u/${post.author}`}
+            </span>
           )}
         </div>
 
@@ -212,7 +225,7 @@ export default function FeedCard({ post, className, index = 0, livePair }: FeedC
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
               className="flex items-center justify-center h-[30px] w-[30px] shrink-0 rounded-lg bg-[#E8431C]/10 hover:bg-[#E8431C]/25 border border-[#E8431C]/20 hover:border-[#E8431C]/50 text-[#E8431C]/70 hover:text-[#E8431C] transition-all"
-              title="View on Reddit"
+              title={isX ? "View on X" : "View on Reddit"}
             >
               <ExternalLink className="h-3 w-3" />
             </a>

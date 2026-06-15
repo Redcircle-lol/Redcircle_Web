@@ -8,7 +8,7 @@ Launching a token is free. Trading carries a **2.0% fee per trade**, split betwe
 | Meteora            | 0.40% | Liquidity / AMM protocol fee.                           |
 | Orynth             | 0.55% | Launch & pool infrastructure partner.                   |
 | RedCircle          | 0.50% | Platform fee that sustains the service.                 |
-| Creator            | 0.40% | Paid to the original Reddit post author.                |
+| Creator            | 0.40% | Paid to the original post author (Reddit or X).         |
 | Curator            | 0.15% | Paid to the wallet registered at launch (new posts).    |
 | **Total per trade**| **2.0%** | On top of standard Solana network fees.             |
 

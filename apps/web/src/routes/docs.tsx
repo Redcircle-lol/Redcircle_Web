@@ -27,11 +27,11 @@ export const Route = createFileRoute("/docs")({
   component: DocsPage,
   head: () => ({
     meta: [
-      { title: "Docs — RedCircle | Tokenize viral Reddit posts on Solana" },
+      { title: "Docs — RedCircle | Tokenize viral posts on Solana" },
       {
         name: "description",
         content:
-          "Complete documentation for RedCircle: how Reddit posts become tradeable Solana tokens, creator & curator rewards, the fee model, architecture, and the public Partner API.",
+          "Complete documentation for RedCircle: how Reddit & X posts become tradeable Solana tokens, creator & curator rewards, the fee model, architecture, and the public Partner API.",
       },
     ],
   }),
@@ -160,7 +160,7 @@ function DocsPage() {
               RedCircle Docs
             </h1>
             <p className="mt-2 max-w-3xl text-sm leading-relaxed text-neutral-400 sm:mt-3 sm:text-base md:text-lg">
-              Turn viral Reddit posts into tradeable Solana tokens — launch, trade,
+              Turn viral Reddit & X posts into tradeable Solana tokens — launch, trade,
               earn rewards, and use the Partner API.
             </p>
           </motion.div>

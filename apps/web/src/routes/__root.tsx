@@ -24,11 +24,11 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 	head: () => ({
 		meta: [
 			{
-				title: "Redcircle - Turn viral Reddit posts to tradeable markets powered by Solana",
+				title: "Redcircle - Turn viral posts into tradeable markets powered by Solana",
 			},
 			{
 				name: "description",
-				content: "Redcircle - Turn viral Reddit posts into tradeable markets powered by Solana blockchain.",
+				content: "Redcircle - Turn viral Reddit & X posts into tradeable markets powered by Solana blockchain.",
 			},
 		],
 		links: [

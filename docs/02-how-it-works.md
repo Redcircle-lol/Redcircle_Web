@@ -1,10 +1,10 @@
 # How it works
 
-A RedCircle token moves through four stages, from a viral Reddit thread to a tradeable market with ongoing rewards.
+A RedCircle token moves through four stages, from a viral Reddit or X post to a tradeable market with ongoing rewards.
 
 ## 1. Discover
 
-Browse the live feed of hot and trending Reddit posts, or paste any Reddit URL. RedCircle continuously syncs trending content so the best candidates surface first.
+Browse the live feed of tokenized posts from Reddit & X, or paste any Reddit or X post URL. RedCircle continuously syncs trending content so the best candidates surface first.
 
 ## 2. Tokenize
 

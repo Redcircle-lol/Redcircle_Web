@@ -75,7 +75,7 @@ function SocialPage() {
           <img src="/logo.png" alt="RedCircle" className="w-12 h-12 rounded-2xl" />
           <div className="text-center">
             <h1 className="text-xl font-bold text-white tracking-tight">RedCircle</h1>
-            <p className="text-sm text-white/40 mt-0.5">Tokenize viral Reddit posts on Solana</p>
+            <p className="text-sm text-white/40 mt-0.5">Tokenize viral Reddit & X posts on Solana</p>
           </div>
         </div>
 

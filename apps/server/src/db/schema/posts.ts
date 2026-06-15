@@ -12,17 +12,20 @@ export const tokenizationStatusEnum = pgEnum("tokenization_status", [
 
 export const posts = pgTable("posts", {
   id: uuid("id").primaryKey().defaultRandom(),
-  
-  // Reddit Post Info
-  redditPostId: text("reddit_post_id").unique().notNull(), // Reddit's unique post ID
-  redditUrl: text("reddit_url").notNull(),
+
+  // Source platform — "reddit" | "x". Determines how other source fields are interpreted.
+  platform: text("platform").default("reddit").notNull(),
+
+  // Source Post Info (Reddit or X)
+  redditPostId: text("reddit_post_id").unique().notNull(), // Reddit post ID or tweet ID
+  redditUrl: text("reddit_url").notNull(),                 // Source post URL
   title: text("title").notNull(),
-  author: text("author").notNull(), // Reddit username of original poster
-  subreddit: text("subreddit").notNull(),
+  author: text("author").notNull(),                        // Reddit username or X handle (no @)
+  subreddit: text("subreddit").notNull(),                  // Subreddit name (Reddit) or "x" (X)
   thumbnail: text("thumbnail"),
   content: text("content"), // Post body/selftext if available
   
-  // Reddit Metrics (snapshot at tokenization time)
+  // Engagement metrics — upvotes=likes, comments=replies for X posts
   upvotes: integer("upvotes").default(0).notNull(),
   comments: integer("comments").default(0).notNull(),
   redditCreatedAt: timestamp("reddit_created_at", { withTimezone: true }),

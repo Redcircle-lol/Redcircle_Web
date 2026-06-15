@@ -10,6 +10,6 @@ On-chain transactions are irreversible. Review amounts, price impact, and the de
 
 ## Risk disclosure
 
-**Trading is risky.** Token values are highly volatile and can go to zero. Nothing on RedCircle is investment advice. Tokens represent engagement with Reddit posts and do not grant ownership, rights, or control over the underlying content.
+**Trading is risky.** Token values are highly volatile and can go to zero. Nothing on RedCircle is investment advice. Tokens represent engagement with social posts (Reddit & X) and do not grant ownership, rights, or control over the underlying content.
 
 See the [Terms of Service](/terms) and [Privacy Policy](/privacy) for full details.

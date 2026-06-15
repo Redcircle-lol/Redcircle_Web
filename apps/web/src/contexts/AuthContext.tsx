@@ -22,26 +22,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const storedToken = getAuthToken();
     const storedUser = getUser();
 
-    console.log("🔐 AuthContext Loading:", { storedToken: !!storedToken, storedUser });
-
     if (storedToken && storedUser) {
       setTokenState(storedToken);
       setUserState(storedUser);
-      console.log("✅ Auth restored from localStorage");
-    } else {
-      console.log("❌ No auth data found in localStorage");
     }
 
     setIsLoading(false);
   }, []);
 
   const login = (newToken: string, newUser: User) => {
-    console.log("🔐 Login called with:", { token: !!newToken, user: newUser });
     setAuthToken(newToken);
     setUser(newUser);
     setTokenState(newToken);
     setUserState(newUser);
-    console.log("✅ Auth stored in localStorage");
   };
 
   const logout = () => {

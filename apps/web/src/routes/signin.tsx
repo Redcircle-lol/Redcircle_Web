@@ -34,20 +34,17 @@ function SignIn() {
     const error = params.get("error");
 
     if (error) {
-      console.error("❌ Authentication error:", error);
-
-      // Show user-friendly error messages
       const errorMessages: { [key: string]: string } = {
-        auth_failed: "Reddit authentication failed. This usually means:\n\n• The users table doesn't exist (run: pnpm db:push)\n• Database connection failed (check DATABASE_URL)\n\nCheck the backend terminal for detailed error logs.",
-        no_user: "Reddit authentication succeeded but no user was returned. Check backend logs.",
-        session_failed: "Failed to create session. Please try again.",
-        server_error: "Server error occurred. Please try again.",
+        auth_failed:      "Reddit authentication failed. Please try again.",
+        no_user:          "Reddit authentication succeeded but no user was returned. Please try again.",
+        x_auth_failed:    "X sign-in failed. Please try again.",
+        x_state_invalid:  "X sign-in session expired or invalid. Please try again.",
+        session_failed:   "Failed to create session. Please try again.",
+        server_error:     "Server error occurred. Please try again.",
       };
 
       const message = errorMessages[error] || `Unknown error: ${error}`;
-      toast.error("Authentication error", {
-        description: `${message}\n\nCheck your backend terminal for detailed error logs.`,
-      });
+      toast.error("Authentication error", { description: message });
 
       // Clean up URL
       window.history.replaceState({}, document.title, "/signin");
@@ -57,12 +54,7 @@ function SignIn() {
     if (token && userStr) {
       try {
         const user = JSON.parse(decodeURIComponent(userStr));
-
-        console.log("🔐 OAuth callback received - logging in user:", user.username);
-        // Use auth context to log in
         login(token, user);
-
-        console.log("✅ Login successful, redirecting to dashboard...");
 
         // Clean up URL immediately to prevent double processing
         window.history.replaceState({}, document.title, "/signin");
@@ -71,23 +63,20 @@ function SignIn() {
           setTimeout(() => {
             navigate({ to: redirect || "/" });
         }, 300);
-      } catch (err) {
-        console.error("❌ Error parsing user data:", err);
+      } catch {
         toast.error("Failed to complete sign in", {
-          description: "We couldn't parse the user data from Reddit. Please try again.",
+          description: "We couldn't complete sign in. Please try again.",
         });
       }
     }
   }, [login, navigate, redirect]);
 
   const startRedditSignIn = () => {
-    console.log("🔴 Reddit sign-in button clicked!");
+    window.location.href = `${getApiUrl()}/auth/reddit`;
+  };
 
-    const apiUrl = getApiUrl();
-    console.log("🔴 Backend URL:", apiUrl);
-    console.log("🔴 Redirecting to:", `${apiUrl}/auth/reddit`);
-
-    window.location.href = `${apiUrl}/auth/reddit`;
+  const startXSignIn = () => {
+    window.location.href = `${getApiUrl()}/auth/x`;
   };
 
   return (
@@ -124,6 +113,7 @@ function SignIn() {
         },
       ]}
       onRedditSignIn={startRedditSignIn}
+      onXSignIn={startXSignIn}
     />
   );
 }

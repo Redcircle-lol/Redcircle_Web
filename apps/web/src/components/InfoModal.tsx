@@ -40,7 +40,7 @@ export default function InfoModal({ open, onClose }: InfoModalProps) {
               <div className="text-center">
                 <h3 className="text-sm sm:text-lg font-bold text-[#FF4500] mb-1">What is RedCircle?</h3>
                 <p className="text-xs sm:text-sm text-white/70 leading-relaxed">
-                  RedCircle turns viral Reddit posts into tradeable Solana tokens.
+                  RedCircle turns viral Reddit & X posts into tradeable Solana tokens.
                   Creators earn USDC, curators get rewarded, and anyone can trade on Jupiter DEX.
                 </p>
               </div>
@@ -48,7 +48,7 @@ export default function InfoModal({ open, onClose }: InfoModalProps) {
               <div>
                 <h3 className="text-sm sm:text-lg font-bold text-[#FF4500] text-center mb-1.5">How it works</h3>
                 <ul className="space-y-1 sm:space-y-1.5 text-xs sm:text-sm text-white/70">
-                  <li className="flex items-start gap-2"><span className="text-[#FF4500] shrink-0">→</span>Browse hot Reddit posts and launch a token in one click</li>
+                  <li className="flex items-start gap-2"><span className="text-[#FF4500] shrink-0">→</span>Browse viral Reddit & X posts and launch a token in one click</li>
                   <li className="flex items-start gap-2"><span className="text-[#FF4500] shrink-0">→</span>Server pays the gas — no SOL needed to launch</li>
                   <li className="flex items-start gap-2"><span className="text-[#FF4500] shrink-0">→</span>Token goes live on Solana via a Meteora liquidity pool</li>
                   <li className="flex items-start gap-2"><span className="text-[#FF4500] shrink-0">→</span>Trade instantly on Jupiter DEX with real price discovery</li>

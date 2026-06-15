@@ -26,7 +26,7 @@ type SearchBarProps = {
 
 export default function SearchBar({
   onSearch,
-  placeholder = "search the trenches — posts, tokens, subreddits…",
+  placeholder = "search the trenches — posts, tokens, communities…",
   showFilters = true,
   className,
 }: SearchBarProps) {
@@ -151,11 +151,11 @@ export default function SearchBar({
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-medium text-white/40 uppercase tracking-wider">
-                    Subreddit
+                    Community / Account
                   </label>
                   <Input
                     type="text"
-                    placeholder="e.g., cryptocurrency"
+                    placeholder="e.g., cryptocurrency, elonmusk"
                     value={filters.subreddit || ""}
                     onChange={(e) =>
                       setFilters({ ...filters, subreddit: e.target.value || undefined })

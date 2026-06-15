@@ -6,15 +6,15 @@ No. RedCircle covers the launch cost and signs the transaction server-side, so l
 
 ## Can I launch a post I didn't write?
 
-Yes — curation is a core feature. The original Reddit author can always claim creator rewards later by proving their identity, regardless of who launched it. As the launcher, you can register a curator wallet to earn the curator share.
+Yes — curation is a core feature. The original post author (Reddit or X) can always claim creator rewards later by proving their identity, regardless of who launched it. As the launcher, you can register a curator wallet to earn the curator share.
 
 ## How do I claim my rewards?
 
-Creators sign in with the Reddit account that authored the post and submit a wallet to receive USDC. Curators claim by proving control of the wallet registered at launch. Both are paid on-chain in USDC.
+Creators sign in with the platform account that authored the post (Reddit or X) and submit a wallet to receive USDC. Curators claim by proving control of the wallet registered at launch. Both are paid on-chain in USDC.
 
 ## What happens if a post is already tokenized?
 
-Each Reddit post maps to exactly one token. Attempting to launch an existing post routes you to the existing market rather than creating a duplicate.
+Each post maps to exactly one token. Attempting to launch an existing post routes you to the existing market rather than creating a duplicate.
 
 ## Which wallets are supported?
 

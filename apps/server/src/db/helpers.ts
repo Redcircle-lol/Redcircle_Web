@@ -55,3 +55,15 @@ export async function resolvePostById(tokenId: string) {
     .limit(1);
   return byOther ?? null;
 }
+
+export function matchesPostAuthor(
+  post: { platform?: string | null; author: string } | null | undefined,
+  user: { username?: string | null; xUsername?: string | null } | null | undefined,
+): boolean {
+  if (!post?.author || !user) return false;
+  const author = post.author.toLowerCase();
+  if (post.platform === "x") {
+    return !!user.xUsername && user.xUsername.toLowerCase() === author;
+  }
+  return !!user.username && user.username.toLowerCase() === author;
+}

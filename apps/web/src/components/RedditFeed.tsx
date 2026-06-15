@@ -15,6 +15,7 @@ type BackendPost = {
   comments: number;
   tokenizedAt: string;
   redditCreatedAt?: string;
+  platform?: "reddit" | "x";
   thumbnail?: string;
   tags?: string[];
   currentPrice?: string;
@@ -30,6 +31,7 @@ type BackendPost = {
   holders?: number;
 };
 
+type PlatformFilter = "all" | "reddit" | "x";
 type SortField   = "totalVolume" | "marketCap" | "currentPrice" | "tokenizedAt";
 type SortOrder   = "desc" | "asc";
 type TimeWindow  = "all" | "1h" | "4h" | "24h" | "7d" | "30d";
@@ -130,6 +132,7 @@ function transformPost(post: BackendPost): FeedPost {
     upvotes: post.upvotes || 0,
     comments: post.comments || 0,
     createdAt: post.tokenizedAt,
+    platform: post.platform ?? "reddit",
     imageUrl: post.thumbnail || undefined,
     flair: post.tags?.[0],
     tokenPrice: post.currentPrice ? parseFloat(post.currentPrice) : undefined,
@@ -155,9 +158,10 @@ export default function RedditFeed() {
   const [offset, setOffset] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
   const [searchFilters, setSearchFilters] = useState<SearchFilters>({});
-  const [sortField,  setSortField]  = useState<SortField>("totalVolume");
-  const [sortOrder,  setSortOrder]  = useState<SortOrder>("desc");
-  const [timeWindow, setTimeWindow] = useState<TimeWindow>("all");
+  const [sortField,      setSortField]      = useState<SortField>("totalVolume");
+  const [sortOrder,      setSortOrder]      = useState<SortOrder>("desc");
+  const [timeWindow,     setTimeWindow]     = useState<TimeWindow>("all");
+  const [platformFilter, setPlatformFilter] = useState<PlatformFilter>("all");
   const [livePairs, setLivePairs] = useState<Record<string, LivePair>>({});
 
   // One batched request for all visible cards instead of one request per card
@@ -182,6 +186,7 @@ export default function RedditFeed() {
       field?: SortField;
       order?: SortOrder;
       time?: TimeWindow;
+      platform?: PlatformFilter;
       currentOffset?: number;
     } = {}) => {
       const {
@@ -191,6 +196,7 @@ export default function RedditFeed() {
         field = sortField,
         order = sortOrder,
         time = timeWindow,
+        platform = platformFilter,
         currentOffset = 0,
       } = opts;
 
@@ -213,6 +219,7 @@ export default function RedditFeed() {
 
         url += `limit=20&offset=${useOffset}`;
         if (time && time !== "all") url += `&since=${time}`;
+        if (platform && platform !== "all") url += `&platform=${platform}`;
 
         if (filters.q) url += `&q=${encodeURIComponent(filters.q)}`;
         if (filters.subreddit) url += `&subreddit=${encodeURIComponent(filters.subreddit)}`;
@@ -242,7 +249,7 @@ export default function RedditFeed() {
         setIsRefreshing(false);
       }
     },
-    [searchFilters, sortField, sortOrder, timeWindow, fetchPrices],
+    [searchFilters, sortField, sortOrder, timeWindow, platformFilter, fetchPrices],
   );
 
   // Initial load
@@ -267,6 +274,12 @@ export default function RedditFeed() {
     setTimeWindow(time);
     setOffset(0);
     fetchPosts({ reset: true, field: sortField, order: sortOrder, time, currentOffset: 0 });
+  };
+
+  const handlePlatformChange = (p: PlatformFilter) => {
+    setPlatformFilter(p);
+    setOffset(0);
+    fetchPosts({ reset: true, field: sortField, order: sortOrder, time: timeWindow, platform: p, currentOffset: 0 });
   };
 
   // Re-fetch when search changes
@@ -313,17 +326,43 @@ export default function RedditFeed() {
       {/* Header controls */}
       <div className="mb-6 space-y-3">
         {/* Section header */}
-        <div className="flex items-center gap-2.5 pb-1">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#E8431C] opacity-60" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#E8431C]" />
-          </span>
-          <h2 className="text-sm sm:text-base font-mono font-black uppercase tracking-[0.25em] text-white">
-            The Trenches
-          </h2>
-          <span className="hidden sm:inline text-[10px] font-mono text-white/25 mt-px">
-            // every post is a market
-          </span>
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2.5">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#E8431C] opacity-60" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#E8431C]" />
+            </span>
+            <h2 className="text-sm sm:text-base font-mono font-black uppercase tracking-[0.25em] text-white">
+              The Trenches
+            </h2>
+            <span className="hidden sm:inline text-[10px] font-mono text-white/25 mt-px">
+              // every post is a market
+            </span>
+          </div>
+
+          {/* Platform toggle */}
+          <div className="flex items-center gap-1 rounded-lg border border-white/10 bg-[#0d0d0d] p-0.5">
+            {(["all", "reddit", "x"] as PlatformFilter[]).map((p) => (
+              <button
+                key={p}
+                onClick={() => handlePlatformChange(p)}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-mono font-semibold uppercase tracking-wide transition-all cursor-pointer",
+                  platformFilter === p
+                    ? "bg-[#E8431C] text-white shadow-[0_0_12px_rgba(232,67,28,0.4)]"
+                    : "text-white/40 hover:text-white/70",
+                )}
+              >
+                {p === "reddit" && (
+                  <svg className="h-3 w-3" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.561-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.249 0-.687-.562-1.249-1.25-1.249zm-5.466 3.99a.327.327 0 0 0-.231.094.33.33 0 0 0 0 .463c.842.842 2.484.913 2.961.913.477 0 2.105-.056 2.961-.913a.361.361 0 0 0 .029-.463.33.33 0 0 0-.464 0c-.547.533-1.684.73-2.512.73-.828 0-1.979-.196-2.512-.73a.326.326 0 0 0-.232-.095z"/>
+                  </svg>
+                )}
+                {p === "x" && <span className="font-black">𝕏</span>}
+                {p === "all" ? "All" : p === "reddit" ? "Reddit" : "X"}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Search */}
