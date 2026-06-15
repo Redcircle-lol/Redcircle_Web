@@ -23,7 +23,7 @@ const isPostStatus = (v: unknown): v is PostStatus =>
  */
 router.post("/fetch-reddit", async (req, res) => {
   try {
-    const { url } = req.body;
+    const url = typeof req.body?.url === "string" ? req.body.url.trim() : "";
 
     if (!url) {
       return res.status(400).json({ error: "Reddit URL is required" });
@@ -157,7 +157,7 @@ Reply with ONLY a JSON object, no markdown:
  */
 router.post("/fetch-x", async (req, res) => {
   try {
-    const { url } = req.body;
+    const url = typeof req.body?.url === "string" ? req.body.url.trim() : "";
 
     if (!url) {
       return res.status(400).json({ error: "X (Twitter) URL is required" });
@@ -250,7 +250,7 @@ Reply with ONLY a JSON object, no markdown:
       post: {
         platform: "x",
         xPostId: xPost.id,
-        title: xPost.text,
+        title: (xPost.text || "").trim() || `Post by @${xPost.author}`,
         author: xPost.author,
         authorName: xPost.authorName,
         url: xPost.url,

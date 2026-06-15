@@ -29,6 +29,7 @@ export default function Navbar() {
   const { isAuthenticated, user, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const displayName = getDisplayUsername(user);
 
   const handleFeedClick = (e: React.MouseEvent) => {
