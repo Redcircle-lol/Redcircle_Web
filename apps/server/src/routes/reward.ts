@@ -7,7 +7,7 @@ import bs58 from "bs58";
 import { db } from "../db";
 import { posts, launches, users } from "../db";
 import { authenticateToken } from "../middleware/auth";
-import { resolvePostById } from "../db/helpers";
+import { resolvePostById, matchesPostAuthor } from "../db/helpers";
 import * as Orynth from "../services/orynth.service";
 
 const router: express.Router = express.Router();
@@ -69,8 +69,8 @@ router.post("/", authenticateToken, async (req: Request, res: Response) => {
       return res.status(404).json({ success: false, error: "Post not found" });
     }
 
-    // 3. Only the original Reddit post author can claim
-    if (!dbUser.username || dbUser.username.toLowerCase() !== post.author.toLowerCase()) {
+    // 3. Only the original post author can claim.
+    if (!matchesPostAuthor(post, dbUser)) {
       return res.status(403).json({
         success: false,
         error: "Only the original post creator can claim rewards",

@@ -12,9 +12,8 @@ const router: import("express").Router = Router();
  * GET /api/leaderboard
  * Returns top creators ranked by USDC earnings.
  *
- * A "creator" is the Reddit user who authored the tokenized post AND has a
- * Redcircle account (i.e. their Reddit username matches a row in `users`).
- * This is determined by joining launches.creatorUsername = users.username.
+ * A "creator" is the user who authored the tokenized post. Matched to Redcircle
+ * accounts via Reddit username or X handle depending on source platform.
  */
 router.get("/", async (req, res) => {
   try {
@@ -26,6 +25,7 @@ router.get("/", async (req, res) => {
     const rows = await db
       .select({
         poolAddress:          launches.poolAddress,
+        sourcePlatform:       launches.sourcePlatform,
         creatorUsername:      launches.creatorUsername,
         creatorFeeBps:        launches.creatorFeeBps,
         curatorFeeBps:        launches.curatorFeeBps,
@@ -37,7 +37,10 @@ router.get("/", async (req, res) => {
       .from(launches)
       .leftJoin(
         users,
-        sql`lower(${launches.creatorUsername}) = lower(${users.username})`,
+        sql`case when ${launches.sourcePlatform} = 'x'
+              then lower(${launches.creatorUsername}) = lower(${users.xUsername})
+              else lower(${launches.creatorUsername}) = lower(${users.username})
+            end`,
       )
       .where(
         and(

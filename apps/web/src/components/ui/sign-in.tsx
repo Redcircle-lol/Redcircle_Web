@@ -23,6 +23,7 @@ interface SignInPageProps {
   heroImageSrc?: string;
   testimonials?: Testimonial[];
   onRedditSignIn?: () => void;
+  onXSignIn?: () => void;
 }
 
 // --- SUB-COMPONENTS ---
@@ -46,6 +47,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({
   heroImageSrc,
   testimonials = [],
   onRedditSignIn,
+  onXSignIn,
 }) => {
   // Adjust for navbar height (assume 64px)
   return (
@@ -59,18 +61,25 @@ export const SignInPage: React.FC<SignInPageProps> = ({
               <p className="animate-element animate-delay-200 text-muted-foreground text-lg">{description}</p>
             </div>
 
-            <button 
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onRedditSignIn?.();
-              }}
-              className="animate-element animate-delay-300 w-full flex items-center justify-center gap-3 border-2 border-[#FF4500] rounded-2xl py-5 hover:bg-[#FF4500]/10 transition-all group relative z-10 cursor-pointer shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]"
-            >
+            <div className="flex flex-col gap-3">
+              <button
+                type="button"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onRedditSignIn?.(); }}
+                className="animate-element animate-delay-300 w-full flex items-center justify-center gap-3 border-2 border-[#FF4500] rounded-2xl py-5 hover:bg-[#FF4500]/10 transition-all relative z-10 cursor-pointer shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]"
+              >
                 <RedditIcon />
                 <span className="font-semibold text-lg">Continue with Reddit</span>
-            </button>
+              </button>
+
+              <button
+                type="button"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onXSignIn?.(); }}
+                className="animate-element animate-delay-350 w-full flex items-center justify-center gap-3 border-2 border-white/20 rounded-2xl py-5 hover:bg-white/5 transition-all relative z-10 cursor-pointer shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <span className="text-white font-bold text-xl leading-none">𝕏</span>
+                <span className="font-semibold text-lg text-white">Continue with X</span>
+              </button>
+            </div>
 
             <div className="animate-element animate-delay-400 text-center space-y-2">
               <p className="text-sm text-muted-foreground">

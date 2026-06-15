@@ -4,7 +4,7 @@ A portion of every trade's fees is set aside for the people behind the content. 
 
 ## Creator rewards
 
-The original Reddit author earns **0.40% of every trade**. To claim, sign in with the Reddit account that authored the post and submit your Solana wallet — RedCircle verifies that your Reddit username matches the post's author before transferring your accrued USDC balance.
+The original post author earns **0.40% of every trade**. To claim, sign in with the platform account that authored the post (Reddit or X) and submit your Solana wallet — RedCircle verifies that your username matches the post's author before transferring your accrued USDC balance.
 
 Claims are idempotent: you only ever receive newly-accrued earnings, and concurrent claims are protected by an optimistic lock.
 

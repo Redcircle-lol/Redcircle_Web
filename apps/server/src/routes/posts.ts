@@ -6,7 +6,7 @@ import * as schema from "../db";
 import { eq, desc, asc, and, gte, ilike, inArray, or } from "drizzle-orm";
 import * as Orynth from "../services/orynth.service";
 import { authenticateToken } from "../middleware/auth";
-import { resolvePostById } from "../db/helpers";
+import { resolvePostById, matchesPostAuthor } from "../db/helpers";
 
 const { posts, launches } = schema;
 const router: import("express").Router = Router();
@@ -690,7 +690,7 @@ router.get("/:id/creator-earnings", async (req, res) => {
 
 /**
  * POST /api/posts/:id/claim-creator-earnings
- * Only the original Reddit post author (matched by Reddit username) can trigger this.
+ * Only the original post author can trigger this (Reddit username or X handle).
  * Calls Orynth to claim accrued USDC trading fees for the pool into the platform wallet.
  * (The /api/reward endpoint then handles forwarding the creator's share to their wallet.)
  */
@@ -709,8 +709,8 @@ router.post("/:id/claim-creator-earnings", authenticateToken, async (req, res) =
     const post = await resolvePostById(id);
     if (!post) return res.status(404).json({ success: false, error: "Post not found" });
 
-    // 3. Only the original Reddit post author can claim
-    if (!dbUser.username || dbUser.username.toLowerCase() !== post.author.toLowerCase()) {
+    // 3. Only the original post author can claim
+    if (!matchesPostAuthor(post, dbUser)) {
       return res.status(403).json({ success: false, error: "Only the original post creator can claim earnings" });
     }
 

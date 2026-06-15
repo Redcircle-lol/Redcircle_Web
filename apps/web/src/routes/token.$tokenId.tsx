@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchWithAuth } from "@/lib/auth";
+import { fetchWithAuth, matchesPostAuthor } from "@/lib/auth";
 import { useAuth } from "@/contexts/AuthContext";
 import { motion, AnimatePresence } from "motion/react";
 import { ArrowLeft, ArrowRightLeft, Copy, Check, Wallet, X, AlertCircle } from "lucide-react";
@@ -196,11 +196,7 @@ function TokenDetailsPage() {
     return () => clearInterval(interval);
   }, [post?.tokenMintAddress]);
 
-  const isCreator = !!(
-    user?.username &&
-    post?.author &&
-    user.username.toLowerCase() === post.author.toLowerCase()
-  );
+  const isCreator = matchesPostAuthor(post ?? null, user);
 
   // When wallet connects while a claim was pending, open the relevant confirm dialog
   useEffect(() => {

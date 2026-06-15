@@ -44,7 +44,7 @@ function HomeComponent() {
         <div className="mb-8 sm:mb-12 text-center">
 
           <h1 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight leading-[1.05] mb-4 sm:mb-5">
-            <span className="text-white">Turn Posts Into</span>
+            <span className="text-white">Turn Reddit & X Posts Into</span>
             <br />
             <span
               className="bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(232,67,28,0.35)]"

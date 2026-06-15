@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate, useLocation } from "@tanstack/react-router";
 import { useAuth } from "@/contexts/AuthContext";
+import { getDisplayUsername } from "@/lib/auth";
 import { Menu, X, LogOut, UserRound, Flame } from "lucide-react";
 import WalletButton from "@/components/WalletButton";
 
@@ -28,7 +29,7 @@ export default function Navbar() {
   const { isAuthenticated, user, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
-  const { pathname } = useLocation();
+  const displayName = getDisplayUsername(user);
 
   const handleFeedClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -86,12 +87,12 @@ export default function Navbar() {
                 {/* Avatar always visible */}
                 <Avatar
                   src={user.avatarUrl}
-                  alt={user.username}
+                  alt={displayName}
                   className="w-8 h-8 rounded-full border-2 border-white/20 object-cover flex-shrink-0"
                 />
                 {/* Username + logout only on desktop */}
                 <span className="hidden md:inline text-white text-sm font-medium truncate max-w-[120px]">
-                  {user.username}
+                  {displayName}
                 </span>
                 <button
                   onClick={logout}
@@ -129,9 +130,9 @@ export default function Navbar() {
           {isAuthenticated && user && (
             <div className="flex items-center justify-between px-3 py-3 mb-2 border-b border-white/8">
               <div className="flex items-center gap-2">
-                <Avatar src={user.avatarUrl} alt={user.username}
+                <Avatar src={user.avatarUrl} alt={displayName}
                   className="w-8 h-8 rounded-full border border-white/20 object-cover" />
-                <span className="text-sm font-medium text-white">{user.username}</span>
+                <span className="text-sm font-medium text-white">{displayName}</span>
               </div>
               <button
                 onClick={() => { logout(); setMenuOpen(false); }}

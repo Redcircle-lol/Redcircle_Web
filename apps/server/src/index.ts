@@ -6,6 +6,7 @@ import { startPriceSyncJob } from "./jobs/priceSync";
 import { initLaunchWebSocket } from "./services/ws.service";
 import { startTrendingSyncJob } from "./jobs/trendingSync";
 import redditAuthRoutes from "./config/reddit-oauth-simple";
+import xAuthRoutes from "./config/x-oauth";
 import postsRoutes from "./routes/posts";
 import portfolioRoutes from "./routes/portfolio";
 import transactionsRoutes from "./routes/transactions";
@@ -52,6 +53,7 @@ app.use((req, res, next) => {
 
 // Routes
 app.use(redditAuthRoutes);
+app.use(xAuthRoutes);
 app.use("/api/posts", postsRoutes);
 app.use("/api/portfolio", portfolioRoutes);
 app.use("/api/transactions", transactionsRoutes);

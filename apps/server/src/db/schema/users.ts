@@ -4,8 +4,12 @@ export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   
   // Reddit Auth
-  redditId: text("reddit_id").unique().notNull(),
-  username: text("username").unique(), // Reddit username
+  redditId: text("reddit_id").unique(),    // nullable — X-only users have no reddit_id
+  username: text("username").unique(),     // Reddit username
+
+  // X (Twitter) Auth
+  xId:       text("x_id").unique(),        // Twitter numeric user ID
+  xUsername: text("x_username").unique(),  // Twitter @handle (without @)
   
   // Blockchain
   walletAddress: text("wallet_address").unique(),

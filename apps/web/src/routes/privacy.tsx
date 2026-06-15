@@ -30,10 +30,10 @@ function PrivacyPolicy() {
               <h2 className="text-2xl font-semibold text-white mb-4 font-satoshi">2. Information We Collect</h2>
               <div className="space-y-4">
                 <div>
-                  <h3 className="text-xl font-medium text-white mb-2">2.1 Information from Reddit</h3>
+                  <h3 className="text-xl font-medium text-white mb-2">2.1 Information from Social Platforms</h3>
                   <p>
-                    When you connect your Reddit account, we collect your Reddit username, user ID, and profile information. 
-                    This is necessary to tokenize Reddit posts and facilitate trading on the Solana blockchain.
+                    When you connect your Reddit account, we collect your Reddit username, user ID, and profile information.
+                    We also fetch publicly available X (Twitter) post data to enable tokenization. This is necessary to tokenize social posts and facilitate trading on the Solana blockchain.
                   </p>
                 </div>
                 <div>
@@ -57,7 +57,7 @@ function PrivacyPolicy() {
               <h2 className="text-2xl font-semibold text-white mb-4 font-satoshi">3. How We Use Your Information</h2>
               <p>We use the information we collect to:</p>
               <ul className="list-disc list-inside space-y-2 ml-4 mt-4">
-                <li>Facilitate Reddit post tokenization and token trading</li>
+                <li>Facilitate post tokenization (Reddit & X) and token trading</li>
                 <li>Process transactions on the Solana blockchain</li>
                 <li>Maintain and improve our platform</li>
                 <li>Communicate with you about your account and transactions</li>
