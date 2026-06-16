@@ -16,6 +16,12 @@ const FRONTEND_URL    = process.env.FRONTEND_URL;
 
 const isEnabled = !!(X_CLIENT_ID && X_CLIENT_SECRET && X_REDIRECT_URI && FRONTEND_URL);
 
+if (isEnabled) {
+  console.log(`✅ X OAuth enabled — redirect: ${X_REDIRECT_URI}, frontend: ${FRONTEND_URL}`);
+} else {
+  console.warn("⚠️ X OAuth disabled. Set X_CLIENT_ID, X_CLIENT_SECRET, X_REDIRECT_URI, FRONTEND_URL.");
+}
+
 // In-memory PKCE store: state → { codeVerifier, expiry }
 // Fine for single-process deploys; swap for Redis if horizontally scaled.
 const pkceStore = new Map<string, { codeVerifier: string; expiry: number }>();
@@ -82,8 +88,9 @@ if (isEnabled) {
         } as Record<string, string>),
       });
 
-      const tokenData = await tokenRes.json() as { access_token?: string; error?: string };
+      const tokenData = await tokenRes.json() as { access_token?: string; error?: string; error_description?: string };
       if (!tokenData.access_token) {
+        console.error("X OAuth token exchange failed:", tokenData.error, tokenData.error_description);
         return res.redirect(`${FRONTEND_URL}/signin?error=x_auth_failed`);
       }
 

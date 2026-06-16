@@ -319,7 +319,6 @@ export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
                 >
                   <XThreadShare
                     variant="launch"
-                    tweetId={postPreview!.postId}
                     tweetUrl={postPreview!.url}
                     tokenSymbol={tokenSymbol}
                     tokenPageUrl={tokenPageUrl}

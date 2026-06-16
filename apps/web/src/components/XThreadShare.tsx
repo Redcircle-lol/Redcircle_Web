@@ -1,11 +1,10 @@
 import { useState } from "react";
 import { Check, Copy, ArrowUpRight } from "lucide-react";
 import { toast } from "sonner";
-import { buildXLaunchReplyText, buildXReplyIntentUrl } from "@/lib/x-share";
+import { buildXLaunchPostText, buildXPostIntentUrl } from "@/lib/x-share";
 import { cn } from "@/lib/utils";
 
 type XThreadShareProps = {
-  tweetId: string;
   tweetUrl: string;
   tokenSymbol: string;
   tokenPageUrl: string;
@@ -14,7 +13,6 @@ type XThreadShareProps = {
 };
 
 export default function XThreadShare({
-  tweetId,
   tweetUrl,
   tokenSymbol,
   tokenPageUrl,
@@ -22,13 +20,13 @@ export default function XThreadShare({
   variant = "sidebar",
 }: XThreadShareProps) {
   const [copied, setCopied] = useState(false);
-  const replyText = buildXLaunchReplyText(tokenSymbol, tokenPageUrl);
-  const replyIntentUrl = buildXReplyIntentUrl(tweetId, replyText);
-  const replyLines = replyText.split("\n");
+  const postText = buildXLaunchPostText(tokenSymbol, tokenPageUrl, tweetUrl);
+  const postIntentUrl = buildXPostIntentUrl(postText);
+  const postLines = postText.split("\n");
 
-  const copyReply = async () => {
+  const copyPost = async () => {
     try {
-      await navigator.clipboard.writeText(replyText);
+      await navigator.clipboard.writeText(postText);
       setCopied(true);
       toast.success("Copied to clipboard");
       setTimeout(() => setCopied(false), 2000);
@@ -58,7 +56,7 @@ export default function XThreadShare({
               Next step
             </p>
             <h3 className="mt-1 text-[15px] font-semibold text-white leading-snug">
-              Reply on the original post so people can find your token
+              Tell your followers your post is now tradable on RedCircle
             </h3>
           </div>
         </div>
@@ -66,11 +64,11 @@ export default function XThreadShare({
         <div className="rounded-xl border border-white/[0.06] bg-black/40 overflow-hidden mb-5">
           <div className="flex items-center gap-2 px-4 py-2 border-b border-white/[0.05] bg-white/[0.02]">
             <img src="/favicon-circle.png" alt="" className="w-4 h-4 rounded-full" />
-            <span className="text-[11px] text-white/40">Redcircle · reply preview</span>
+            <span className="text-[11px] text-white/40">Redcircle · post preview</span>
           </div>
           <div className="px-4 py-3.5">
-            <p className="text-[13px] text-white/70 leading-relaxed">{replyLines[0]}</p>
-            {replyLines.slice(1).map((line, i) => (
+            <p className="text-[13px] text-white/70 leading-relaxed">{postLines[0]}</p>
+            {postLines.slice(1).map((line, i) => (
               <p
                 key={i}
                 className={cn(
@@ -85,18 +83,18 @@ export default function XThreadShare({
         </div>
 
         <a
-          href={replyIntentUrl}
+          href={postIntentUrl}
           target="_blank"
           rel="noreferrer"
           className="group flex w-full items-center justify-center gap-2 rounded-xl bg-[#E8431C] hover:bg-[#FF5535] text-white text-sm font-semibold py-3 transition-colors"
         >
           <img src="/favicon-circle.png" alt="" className="w-4 h-4 rounded-full" />
-          Reply on X
+          Post on X
           <ArrowUpRight className="w-4 h-4 opacity-80 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
         </a>
 
         <p className="mt-3 text-center text-[11px] text-white/35 leading-relaxed">
-          Opens X with your reply ready — you just hit Post
+          Opens X with your post ready — you just hit Post
         </p>
 
         <div className="mt-4 pt-4 border-t border-white/[0.06] flex items-center justify-center gap-4 text-xs text-white/35">
@@ -111,11 +109,11 @@ export default function XThreadShare({
           <span className="text-white/15">·</span>
           <button
             type="button"
-            onClick={() => void copyReply()}
+            onClick={() => void copyPost()}
             className="inline-flex items-center gap-1.5 hover:text-white/70 transition-colors cursor-pointer"
           >
             {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-            {copied ? "Copied" : "Copy reply text"}
+            {copied ? "Copied" : "Copy post text"}
           </button>
         </div>
       </div>
@@ -125,14 +123,14 @@ export default function XThreadShare({
   return (
     <div className={cn("rounded-2xl border border-white/10 bg-white/[0.05] p-3 space-y-2.5", className)}>
       <p className="text-xs font-medium text-white/80">Share on X</p>
-      <p className="text-[11px] text-white/40 leading-relaxed">{replyText}</p>
+      <p className="text-[11px] text-white/40 leading-relaxed">{postText}</p>
       <a
-        href={replyIntentUrl}
+        href={postIntentUrl}
         target="_blank"
         rel="noreferrer"
         className="w-full inline-flex items-center justify-center gap-2 py-2 text-xs bg-[#E8431C] text-white hover:bg-[#FF5535] rounded-lg font-semibold transition-colors"
       >
-        Reply on X
+        Post on X
       </a>
     </div>
   );

@@ -9,12 +9,20 @@ export function buildTokenPageUrl(mintOrSlug: string): string {
   return `${origin}/token/${mintOrSlug}`;
 }
 
-export function buildXLaunchReplyText(symbol: string, tokenUrl: string): string {
+export function buildXLaunchPostText(symbol: string, tokenUrl: string, tweetUrl: string): string {
   const ticker = `$${symbol.toUpperCase()}`;
-  return `This post is now tradable on RedCircle 🚀\n\n${ticker} is live — trade it:\n${tokenUrl}`;
+  return [
+    `I tokenized my X post on @redcircle_sol — it's now a tradable token on Solana 🚀`,
+    ``,
+    `Trade ${ticker} on RedCircle:`,
+    tokenUrl,
+    ``,
+    `The post I tokenized ↓`,
+    tweetUrl,
+  ].join("\n");
 }
 
-export function buildXReplyIntentUrl(tweetId: string, text: string): string {
-  const params = new URLSearchParams({ in_reply_to: tweetId, text });
+export function buildXPostIntentUrl(text: string): string {
+  const params = new URLSearchParams({ text });
   return `https://x.com/intent/post?${params.toString()}`;
 }
