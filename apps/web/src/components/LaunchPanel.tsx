@@ -3,9 +3,11 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import {
   TrendingUp, Users, AlertCircle, Rocket,
-  CheckCircle, Loader2, ExternalLink, Check, Wallet,
+  Loader2, ExternalLink, Check, Wallet, Copy,
 } from "lucide-react";
-import { fetchWithAuth, getApiUrl } from "@/lib/auth";
+import { getApiUrl } from "@/lib/auth";
+import { buildTokenPageUrl } from "@/lib/x-share";
+import XThreadShare from "@/components/XThreadShare";
 import { cn } from "@/lib/utils";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
@@ -79,16 +81,6 @@ const STEP_STATUS: Record<LaunchStep, string> = {
   error:      "> error encountered.",
 };
 
-// Rocket particle positions
-const PARTICLES = [
-  { x: -40, y: -30, color: "#E8431C" },
-  { x: 40,  y: -20, color: "#00FFA3" },
-  { x: -25, y: 20,  color: "#FFA500" },
-  { x: 35,  y: 25,  color: "#a78bfa" },
-  { x: 0,   y: -50, color: "#E8431C" },
-  { x: -50, y: 0,   color: "#00FFA3" },
-];
-
 export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
   const { connected, publicKey, disconnect } = useWallet();
   const { setVisible: openWalletModal } = useWalletModal();
@@ -102,7 +94,7 @@ export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
   const [error, setError]           = useState("");
   const [launchId, setLaunchId]     = useState<string | null>(null);
   const [mintAddress, setMintAddress] = useState<string | null>(null);
-  const [rocketGone, setRocketGone] = useState(false);
+  const [mintCopied, setMintCopied] = useState(false);
   const [fetchLabel, setFetchLabel] = useState("Fetching post");
 
 
@@ -144,21 +136,12 @@ export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
 
   // Trigger rocket-gone after animation completes
   useEffect(() => {
-    if (step === "done") {
-      const t = setTimeout(() => setRocketGone(true), 1200);
-      return () => clearTimeout(t);
-    }
-    setRocketGone(false);
-  }, [step]);
-
-  useEffect(() => {
     if (step !== "fetching") { setFetchLabel("Fetching post"); return; }
     const t = setTimeout(() => setFetchLabel("Generating Token Details"), 3000);
     return () => clearTimeout(t);
   }, [step]);
 
   // Auto-fetch only when arriving from the hot page (initialUrl set via sessionStorage)
-  // On refresh, sessionStorage is already cleared so initialUrl is undefined — no auto-fetch
   useEffect(() => {
     if (initialUrl) handleFetchPost();
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -268,10 +251,22 @@ export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
     setUrl(""); setPostPreview(null); setQuote(null);
     setTokenName(""); setTokenSymbol(""); setDescription("");
     setStep("idle"); setError(""); setLaunchId(null); setMintAddress(null);
-    setRocketGone(false);
   };
 
   const isBusy = ["fetching", "quoting", "preparing", "polling"].includes(step);
+
+  const tokenPageUrl = mintAddress ? buildTokenPageUrl(mintAddress) : "";
+
+  const isXSuccess = postPreview?.platform === "x" && !!postPreview.postId && !!tokenSymbol;
+
+  const copyMint = async () => {
+    if (!mintAddress) return;
+    try {
+      await navigator.clipboard.writeText(mintAddress);
+      setMintCopied(true);
+      setTimeout(() => setMintCopied(false), 2000);
+    } catch { /* ignore */ }
+  };
 
   return (
     <div className="w-full max-w-3xl mx-auto">
@@ -279,73 +274,78 @@ export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
       <AnimatePresence>
         {step === "done" && mintAddress && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.96 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="relative rounded-2xl border border-[#00FFA3]/15 bg-black overflow-hidden"
-            style={{ boxShadow: "0 0 60px -20px rgba(0,255,163,0.15), inset 0 0 40px -20px rgba(0,255,163,0.04)" }}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+            className="relative rounded-3xl border border-white/[0.08] bg-[#080808] overflow-hidden"
           >
-            {/* Terminal header */}
-            <TerminalHeader />
+            <div className="h-px bg-gradient-to-r from-transparent via-[#E8431C]/35 to-transparent" />
 
-            <div className="px-8 py-12 flex flex-col items-center gap-6">
-              {/* Rocket + particles */}
-              <div className="relative h-28 w-28 flex items-center justify-center">
-                {!rocketGone && (
-                  <motion.div
-                    initial={{ y: 0, opacity: 1, rotate: -45 }}
-                    animate={{ y: -120, opacity: 0, rotate: -45 }}
-                    transition={{ duration: 1, delay: 0.2, ease: "easeIn" }}
-                    className="absolute"
-                  >
-                    <Rocket className="w-14 h-14 text-[#E8431C]" />
-                  </motion.div>
-                )}
-                {PARTICLES.map((p, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, scale: 0, x: 0, y: 0 }}
-                    animate={{ opacity: [0, 1, 0], scale: [0, 1.2, 0], x: p.x, y: p.y }}
-                    transition={{ duration: 0.7, delay: 0.4 + i * 0.08, ease: "easeOut" }}
-                    className="absolute w-2 h-2 rounded-full"
-                    style={{ background: p.color }}
-                  />
-                ))}
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.5 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 1.2, type: "spring", stiffness: 200 }}
+            <div className="px-6 sm:px-10 py-10 sm:py-12 flex flex-col items-center gap-8 max-w-lg mx-auto">
+              {/* Success header — clean, no rocket / terminal chrome */}
+              <div className="text-center space-y-4 w-full">
+                <div className="inline-flex items-center justify-center w-11 h-11 rounded-full bg-emerald-500/[0.08] ring-1 ring-emerald-500/20">
+                  <Check className="w-5 h-5 text-emerald-400/90" strokeWidth={2.5} />
+                </div>
+                <div>
+                  <h2 className="text-2xl sm:text-[1.65rem] font-semibold text-white tracking-tight">
+                    Token launched
+                  </h2>
+                  {tokenSymbol && (
+                    <p className="mt-1.5 text-sm text-white/45">
+                      ${tokenSymbol.toUpperCase()} is live on Solana
+                    </p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void copyMint()}
+                  className="inline-flex items-center gap-2 max-w-full rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-1.5 text-[11px] text-white/35 hover:text-white/55 hover:border-white/10 transition-colors cursor-pointer font-mono"
+                  title="Copy mint address"
                 >
-                  <CheckCircle className="w-14 h-14 text-[#00FFA3]" />
-                </motion.div>
+                  <span className="truncate">{mintAddress}</span>
+                  {mintCopied
+                    ? <Check className="w-3 h-3 shrink-0 text-emerald-400" />
+                    : <Copy className="w-3 h-3 shrink-0 opacity-50" />}
+                </button>
               </div>
 
-              <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 1.1 }}
-                className="text-center space-y-3"
-              >
-                <h2 className="text-xl font-bold text-white font-mono tracking-wide">TOKEN_LAUNCHED</h2>
-                <p className="text-xs text-white/40 font-mono">
-                  mint: <span className="text-[#00FFA3]/80 break-all">{mintAddress}</span>
-                </p>
-                <div className="flex flex-col sm:flex-row justify-center gap-2 pt-2">
-                  <a
-                    href={`https://solscan.io/token/${mintAddress}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center justify-center gap-2 px-5 py-2 rounded-lg border border-[#00FFA3]/20 bg-[#00FFA3]/5 hover:bg-[#00FFA3]/10 text-[#00FFA3] text-sm font-mono transition-all"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" /> Solscan
-                  </a>
-                  <button
-                    onClick={reset}
-                    className="inline-flex items-center justify-center gap-2 px-5 py-2 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white text-sm font-mono transition-all"
-                  >
-                    Launch Another
-                  </button>
-                </div>
-              </motion.div>
+              {isXSuccess && mintAddress && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.15, duration: 0.4 }}
+                  className="w-full"
+                >
+                  <XThreadShare
+                    variant="launch"
+                    tweetId={postPreview!.postId}
+                    tweetUrl={postPreview!.url}
+                    tokenSymbol={tokenSymbol}
+                    tokenPageUrl={tokenPageUrl}
+                  />
+                </motion.div>
+              )}
+
+              <div className="flex items-center justify-center gap-5 text-xs text-white/35">
+                <a
+                  href={`https://solscan.io/token/${mintAddress}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 hover:text-white/65 transition-colors"
+                >
+                  Solscan
+                  <ExternalLink className="w-3 h-3 opacity-50" />
+                </a>
+                <span className="text-white/12">|</span>
+                <button
+                  type="button"
+                  onClick={reset}
+                  className="hover:text-white/65 transition-colors cursor-pointer"
+                >
+                  Launch another
+                </button>
+              </div>
             </div>
           </motion.div>
         )}

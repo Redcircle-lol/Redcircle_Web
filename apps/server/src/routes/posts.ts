@@ -302,8 +302,11 @@ router.get("/search", async (req, res) => {
       minVolume,
       minMarketCap,
       tags,
+      platform,
+      since,
       status = "active",
       sortBy = "trending",
+      order = "desc",
       limit = 20,
       offset = 0,
     } = req.query;
@@ -327,6 +330,21 @@ router.get("/search", async (req, res) => {
     // Author — case-insensitive partial match
     if (author) {
       conditions.push(ilike(posts.author, `%${author}%`));
+    }
+
+    // Platform — reddit | x only (omit for all)
+    if (platform === "reddit" || platform === "x") {
+      conditions.push(eq(posts.platform, platform));
+    }
+
+    // Time window on tokenizedAt
+    if (since && typeof since === "string") {
+      const units: Record<string, number> = { "1h": 1, "4h": 4, "24h": 24, "7d": 168, "30d": 720 };
+      const hours = units[since];
+      if (hours) {
+        const cutoff = new Date(Date.now() - hours * 60 * 60 * 1000);
+        conditions.push(gte(posts.tokenizedAt, cutoff));
+      }
     }
 
     // Execute base query with conditions
@@ -386,26 +404,33 @@ router.get("/search", async (req, res) => {
       });
     }
 
-    // Sort results
-    switch (sortBy) {
+    // Sort results (map feed sort fields to search sorts)
+    const sortKey = typeof sortBy === "string" ? sortBy : "trending";
+    const desc = order !== "asc";
+    const cmp = (a: number, b: number) => (desc ? b - a : a - b);
+
+    switch (sortKey) {
       case "new":
-        allPosts.sort((a, b) => 
-          new Date(b.tokenizedAt).getTime() - new Date(a.tokenizedAt).getTime()
+      case "tokenizedAt":
+        allPosts.sort((a, b) =>
+          cmp(new Date(a.tokenizedAt).getTime(), new Date(b.tokenizedAt).getTime()),
         );
         break;
       case "price":
-        allPosts.sort((a, b) => 
-          parseFloat(b.currentPrice || "0") - parseFloat(a.currentPrice || "0")
+      case "currentPrice":
+        allPosts.sort((a, b) =>
+          cmp(parseFloat(a.currentPrice || "0"), parseFloat(b.currentPrice || "0")),
         );
         break;
       case "volume":
-        allPosts.sort((a, b) => 
-          parseFloat(b.totalVolume || "0") - parseFloat(a.totalVolume || "0")
+      case "totalVolume":
+        allPosts.sort((a, b) =>
+          cmp(parseFloat(a.totalVolume || "0"), parseFloat(b.totalVolume || "0")),
         );
         break;
       case "marketCap":
-        allPosts.sort((a, b) => 
-          parseFloat(b.marketCap || "0") - parseFloat(a.marketCap || "0")
+        allPosts.sort((a, b) =>
+          cmp(parseFloat(a.marketCap || "0"), parseFloat(b.marketCap || "0")),
         );
         break;
       case "trending":
@@ -414,7 +439,7 @@ router.get("/search", async (req, res) => {
         allPosts.sort((a, b) => {
           const scoreA = (parseFloat(a.totalVolume || "0") * 10) + (a.upvotes || 0) + (a.featured || 0) * 1000;
           const scoreB = (parseFloat(b.totalVolume || "0") * 10) + (b.upvotes || 0) + (b.featured || 0) * 1000;
-          return scoreB - scoreA;
+          return cmp(scoreA, scoreB);
         });
     }
 

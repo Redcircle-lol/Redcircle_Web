@@ -261,19 +261,19 @@ export default function RedditFeed() {
   const handleFieldChange = (field: SortField) => {
     setSortField(field);
     setOffset(0);
-    fetchPosts({ reset: true, field, order: sortOrder, time: timeWindow, currentOffset: 0 });
+    fetchPosts({ reset: true, field, order: sortOrder, time: timeWindow, platform: platformFilter, currentOffset: 0 });
   };
 
   const handleOrderChange = (order: SortOrder) => {
     setSortOrder(order);
     setOffset(0);
-    fetchPosts({ reset: true, field: sortField, order, time: timeWindow, currentOffset: 0 });
+    fetchPosts({ reset: true, field: sortField, order, time: timeWindow, platform: platformFilter, currentOffset: 0 });
   };
 
   const handleTimeChange = (time: TimeWindow) => {
     setTimeWindow(time);
     setOffset(0);
-    fetchPosts({ reset: true, field: sortField, order: sortOrder, time, currentOffset: 0 });
+    fetchPosts({ reset: true, field: sortField, order: sortOrder, time, platform: platformFilter, currentOffset: 0 });
   };
 
   const handlePlatformChange = (p: PlatformFilter) => {
@@ -287,9 +287,17 @@ export default function RedditFeed() {
     (filters: SearchFilters) => {
       setSearchFilters(filters);
       setOffset(0);
-      fetchPosts({ reset: true, filters, field: sortField, order: sortOrder, time: timeWindow, currentOffset: 0 });
+      fetchPosts({
+        reset: true,
+        filters,
+        field: sortField,
+        order: sortOrder,
+        time: timeWindow,
+        platform: platformFilter,
+        currentOffset: 0,
+      });
     },
-    [sortField, sortOrder, timeWindow, fetchPosts],
+    [sortField, sortOrder, timeWindow, platformFilter, fetchPosts],
   );
 
   const handleRefresh = () => {
