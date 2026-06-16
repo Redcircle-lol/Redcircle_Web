@@ -278,7 +278,7 @@ Reply with ONLY a JSON object, no markdown:
  * GET /api/posts/search
  * Advanced search with multiple filters
  * Query params:
- *   - q: search query (title, author, subreddit)
+ *   - q: search query (title, author, subreddit, symbol, mint address, slug)
  *   - subreddit: filter by subreddit
  *   - author: filter by author
  *   - minPrice: minimum current price
@@ -353,14 +353,17 @@ router.get("/search", async (req, res) => {
       : query
     );
 
-    // Filter by search query (title, subreddit, author)
+    // Filter by search query (title, subreddit, author, symbol, slug, mint address)
     if (q && typeof q === "string" && q.trim()) {
-      const searchTerm = q.toLowerCase().trim();
-      allPosts = allPosts.filter(post => 
+      const raw = q.trim();
+      const searchTerm = raw.toLowerCase();
+      allPosts = allPosts.filter((post) =>
         post.title.toLowerCase().includes(searchTerm) ||
         post.subreddit?.toLowerCase().includes(searchTerm) ||
         post.author?.toLowerCase().includes(searchTerm) ||
-        post.tokenSymbol?.toLowerCase().includes(searchTerm)
+        post.tokenSymbol?.toLowerCase().includes(searchTerm) ||
+        post.tokenSlug?.toLowerCase().includes(searchTerm) ||
+        (post.tokenMintAddress?.includes(raw) ?? false),
       );
     }
 

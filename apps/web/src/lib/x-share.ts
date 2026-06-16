@@ -12,12 +12,12 @@ export function buildTokenPageUrl(mintOrSlug: string): string {
 export function buildXLaunchPostText(symbol: string, tokenUrl: string, tweetUrl: string): string {
   const ticker = `$${symbol.toUpperCase()}`;
   return [
-    `I tokenized my X post on @redcircle_sol — it's now a tradable token on Solana 🚀`,
+    `This X post is now a tradable token on @redcircle_sol 🚀`,
     ``,
     `Trade ${ticker} on RedCircle:`,
     tokenUrl,
     ``,
-    `The post I tokenized ↓`,
+    `Original post ↓`,
     tweetUrl,
   ].join("\n");
 }

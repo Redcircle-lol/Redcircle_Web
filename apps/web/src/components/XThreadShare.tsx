@@ -56,7 +56,7 @@ export default function XThreadShare({
               Next step
             </p>
             <h3 className="mt-1 text-[15px] font-semibold text-white leading-snug">
-              Tell your followers your post is now tradable on RedCircle
+              Share that this post is now tradable on RedCircle
             </h3>
           </div>
         </div>

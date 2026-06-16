@@ -26,7 +26,7 @@ type SearchBarProps = {
 
 export default function SearchBar({
   onSearch,
-  placeholder = "search the trenches — posts, tokens, communities…",
+  placeholder = "search posts, tokens, mint address, communities…",
   showFilters = true,
   className,
 }: SearchBarProps) {
