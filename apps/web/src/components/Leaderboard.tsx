@@ -6,6 +6,7 @@ type Entry = {
   rank: number;
   id: string;
   user: string;
+  platform?: "reddit" | "x" | null;
   avatar?: string;
   pnl: number;           // creator USDC earnings
   curatorEarned: number; // curator USDC earnings (0 for old posts)
@@ -104,7 +105,9 @@ export default function Leaderboard() {
                       {e.user[0]?.toUpperCase()}
                     </div>
                   )}
-                  <span className="truncate text-white/90 text-sm">u/{e.user}</span>
+                  <span className="truncate text-white/90 text-sm">
+                    {e.platform === "x" ? "@" : "u/"}{e.user}
+                  </span>
                 </div>
                 <div className="col-span-2 text-right font-medium text-emerald-400 text-sm">
                   ${e.pnl.toFixed(2)}

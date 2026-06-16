@@ -8,7 +8,7 @@ import {
 import { getApiUrl } from "@/lib/auth";
 import { buildTokenPageUrl } from "@/lib/x-share";
 import XThreadShare from "@/components/XThreadShare";
-import { cn } from "@/lib/utils";
+import { cn, tokenSlug } from "@/lib/utils";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 
@@ -255,7 +255,9 @@ export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
 
   const isBusy = ["fetching", "quoting", "preparing", "polling"].includes(step);
 
-  const tokenPageUrl = mintAddress ? buildTokenPageUrl(mintAddress) : "";
+  const tokenPageUrl = mintAddress
+    ? buildTokenPageUrl(tokenSlug(tokenSymbol, mintAddress) || mintAddress)
+    : "";
 
   const isXSuccess = postPreview?.platform === "x" && !!postPreview.postId && !!tokenSymbol;
 

@@ -65,6 +65,7 @@ router.get("/", async (req, res) => {
     const creatorMap = new Map<string, {
       userId:              string | null;
       avatarUrl:           string | null;
+      platform:            string | null;
       totalUsdcEarned:     number;
       totalCuratorEarned:  number;
       totalVolumeUsdc:     number;
@@ -101,6 +102,7 @@ router.get("/", async (req, res) => {
         creatorMap.set(username, {
           userId:             row.userId,
           avatarUrl:          row.avatarUrl,
+          platform:           row.sourcePlatform,
           totalUsdcEarned:    creatorEarned,
           totalCuratorEarned: curatorEarned,
           totalVolumeUsdc:    volumeUsdc,
@@ -116,6 +118,7 @@ router.get("/", async (req, res) => {
         rank:          index + 1,
         id:            c.userId ?? username,
         user:          username,
+        platform:      c.platform,
         avatar:        c.avatarUrl,
         pnl:           parseFloat(c.totalUsdcEarned.toFixed(4)),
         curatorEarned: parseFloat(c.totalCuratorEarned.toFixed(4)),
