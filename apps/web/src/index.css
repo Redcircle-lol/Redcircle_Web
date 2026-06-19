@@ -378,6 +378,11 @@ div:not([class*="fixed"]):not([class*="absolute"]):not([class*="sticky"]):not([c
   /* Chrome, Safari and Opera */
 }
 
+/* Wallet modal above navbar on mobile */
+.wallet-adapter-modal-wrapper {
+  z-index: 9999 !important;
+}
+
 /* Safe area insets for mobile devices with notches */
 .safe-area-inset-bottom {
   padding-bottom: env(safe-area-inset-bottom);

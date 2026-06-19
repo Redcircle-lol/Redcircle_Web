@@ -4,41 +4,75 @@ import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import {
   PhantomWalletAdapter,
   SolflareWalletAdapter,
-  TorusWalletAdapter,
-  LedgerWalletAdapter,
 } from "@solana/wallet-adapter-wallets";
+import {
+  SolanaMobileWalletAdapter,
+  createDefaultAddressSelector,
+  createDefaultAuthorizationResultCache,
+  createDefaultWalletNotFoundHandler,
+} from "@solana-mobile/wallet-adapter-mobile";
 import { clusterApiUrl } from "@solana/web3.js";
+import {
+  hasInjectedSolanaProvider,
+  isAndroidChrome,
+  isInAppBrowser,
+  isMobileDevice,
+} from "@/lib/wallet-mobile";
 
-// Import wallet adapter CSS
 import "@solana/wallet-adapter-react-ui/styles.css";
 
 type WalletContextProviderProps = {
   children: ReactNode;
 };
 
+const APP_ORIGIN = "https://www.redcircle.lol";
+
 export function WalletContextProvider({ children }: WalletContextProviderProps) {
   const network = (import.meta.env.VITE_SOLANA_NETWORK || "mainnet-beta") as "devnet" | "testnet" | "mainnet-beta";
-  
-  // Use custom RPC endpoint if provided, otherwise use cluster API URL
+
   const endpoint = useMemo(() => {
     const customRpc = import.meta.env.VITE_SOLANA_RPC_URL;
     return customRpc || clusterApiUrl(network);
   }, [network]);
 
-  // Initialize wallet adapters
-  const wallets = useMemo(
-    () => [
-      new PhantomWalletAdapter(),
-      new SolflareWalletAdapter(),
-      new TorusWalletAdapter(),
-      new LedgerWalletAdapter(),
-    ],
-    []
-  );
+  const wallets = useMemo(() => {
+    const mobileMwa = new SolanaMobileWalletAdapter({
+      addressSelector: createDefaultAddressSelector(),
+      appIdentity: {
+        name: "Redcircle",
+        uri: APP_ORIGIN,
+        icon: `${APP_ORIGIN}/logo.png`,
+      },
+      authorizationResultCache: createDefaultAuthorizationResultCache(),
+      chain: network,
+      onWalletNotFound: createDefaultWalletNotFoundHandler(),
+    });
+
+    const phantom = new PhantomWalletAdapter();
+    const solflare = new SolflareWalletAdapter();
+
+    // Android Chrome: native wallet app via Mobile Wallet Adapter
+    if (isAndroidChrome()) {
+      return [mobileMwa, phantom, solflare];
+    }
+
+    // iOS Safari / mobile WebKit: injected provider inside Phantom in-app browser
+    if (isMobileDevice()) {
+      return hasInjectedSolanaProvider() ? [phantom, solflare] : [];
+    }
+
+    // Desktop
+    return [mobileMwa, phantom, solflare];
+  }, [network]);
+
+  const autoConnect =
+    typeof window !== "undefined"
+    && !isInAppBrowser()
+    && (hasInjectedSolanaProvider() || isAndroidChrome());
 
   return (
     <ConnectionProvider endpoint={endpoint}>
-      <WalletProvider wallets={wallets} autoConnect>
+      <WalletProvider wallets={wallets} autoConnect={autoConnect}>
         <WalletModalProvider>{children}</WalletModalProvider>
       </WalletProvider>
     </ConnectionProvider>

@@ -3,6 +3,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { Wallet, ChevronDown, Copy, LogOut, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { openMobileAwareWalletConnect } from "@/lib/wallet-mobile";
 
 export default function WalletButton() {
   const { connected, publicKey, disconnect } = useWallet();
@@ -37,7 +38,7 @@ export default function WalletButton() {
   if (!connected) {
     return (
       <button
-        onClick={() => setVisible(true)}
+        onClick={() => openMobileAwareWalletConnect(setVisible)}
         className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-medium transition-all whitespace-nowrap"
       >
         <Wallet className="w-3.5 h-3.5 text-white/60" />

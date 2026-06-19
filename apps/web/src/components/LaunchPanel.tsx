@@ -12,6 +12,7 @@ import { cn, tokenSlug } from "@/lib/utils";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { clearLaunchSearchCache, readLaunchSearchParams, resolveLaunchUrlFromSearch } from "@/lib/launch-link";
+import { openMobileAwareWalletConnect, shouldRedirectToPhantomBrowser } from "@/lib/wallet-mobile";
 
 type Platform = "reddit" | "x";
 
@@ -230,8 +231,12 @@ export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
   const handleLaunch = async () => {
     if (!postPreview) return;
     if (!hasCuratorWallet) {
+      if (shouldRedirectToPhantomBrowser()) {
+        openMobileAwareWalletConnect(openWalletModal);
+        return;
+      }
       setError("Connect a Solana wallet to register as curator before launching.");
-      openWalletModal(true);
+      openMobileAwareWalletConnect(openWalletModal);
       return;
     }
     setError("");
@@ -273,7 +278,8 @@ export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
   };
 
   const isBusy = ["fetching", "quoting", "preparing", "polling"].includes(step);
-  const canLaunch = !!tokenName && !!tokenSymbol && hasCuratorWallet;
+  const needsPhantomHandoff = shouldRedirectToPhantomBrowser();
+  const canLaunch = !!tokenName && !!tokenSymbol && (hasCuratorWallet || needsPhantomHandoff);
 
   const tokenPageUrl = mintAddress
     ? buildTokenPageUrl(tokenSlug(tokenSymbol, mintAddress) || mintAddress)
@@ -643,11 +649,13 @@ export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
                       ) : (
                         <button
                           type="button"
-                          onClick={() => openWalletModal(true)}
+                          onClick={() => openMobileAwareWalletConnect(openWalletModal)}
                           className="w-full flex items-center gap-2 bg-black/60 border border-white/[0.07] hover:border-white/15 rounded-lg px-3 py-2.5 text-white/40 hover:text-white/60 text-xs font-mono transition-all"
                         >
                           <Wallet className="w-3.5 h-3.5 shrink-0" />
-                          Connect wallet to launch
+                          {needsPhantomHandoff
+                            ? "Open in Phantom to connect"
+                            : "Connect wallet to launch"}
                         </button>
                       )}
                       <p className="text-[10px] font-mono text-white/25 leading-relaxed px-0.5">
@@ -672,11 +680,13 @@ export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
                       onClick={() => { if (canLaunch) void handleLaunch(); }}
                       disabled={isBusy || !canLaunch}
                       title={
-                        !hasCuratorWallet
+                        !hasCuratorWallet && !needsPhantomHandoff
                           ? "Connect a curator wallet to launch"
                           : !tokenName || !tokenSymbol
                             ? "Fill in token details"
-                            : undefined
+                            : needsPhantomHandoff
+                              ? "Opens in Phantom app to connect wallet"
+                              : undefined
                       }
                       className={cn(
                         "px-8 py-2.5 rounded-xl font-mono font-black text-sm uppercase tracking-wide transition-all flex items-center justify-center gap-2",
@@ -689,7 +699,7 @@ export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
                       {isBusy ? (
                         <><Loader2 className="w-4 h-4 animate-spin" />{STEP_STATUS[step].replace("> ", "").replace("_", "")}</>
                       ) : !hasCuratorWallet ? (
-                        <><Wallet className="w-4 h-4" /> Connect Wallet to Launch</>
+                        <><Wallet className="w-4 h-4" /> {needsPhantomHandoff ? "Open in Phantom" : "Connect Wallet to Launch"}</>
                       ) : (
                         <><Rocket className="w-4 h-4" /> Launch Token</>
                       )}

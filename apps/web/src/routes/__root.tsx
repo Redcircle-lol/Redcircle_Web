@@ -1,6 +1,7 @@
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import Navbar from "@/components/Navbar";
+import MobileWalletBanner from "@/components/MobileWalletBanner";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { WalletContextProvider } from "@/contexts/WalletContext";
 import {
@@ -61,6 +62,7 @@ function RootComponent() {
 					<AuthProvider>
 						<ScrollToTop />
 						<Navbar />
+						<MobileWalletBanner />
 						<div className="pt-16">
 							<Outlet />
 						</div>

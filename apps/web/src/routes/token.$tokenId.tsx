@@ -11,6 +11,7 @@ import type { FeedPost } from "@/components/FeedCard";
 import { cn, formatUsd } from "@/lib/utils";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
+import { openMobileAwareWalletConnect } from "@/lib/wallet-mobile";
 
 type TokenPair = {
   priceUsd: string;
@@ -214,7 +215,7 @@ function TokenDetailsPage() {
   const handleClaimClick = () => {
     if (!connected) {
       pendingClaimRef.current = true;
-      openWalletModal(true);
+      openMobileAwareWalletConnect(openWalletModal);
       return;
     }
     setShowClaimConfirm(true);
@@ -223,7 +224,7 @@ function TokenDetailsPage() {
   const handleCuratorClaimClick = () => {
     if (!connected) {
       pendingCuratorClaimRef.current = true;
-      openWalletModal(true);
+      openMobileAwareWalletConnect(openWalletModal);
       return;
     }
     setShowCuratorClaimConfirm(true);
