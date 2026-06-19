@@ -5,14 +5,16 @@
  * Default handle is @test. @redcircle_sol is blocked unless X_BOT_ALLOW_PROD_HANDLE=true.
  *
  * Only replies when the mention includes launch intent (e.g. "tokenize", "launch").
+ * Ignores launch announcements (e.g. "now a tradable token on @redcircle_sol").
  * Plain @tags are ignored silently.
  *
  * Requires user-context OAuth tokens for the bot account (tweet.read + tweet.write).
  * Polls mentions on a timer — compatible with X pay-as-you-use (no filtered stream).
  */
 
-import { eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { db } from "../db";
+import { posts } from "../db/schema/posts";
 import { xBotMentions } from "../db/schema/x-bot";
 import { XService } from "./x.service";
 
@@ -115,10 +117,63 @@ export function resolveTargetPostUrl(
   return null;
 }
 
+/** Launch announcements that tag us — not a request to tokenize. */
+export function isPromoOrAnnouncementMention(text: string): boolean {
+  const lower = text.toLowerCase();
+  if (/redcircle\.lol\/token\//i.test(text)) return true;
+  if (/this x post is now a tradable/i.test(lower)) return true;
+  if (/\bnow a tradable token\b/i.test(lower)) return true;
+  if (/\bis now a tradable\b/i.test(lower)) return true;
+  if (/trade \$[a-z0-9]+ on redcircle/i.test(text)) return true;
+  return false;
+}
+
 /** True when the mention explicitly asks to tokenize/launch (not a casual @tag). */
 export function hasLaunchIntent(text: string): boolean {
+  if (isPromoOrAnnouncementMention(text)) return false;
+
   const normalized = text.replace(new RegExp(`@${BOT_USERNAME}\\b`, "gi"), " ").trim();
-  return /\b(tokeni[sz]e|launch(?:\s+(?:this|coin|token|it))?|tradable)\b/i.test(normalized);
+
+  if (/\b(tokeni[sz]e|launch(?:\s+(?:this|coin|token|it))?)\b/i.test(normalized)) {
+    return true;
+  }
+
+  // "tradable" as a command, not descriptive copy ("now a tradable token").
+  if (/(?:now\s+a|is\s+a|be\s+a|as\s+a)\s+tradable\b/i.test(normalized)) return false;
+  if (/\ba\s+tradable\s+token\b/i.test(normalized)) return false;
+  if (/\b(?:make\s+(?:it\s+)?tradable)\b/i.test(normalized)) return true;
+  if (/\btradable\s+(?:this|coin|token|it|please)\b/i.test(normalized)) return true;
+  if (/^tradable[!.?]*$/i.test(normalized)) return true;
+
+  return false;
+}
+
+async function findLaunchedXPost(tweetId: string): Promise<{ tokenSlug: string; tokenSymbol: string | null } | null> {
+  const [row] = await db
+    .select({ tokenSlug: posts.tokenSlug, tokenSymbol: posts.tokenSymbol })
+    .from(posts)
+    .where(
+      and(
+        eq(posts.platform, "x"),
+        eq(posts.redditPostId, tweetId),
+        inArray(posts.status, ["active", "minting", "pending"]),
+      ),
+    )
+    .limit(1);
+
+  if (!row?.tokenSlug) return null;
+  return { tokenSlug: row.tokenSlug, tokenSymbol: row.tokenSymbol };
+}
+
+export function buildAlreadyLaunchedReplyText(tokenSlug: string, tokenSymbol?: string | null): string {
+  const url = `${launchBaseUrl()}/token/${tokenSlug}`;
+  const symbolLine = tokenSymbol ? `Trade $${tokenSymbol} on Redcircle:` : "Trade on Redcircle:";
+  return [
+    "This post already has a token on Redcircle 🚀",
+    "",
+    symbolLine,
+    url,
+  ].join("\n");
 }
 
 export function buildMentionReplyText(targetPostUrl: string): string {
@@ -352,6 +407,12 @@ async function handleMention(
   }
   if (await alreadyProcessed(mention.id)) return;
 
+  // Launch announcements that @tag us — ignore silently (no reply spam).
+  if (isPromoOrAnnouncementMention(mention.text)) {
+    await markProcessed(mention.id, "promo", null);
+    return;
+  }
+
   // Casual @tags without launch intent — ignore silently (no reply spam).
   if (!hasLaunchIntent(mention.text)) {
     await markProcessed(mention.id, "ignored", null);
@@ -360,6 +421,28 @@ async function handleMention(
 
   const ctx = mention._ctx ?? { referenced: new Map(), usernames: new Map() };
   const targetUrl = resolveTargetPostUrl(mention, ctx.referenced, ctx.usernames);
+
+  if (targetUrl) {
+    const tweetId = XService.extractTweetId(targetUrl);
+    if (tweetId) {
+      const existing = await findLaunchedXPost(tweetId);
+      if (existing) {
+        await markProcessed(mention.id, `existing:${existing.tokenSlug}`, null);
+        const replyId = await postReply(
+          mention.id,
+          buildAlreadyLaunchedReplyText(existing.tokenSlug, existing.tokenSymbol),
+        );
+        if (replyId) {
+          await db.update(xBotMentions)
+            .set({ replyTweetId: replyId })
+            .where(eq(xBotMentions.mentionTweetId, mention.id));
+          console.log(`✅ [XBot] Replied already-launched for mention ${mention.id} → ${existing.tokenSlug}`);
+        }
+        return;
+      }
+    }
+  }
+
   const replyText = targetUrl ? buildMentionReplyText(targetUrl) : buildHelpReplyText();
 
   // Mark before replying so a crash/restart can't double-post.
