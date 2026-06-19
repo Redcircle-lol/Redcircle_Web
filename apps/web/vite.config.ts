@@ -14,7 +14,8 @@ export default defineConfig({
 	server: {
 		host: true,
 		fs: {
-			allow: [path.resolve(__dirname, "../..")],
+			allow: [path.resolve(__dirname, "../.."), path.resolve(__dirname, ".")],
+			strict: false,
 		},
-	}
+	},
 });

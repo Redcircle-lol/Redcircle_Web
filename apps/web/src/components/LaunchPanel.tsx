@@ -81,10 +81,16 @@ const STEP_STATUS: Record<LaunchStep, string> = {
   error:      "> error encountered.",
 };
 
+/** Read launch target from prop (router passes resolved ?url= / ?x=). */
+function resolveIncomingLaunchUrl(initialUrl?: string): string {
+  if (initialUrl?.trim()) return initialUrl.trim();
+  return "";
+}
+
 export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
   const { connected, publicKey, disconnect } = useWallet();
   const { setVisible: openWalletModal } = useWalletModal();
-  const [url, setUrl]               = useState(initialUrl || "");
+  const [url, setUrl]               = useState(() => resolveIncomingLaunchUrl(initialUrl));
   const [postPreview, setPostPreview] = useState<PostPreview | null>(null);
   const [quote, setQuote]           = useState<Quote | null>(null);
   const [tokenName, setTokenName]   = useState("");
@@ -141,14 +147,17 @@ export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
     return () => clearTimeout(t);
   }, [step]);
 
-  // Auto-fetch only when arriving from the hot page (initialUrl set via sessionStorage)
+  // Auto-fetch when arriving via ?url= deep link or hot page sessionStorage
   useEffect(() => {
-    if (initialUrl) handleFetchPost();
+    const target = resolveIncomingLaunchUrl(initialUrl);
+    if (!target) return;
+    setUrl(target);
+    handleFetchPost(target);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [initialUrl]);
 
-  const handleFetchPost = async () => {
-    const targetUrl = url.trim();
+  const handleFetchPost = async (overrideUrl?: string) => {
+    const targetUrl = (overrideUrl ?? url).trim();
     if (!targetUrl) return;
 
     const platform = detectPlatform(targetUrl);
@@ -488,7 +497,7 @@ export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
                   />
                 </div>
                 <button
-                  onClick={handleFetchPost}
+                  onClick={() => void handleFetchPost()}
                   disabled={!url || isBusy}
                   className="h-12 px-6 rounded-xl bg-[#E8431C] hover:bg-[#FF5535] text-black font-mono font-black text-sm uppercase tracking-wide transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 whitespace-nowrap shadow-[0_0_24px_rgba(232,67,28,0.4)] hover:shadow-[0_0_36px_rgba(232,67,28,0.6)] hover:-translate-y-px cursor-pointer"
                 >

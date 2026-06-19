@@ -5,6 +5,7 @@ import express from "express";
 import { startPriceSyncJob } from "./jobs/priceSync";
 import { initLaunchWebSocket } from "./services/ws.service";
 import { startTrendingSyncJob } from "./jobs/trendingSync";
+import { initXBotJob } from "./jobs/xBotPoll";
 import redditAuthRoutes from "./config/reddit-oauth-simple";
 import xAuthRoutes from "./config/x-oauth";
 import postsRoutes from "./routes/posts";
@@ -283,4 +284,5 @@ app.use((err: Error, req: express.Request, res: express.Response, _next: express
 	console.log(`\nServer running on port ${port}\n`);
 	startPriceSyncJob();
 	startTrendingSyncJob();
+	initXBotJob();
 });

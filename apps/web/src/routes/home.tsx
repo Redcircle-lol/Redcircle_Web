@@ -4,14 +4,19 @@ import LaunchPanel from "@/components/LaunchPanel";
 import RedditFeed from "@/components/RedditFeed";
 import CopyCA from "@/components/CopyCA";
 import { AnimatedFooter } from "@/components/ui/animated-footer";
+import { resolveLaunchUrlFromSearch } from "@/lib/launch-link";
 
 export const Route = createFileRoute("/home")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    url: typeof search.url === "string" ? search.url : undefined,
+    x: typeof search.x === "string" ? search.x : undefined,
+  }),
   component: HomeComponent,
 });
 
 function HomeComponent() {
-  const initialUrl = sessionStorage.getItem("hotLaunchUrl") || undefined;
-  if (initialUrl) sessionStorage.removeItem("hotLaunchUrl");
+  const { url, x } = Route.useSearch();
+  const launchUrl = resolveLaunchUrlFromSearch(url, x);
 
   useEffect(() => {
     if (sessionStorage.getItem("scrollToFeed")) {
@@ -70,7 +75,7 @@ function HomeComponent() {
 
         {/* Launch widget */}
         <div className="mb-12 sm:mb-20">
-          <LaunchPanel initialUrl={initialUrl || undefined} />
+          <LaunchPanel initialUrl={launchUrl} />
         </div>
 
         <div className="mb-8 sm:mb-10" />

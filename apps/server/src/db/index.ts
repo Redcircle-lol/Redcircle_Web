@@ -32,3 +32,4 @@ export * from "./schema/price-history";
 export * from "./schema/waitlist";
 export * from "./schema/launches";
 export * from "./schema/claims";
+export * from "./schema/x-bot";

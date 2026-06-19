@@ -266,8 +266,7 @@ function HotPage() {
 
   const handleLaunch = () => {
     if (!selectedPost) return;
-    sessionStorage.setItem("hotLaunchUrl", selectedPost.redditUrl);
-    navigate({ to: "/home" });
+    navigate({ to: "/home", search: { url: selectedPost.redditUrl, x: undefined } });
   };
 
   return (

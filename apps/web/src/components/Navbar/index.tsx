@@ -39,7 +39,7 @@ export default function Navbar() {
       document.getElementById("feed")?.scrollIntoView({ behavior: "smooth" });
     } else {
       sessionStorage.setItem("scrollToFeed", "1");
-      navigate({ to: "/home" });
+      navigate({ to: "/home", search: { url: undefined, x: undefined } });
     }
   };
 
@@ -53,6 +53,7 @@ export default function Navbar() {
           {/* Logo */}
           <Link
             to="/home"
+            search={{ url: undefined, x: undefined }}
             className="flex shrink-0 items-center gap-2 font-extrabold text-lg tracking-tight text-white"
           >
             <img src="/logo.png" alt="Redcircle" className="h-8 w-auto" />
