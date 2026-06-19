@@ -286,7 +286,6 @@ function DocsPage() {
             </p>
             <Link
               to="/home"
-              search={{ url: undefined, x: undefined }}
               className="mt-4 inline-flex items-center gap-1 text-sm text-neutral-400 hover:text-white"
             >
               ← Back to app

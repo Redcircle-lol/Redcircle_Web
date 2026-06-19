@@ -5,6 +5,14 @@ export const Route = createFileRoute("/")({
 		if (typeof window !== "undefined" && window.location.hostname === "social.redcircle.lol") {
 			throw redirect({ to: "/social" });
 		}
-		throw redirect({ to: "/home", search: { url: undefined, x: undefined } });
+		const params = typeof window !== "undefined"
+			? new URLSearchParams(window.location.search)
+			: null;
+		const url = params?.get("url") ?? undefined;
+		const x = params?.get("x") ?? undefined;
+		throw redirect({
+			to: "/home",
+			search: url || x ? { url, x } : {},
+		});
 	},
 });

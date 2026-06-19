@@ -4,7 +4,7 @@ import LaunchPanel from "@/components/LaunchPanel";
 import RedditFeed from "@/components/RedditFeed";
 import CopyCA from "@/components/CopyCA";
 import { AnimatedFooter } from "@/components/ui/animated-footer";
-import { resolveLaunchUrlFromSearch } from "@/lib/launch-link";
+import { readLaunchSearchParams, resolveLaunchUrlFromSearch } from "@/lib/launch-link";
 
 export const Route = createFileRoute("/home")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -15,8 +15,13 @@ export const Route = createFileRoute("/home")({
 });
 
 function HomeComponent() {
-  const { url, x } = Route.useSearch();
-  const launchUrl = resolveLaunchUrlFromSearch(url, x);
+  const routerSearch = Route.useSearch();
+  // Navbar <Link search={{ x: undefined }}> can strip params on load — read window too.
+  const windowSearch = readLaunchSearchParams();
+  const launchUrl = resolveLaunchUrlFromSearch(
+    routerSearch.url ?? windowSearch.url,
+    routerSearch.x ?? windowSearch.x,
+  );
 
   useEffect(() => {
     if (sessionStorage.getItem("scrollToFeed")) {

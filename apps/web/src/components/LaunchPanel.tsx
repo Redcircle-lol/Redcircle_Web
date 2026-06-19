@@ -11,6 +11,7 @@ import XThreadShare from "@/components/XThreadShare";
 import { cn, tokenSlug } from "@/lib/utils";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
+import { clearLaunchSearchCache, readLaunchSearchParams, resolveLaunchUrlFromSearch } from "@/lib/launch-link";
 
 type Platform = "reddit" | "x";
 
@@ -84,7 +85,8 @@ const STEP_STATUS: Record<LaunchStep, string> = {
 /** Read launch target from prop (router passes resolved ?url= / ?x=). */
 function resolveIncomingLaunchUrl(initialUrl?: string): string {
   if (initialUrl?.trim()) return initialUrl.trim();
-  return "";
+  const fromWindow = readLaunchSearchParams();
+  return resolveLaunchUrlFromSearch(fromWindow.url, fromWindow.x) ?? "";
 }
 
 export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
@@ -169,6 +171,7 @@ export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
 
     setError("");
     setStep("fetching");
+    clearLaunchSearchCache();
     setPostPreview(null);
     setQuote(null);
     try {
