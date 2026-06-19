@@ -208,7 +208,7 @@ router.post("/prepare", async (req: Request, res: Response) => {
       tokenSymbol:     z.string().min(1).max(10),
       description:          z.string().max(500).optional(),
       imageUrl:             z.string().url().optional(),
-      curatorWalletAddress: z.string().min(32).max(44).optional(),
+      curatorWalletAddress: z.string().trim().min(32, "Curator wallet is required").max(44),
     }).parse(req.body);
 
     const platform = body.platform;
@@ -298,7 +298,7 @@ router.post("/prepare", async (req: Request, res: Response) => {
       platformFeeBps:        50,
       creatorFeeBps:         40,
       curatorFeeBps:         15,
-      curatorWalletAddress:  body.curatorWalletAddress ?? null,
+      curatorWalletAddress:  body.curatorWalletAddress,
       status:                "submitting",
     })
     .onConflictDoUpdate({
@@ -307,8 +307,9 @@ router.post("/prepare", async (req: Request, res: Response) => {
         orynthLaunchId: orynthLaunch.id,
         preparedTxHex:  fullySigned,
         tokenSlug,
-        feeConfig:      JSON.stringify(orynthLaunch.feeConfig),
-        status:         "submitting",
+        feeConfig:            JSON.stringify(orynthLaunch.feeConfig),
+        curatorWalletAddress: body.curatorWalletAddress,
+        status:               "submitting",
         errorMessage:   null,
         updatedAt:      new Date(),
       },
@@ -328,6 +329,10 @@ router.post("/prepare", async (req: Request, res: Response) => {
 
     res.json({ success: true, launchId: launch.id });
   } catch (err) {
+    if (err instanceof z.ZodError) {
+      const msg = err.issues[0]?.message ?? "Invalid launch request";
+      return res.status(400).json({ success: false, error: msg });
+    }
     res.status(500).json({ success: false, error: err instanceof Error ? err.message : "Failed to launch" });
   }
 });

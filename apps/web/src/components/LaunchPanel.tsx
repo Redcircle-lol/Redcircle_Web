@@ -225,8 +225,15 @@ export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
     }
   };
 
+  const hasCuratorWallet = connected && !!publicKey;
+
   const handleLaunch = async () => {
     if (!postPreview) return;
+    if (!hasCuratorWallet) {
+      setError("Connect a Solana wallet to register as curator before launching.");
+      openWalletModal(true);
+      return;
+    }
     setError("");
     try {
       setStep("preparing");
@@ -244,7 +251,7 @@ export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
           tokenSymbol:          tokenSymbol.toUpperCase(),
           description,
           imageUrl:             postPreview.thumbnail ?? undefined,
-          curatorWalletAddress: publicKey?.toBase58() ?? undefined,
+          curatorWalletAddress: publicKey.toBase58(),
         }),
       });
       const prepData = await prepRes.json();
@@ -266,6 +273,7 @@ export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
   };
 
   const isBusy = ["fetching", "quoting", "preparing", "polling"].includes(step);
+  const canLaunch = !!tokenName && !!tokenSymbol && hasCuratorWallet;
 
   const tokenPageUrl = mintAddress
     ? buildTokenPageUrl(tokenSlug(tokenSymbol, mintAddress) || mintAddress)
@@ -613,11 +621,11 @@ export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
                       />
                     </div>
 
-                    {/* Step 3 — Curator Wallet (optional) */}
+                    {/* Step 3 — Curator Wallet (required) */}
                     <div className="space-y-2">
-                      <SectionLabel n={3} text="Curator Wallet (Optional)" />
+                      <SectionLabel n={3} text="Curator Wallet" />
                       {connected && publicKey ? (
-                        <div className="flex items-center justify-between bg-black/60 border border-white/[0.07] rounded-lg px-3 py-2.5">
+                        <div className="flex items-center justify-between bg-black/60 border border-emerald-500/20 rounded-lg px-3 py-2.5">
                           <div className="flex items-center gap-2 min-w-0">
                             <span className="w-1.5 h-1.5 rounded-full bg-green-400 shrink-0" />
                             <span className="text-xs font-mono text-white/70 truncate">
@@ -629,23 +637,23 @@ export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
                             onClick={() => disconnect().catch(() => {})}
                             className="text-[10px] font-mono text-white/30 hover:text-red-400 transition-colors shrink-0 ml-2"
                           >
-                            Remove
+                            Change
                           </button>
                         </div>
                       ) : (
                         <button
                           type="button"
                           onClick={() => openWalletModal(true)}
-                          className="w-full flex items-center gap-2 bg-black/60 border border-white/[0.07] hover:border-white/15 rounded-lg px-3 py-2.5 text-white/40 hover:text-white/60 text-xs font-mono transition-all"
+                          className="w-full flex items-center gap-2 bg-black/60 border border-[#E8431C]/30 hover:border-[#E8431C]/50 rounded-lg px-3 py-2.5 text-[#FF5535] hover:text-[#FF7755] text-xs font-mono transition-all"
                         >
                           <Wallet className="w-3.5 h-3.5 shrink-0" />
-                          Connect wallet for curator rewards
+                          Connect wallet to launch (required)
                         </button>
                       )}
                       <p className="text-[10px] font-mono text-white/25 leading-relaxed px-0.5">
-                        Connecting identifies you as the curator.
-                        <span className="text-[#00FFA3]/50"> No funds will be deducted</span> — only used
-                        to send you your 0.15% curator reward from trading fees.
+                        A connected wallet is required to launch. It registers you as the curator
+                        and receives your 0.15% reward from trading fees.
+                        <span className="text-[#00FFA3]/50"> No launch cost is deducted from this wallet.</span>
                       </p>
                     </div>
 
@@ -661,18 +669,28 @@ export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
                       Cancel
                     </button>
                     <button
-                      onClick={handleLaunch}
-                      disabled={isBusy || !tokenName || !tokenSymbol}
-                      title={!tokenName || !tokenSymbol ? "Fill in token details" : undefined}
+                      type="button"
+                      onClick={() => { if (canLaunch) void handleLaunch(); }}
+                      disabled={isBusy || !canLaunch}
+                      title={
+                        !hasCuratorWallet
+                          ? "Connect a curator wallet to launch"
+                          : !tokenName || !tokenSymbol
+                            ? "Fill in token details"
+                            : undefined
+                      }
                       className={cn(
-                        "px-8 py-2.5 rounded-xl font-mono font-black text-sm uppercase tracking-wide transition-all flex items-center justify-center gap-2 cursor-pointer",
-                        "bg-[#E8431C] hover:bg-[#FF5535] text-black hover:-translate-y-px",
-                        "disabled:opacity-40 disabled:cursor-not-allowed",
-                        "shadow-[0_0_24px_rgba(232,67,28,0.4)] hover:shadow-[0_0_36px_rgba(232,67,28,0.6)]",
+                        "px-8 py-2.5 rounded-xl font-mono font-black text-sm uppercase tracking-wide transition-all flex items-center justify-center gap-2",
+                        canLaunch && !isBusy
+                          ? "cursor-pointer bg-[#E8431C] hover:bg-[#FF5535] text-black hover:-translate-y-px shadow-[0_0_24px_rgba(232,67,28,0.4)] hover:shadow-[0_0_36px_rgba(232,67,28,0.6)]"
+                          : "cursor-not-allowed bg-[#E8431C]/50 text-black/60 shadow-none",
+                        "disabled:opacity-40",
                       )}
                     >
                       {isBusy ? (
                         <><Loader2 className="w-4 h-4 animate-spin" />{STEP_STATUS[step].replace("> ", "").replace("_", "")}</>
+                      ) : !hasCuratorWallet ? (
+                        <><Wallet className="w-4 h-4" /> Connect Wallet to Launch</>
                       ) : (
                         <><Rocket className="w-4 h-4" /> Launch Token</>
                       )}
