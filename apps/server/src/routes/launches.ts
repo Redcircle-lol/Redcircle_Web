@@ -9,6 +9,7 @@ import { RedditService } from "../services/reddit.service";
 import { XService } from "../services/x.service";
 import { broadcastLaunch } from "../services/ws.service";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GEMINI_MODEL } from "../config/gemini";
 
 const router: express.Router = express.Router();
 
@@ -135,7 +136,7 @@ router.post("/suggest-name", async (req: Request, res: Response) => {
 
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
 
     const prompt = `You are a crypto token naming expert. Given a Reddit post, generate a catchy, memorable token name and ticker that captures the essence of the post.
 

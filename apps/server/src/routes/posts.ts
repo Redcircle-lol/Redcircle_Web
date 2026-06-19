@@ -7,6 +7,7 @@ import { eq, desc, asc, and, gte, ilike, inArray, or } from "drizzle-orm";
 import * as Orynth from "../services/orynth.service";
 import { authenticateToken } from "../middleware/auth";
 import { resolvePostById, matchesPostAuthor } from "../db/helpers";
+import { GEMINI_MODEL } from "../config/gemini";
 
 const { posts, launches } = schema;
 const router: import("express").Router = Router();
@@ -87,7 +88,7 @@ Reply with ONLY a JSON object, no markdown:
           if (imageBase64) parts.push({ inline_data: { mime_type: "image/jpeg", data: imageBase64 } });
 
           const geminiRes = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${geminiKey}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${geminiKey}`,
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -214,7 +215,7 @@ Reply with ONLY a JSON object, no markdown:
         if (imageBase64) parts.push({ inline_data: { mime_type: "image/jpeg", data: imageBase64 } });
 
         const geminiRes = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${geminiKey}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${geminiKey}`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
