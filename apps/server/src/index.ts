@@ -31,11 +31,15 @@ const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
   : ["http://localhost:3001", "http://localhost:5173", "http://localhost:3000"];
 
+// Allow any *.redcircle.lol subdomain automatically
+const isRedcircleOrigin = (origin: string) =>
+  /^https:\/\/([a-z0-9-]+\.)?redcircle\.lol$/.test(origin);
+
 app.use(
   cors({
     origin: (origin, cb) => {
-      // Allow server-to-server requests (no origin) and listed origins
-      if (!origin || ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+      // Allow server-to-server requests (no origin), listed origins, and *.redcircle.lol
+      if (!origin || ALLOWED_ORIGINS.includes(origin) || isRedcircleOrigin(origin)) return cb(null, true);
       cb(new Error(`Origin ${origin} not allowed by CORS`));
     },
     credentials: true,

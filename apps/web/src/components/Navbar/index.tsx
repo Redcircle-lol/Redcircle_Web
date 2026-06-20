@@ -25,6 +25,12 @@ function Avatar({ src, alt, className }: { src?: string | null; alt: string; cla
   return <img src={src} alt={alt} className={className} onError={() => setFailed(true)} />;
 }
 
+const HOME_URL =
+  typeof window !== "undefined" &&
+  !["localhost", "127.0.0.1", "redcircle.lol", "www.redcircle.lol"].includes(window.location.hostname)
+    ? "https://www.redcircle.lol/home"
+    : null;
+
 export default function Navbar() {
   const { isAuthenticated, user, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -51,13 +57,23 @@ export default function Navbar() {
         <div className="flex h-16 items-center justify-between gap-3">
 
           {/* Logo */}
-          <Link
-            to="/home"
-            className="flex shrink-0 items-center gap-2 font-extrabold text-lg tracking-tight text-white"
-          >
-            <img src="/logo.png" alt="Redcircle" className="h-8 w-auto" />
-            <span>Redcircle</span>
-          </Link>
+          {HOME_URL ? (
+            <a
+              href={HOME_URL}
+              className="flex shrink-0 items-center gap-2 font-extrabold text-lg tracking-tight text-white"
+            >
+              <img src="/logo.png" alt="Redcircle" className="h-8 w-auto" />
+              <span>Redcircle</span>
+            </a>
+          ) : (
+            <Link
+              to="/home"
+              className="flex shrink-0 items-center gap-2 font-extrabold text-lg tracking-tight text-white"
+            >
+              <img src="/logo.png" alt="Redcircle" className="h-8 w-auto" />
+              <span>Redcircle</span>
+            </Link>
+          )}
 
           {/* Desktop nav — absolutely centered so it stays centered regardless of side content width */}
           <nav className="hidden md:flex items-center gap-6 absolute left-1/2 -translate-x-1/2">
