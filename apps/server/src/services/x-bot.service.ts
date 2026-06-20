@@ -15,7 +15,7 @@
 import { and, eq, inArray } from "drizzle-orm";
 import { db } from "../db";
 import { posts } from "../db/schema/posts";
-import { xBotMentions } from "../db/schema/x-bot";
+import { xBotMentions, xBotCredentials } from "../db/schema/x-bot";
 import { XService } from "./x.service";
 
 const API_BASE = "https://api.twitter.com/2";
@@ -196,6 +196,57 @@ export function buildHelpReplyText(): string {
   ].join("\n");
 }
 
+/** Persist tokens after OAuth or refresh — X rotates refresh tokens on each use. */
+async function saveXBotCredentials(creds: {
+  username: string;
+  userId: string;
+  accessToken: string;
+  refreshToken: string;
+}): Promise<void> {
+  const botUsername = creds.username.replace(/^@/, "").toLowerCase();
+  await db.insert(xBotCredentials).values({
+    botUsername,
+    userId: creds.userId,
+    accessToken: creds.accessToken,
+    refreshToken: creds.refreshToken,
+    updatedAt: new Date(),
+  }).onConflictDoUpdate({
+    target: xBotCredentials.botUsername,
+    set: {
+      userId: creds.userId,
+      accessToken: creds.accessToken,
+      refreshToken: creds.refreshToken,
+      updatedAt: new Date(),
+    },
+  });
+}
+
+async function loadXBotCredentialsFromDb(): Promise<boolean> {
+  const [row] = await db
+    .select()
+    .from(xBotCredentials)
+    .where(eq(xBotCredentials.botUsername, BOT_USERNAME.toLowerCase()))
+    .limit(1);
+
+  if (!row) return false;
+
+  accessToken = row.accessToken;
+  refreshToken = row.refreshToken;
+  botUserId = row.userId;
+  console.log(`✅ [XBot] Loaded OAuth tokens from DB for @${BOT_USERNAME}`);
+  return true;
+}
+
+async function persistXBotCredentials(): Promise<void> {
+  if (!accessToken || !refreshToken || !botUserId) return;
+  await saveXBotCredentials({
+    username: BOT_USERNAME,
+    userId: botUserId,
+    accessToken,
+    refreshToken,
+  });
+}
+
 async function refreshAccessToken(): Promise<boolean> {
   const clientId = botClientId();
   const clientSecret = botClientSecret();
@@ -226,12 +277,17 @@ async function refreshAccessToken(): Promise<boolean> {
   if (!res.ok || !data.access_token) {
     const detail = data.error_description || data.error || `HTTP ${res.status}`;
     console.error(`❌ [XBot] Token refresh failed: ${detail}`);
+    console.error(
+      "❌ [XBot] Re-auth required — generate new tokens for @" +
+      `${BOT_USERNAME} and update X_BOT_ACCESS_TOKEN / X_BOT_REFRESH_TOKEN in Render (or x_bot_credentials in DB).`,
+    );
     return false;
   }
 
   accessToken = data.access_token;
   if (data.refresh_token) refreshToken = data.refresh_token;
-  console.log("✅ [XBot] Access token refreshed");
+  await persistXBotCredentials();
+  console.log("✅ [XBot] Access token refreshed (saved to DB)");
   return true;
 }
 
@@ -495,8 +551,13 @@ export function startXBotPollJob(): void {
 
   console.log(`🤖 [XBot] Starting — @${BOT_USERNAME}, poll every ${POLL_MS / 1000}s`);
 
-  resolveBotUserId()
+  loadXBotCredentialsFromDb()
+    .then(() => resolveBotUserId())
     .then(async (userId) => {
+      // Seed DB from env on first boot so the next refresh rotation is persisted.
+      if (accessToken && refreshToken) {
+        await persistXBotCredentials();
+      }
       await loadSinceIdFromDb();
       await bootstrapSinceId(userId);
       await pollOnce();

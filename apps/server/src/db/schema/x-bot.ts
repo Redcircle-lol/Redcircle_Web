@@ -7,3 +7,12 @@ export const xBotMentions = pgTable("x_bot_mentions", {
   targetPostUrl: text("target_post_url").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
+
+/** OAuth tokens for the bot — survives refresh rotation across Render restarts. */
+export const xBotCredentials = pgTable("x_bot_credentials", {
+  botUsername: text("bot_username").primaryKey(),
+  userId: text("user_id").notNull(),
+  accessToken: text("access_token").notNull(),
+  refreshToken: text("refresh_token").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});

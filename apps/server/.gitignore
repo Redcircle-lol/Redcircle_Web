@@ -47,6 +47,9 @@ lerna-debug.log*
 .DS_Store
 *.pem
 
+# local-only X bot token helper (never commit)
+scripts/get-x-bot-tokens.mjs
+
 # local db
 *.db*
 
