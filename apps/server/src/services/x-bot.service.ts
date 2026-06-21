@@ -26,6 +26,8 @@ const BOT_USERNAME = (process.env.X_BOT_USERNAME || "test").replace(/^@/, "");
 const PROD_BOT_HANDLE = "redcircle_sol";
 const ALLOW_PROD_BOT = process.env.X_BOT_ALLOW_PROD_HANDLE === "true";
 const POLL_MS = Math.max(15_000, Number(process.env.X_BOT_POLL_INTERVAL_MS) || 60_000);
+const REPLY_DELAY_MIN_MS = Math.max(0, Number(process.env.X_BOT_REPLY_DELAY_MIN_MS) || 8_000);
+const REPLY_DELAY_MAX_MS = Math.max(REPLY_DELAY_MIN_MS, Number(process.env.X_BOT_REPLY_DELAY_MAX_MS) || 20_000);
 
 let botUserId = process.env.X_BOT_USER_ID || "";
 let accessToken = process.env.X_BOT_ACCESS_TOKEN || "";
@@ -99,8 +101,14 @@ export function resolveTargetPostUrl(
   referenced: Map<string, MentionTweet>,
   usernames: Map<string, string>,
 ): string | null {
-  for (const ref of mention.referenced_tweets ?? []) {
-    if (ref.type !== "replied_to" && ref.type !== "quoted") continue;
+  const refs = mention.referenced_tweets ?? [];
+  // Prefer the direct parent (replied_to) over quoted tweets in the same mention.
+  const ordered = [
+    ...refs.filter((r) => r.type === "replied_to"),
+    ...refs.filter((r) => r.type === "quoted"),
+  ];
+
+  for (const ref of ordered) {
     const refTweet = referenced.get(ref.id);
     const author = refTweet ? usernames.get(refTweet.author_id) : null;
     if (author) return tweetUrl(author, ref.id);
@@ -167,33 +175,56 @@ async function findLaunchedXPost(tweetId: string): Promise<{ tokenSlug: string; 
 
 export function buildAlreadyLaunchedReplyText(tokenSlug: string, tokenSymbol?: string | null): string {
   const url = `${launchBaseUrl()}/token/${tokenSlug}`;
-  const symbolLine = tokenSymbol ? `Trade $${tokenSymbol} on Redcircle:` : "Trade on Redcircle:";
-  return [
-    "This post already has a token on Redcircle 🚀",
-    "",
-    symbolLine,
-    url,
-  ].join("\n");
+  if (tokenSymbol) return `Already live — trade $${tokenSymbol}: ${url}`;
+  return `Already live on Redcircle: ${url}`;
 }
 
 export function buildMentionReplyText(targetPostUrl: string): string {
   const link = buildLaunchDeepLink(targetPostUrl);
-  return [
-    "Launch a token for this post on Redcircle 🚀",
-    "",
-    link,
-    "",
-    "Tap the link → confirm → trade in ~30s.",
-  ].join("\n");
+  // Single line — multi-line promo copy triggers X spam filters more often.
+  return `Launch this post on Redcircle: ${link}`;
 }
 
 export function buildHelpReplyText(): string {
-  return [
-    `Reply to the X post you want to tokenize with:`,
-    `@${BOT_USERNAME} tokenize`,
-    "",
-    `Or paste any link at ${launchBaseUrl()}/home`,
-  ].join("\n");
+  return `Reply to a post with @${BOT_USERNAME} tokenize to get a launch link.`;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function replyDelayMs(): number {
+  return REPLY_DELAY_MIN_MS + Math.floor(Math.random() * (REPLY_DELAY_MAX_MS - REPLY_DELAY_MIN_MS + 1));
+}
+
+async function verifyReplyVisible(replyId: string): Promise<boolean> {
+  await sleep(3_000);
+  const res = await botFetch(`/tweets/${replyId}?tweet.fields=author_id`, undefined, false);
+  if (!res.ok) return false;
+  const data = (await res.json()) as { data?: { id: string } };
+  return !!data.data?.id;
+}
+
+/** Post a reply after a short delay and verify X didn't silently remove it. */
+async function sendBotReply(mentionId: string, text: string, logContext: string): Promise<string | null> {
+  const delayMs = replyDelayMs();
+  console.log(`⏳ [XBot] Waiting ${Math.round(delayMs / 1000)}s before replying to ${mentionId}`);
+  await sleep(delayMs);
+
+  const replyId = await postReply(mentionId, text);
+  if (!replyId) return null;
+
+  const replyUrl = `https://x.com/i/status/${replyId}`;
+  const visible = await verifyReplyVisible(replyId);
+  if (visible) {
+    console.log(`✅ [XBot] ${logContext} — reply ${replyUrl}`);
+  } else {
+    console.warn(
+      `⚠️ [XBot] Reply API succeeded but tweet may be hidden/removed by X: ${replyUrl}. ` +
+      "Check account standing in X Developer Portal.",
+    );
+  }
+  return replyId;
 }
 
 /** Persist tokens after OAuth or refresh — X rotates refresh tokens on each use. */
@@ -484,15 +515,15 @@ async function handleMention(
       const existing = await findLaunchedXPost(tweetId);
       if (existing) {
         await markProcessed(mention.id, `existing:${existing.tokenSlug}`, null);
-        const replyId = await postReply(
+        const replyId = await sendBotReply(
           mention.id,
           buildAlreadyLaunchedReplyText(existing.tokenSlug, existing.tokenSymbol),
+          `Already-launched for mention ${mention.id} → ${existing.tokenSlug}`,
         );
         if (replyId) {
           await db.update(xBotMentions)
             .set({ replyTweetId: replyId })
             .where(eq(xBotMentions.mentionTweetId, mention.id));
-          console.log(`✅ [XBot] Replied already-launched for mention ${mention.id} → ${existing.tokenSlug}`);
         }
         return;
       }
@@ -504,12 +535,14 @@ async function handleMention(
   // Mark before replying so a crash/restart can't double-post.
   await markProcessed(mention.id, targetUrl ?? "help", null);
 
-  const replyId = await postReply(mention.id, replyText);
+  const logContext = targetUrl
+    ? `Replied to mention ${mention.id} → ${targetUrl}`
+    : `Replied help to mention ${mention.id}`;
+  const replyId = await sendBotReply(mention.id, replyText, logContext);
   if (replyId) {
     await db.update(xBotMentions)
       .set({ replyTweetId: replyId })
       .where(eq(xBotMentions.mentionTweetId, mention.id));
-    console.log(`✅ [XBot] Replied to mention ${mention.id}${targetUrl ? ` → ${targetUrl}` : " (help)"}`);
   }
 }
 
