@@ -173,20 +173,33 @@ async function findLaunchedXPost(tweetId: string): Promise<{ tokenSlug: string; 
   return { tokenSlug: row.tokenSlug, tokenSymbol: row.tokenSymbol };
 }
 
-export function buildAlreadyLaunchedReplyText(tokenSlug: string, tokenSymbol?: string | null): string {
+function prefixForRequester(username: string | null | undefined, text: string): string {
+  if (!username || username.toLowerCase() === BOT_USERNAME.toLowerCase()) return text;
+  return `@${username} ${text}`;
+}
+
+export function buildAlreadyLaunchedReplyText(
+  tokenSlug: string,
+  tokenSymbol?: string | null,
+  requesterUsername?: string | null,
+): string {
   const url = `${launchBaseUrl()}/token/${tokenSlug}`;
-  if (tokenSymbol) return `Already live — trade $${tokenSymbol}: ${url}`;
-  return `Already live on Redcircle: ${url}`;
+  const body = tokenSymbol
+    ? `Already live — trade $${tokenSymbol}: ${url}`
+    : `Already live on Redcircle: ${url}`;
+  return prefixForRequester(requesterUsername, body);
 }
 
-export function buildMentionReplyText(targetPostUrl: string): string {
+export function buildMentionReplyText(targetPostUrl: string, requesterUsername?: string | null): string {
   const link = buildLaunchDeepLink(targetPostUrl);
-  // Single line — multi-line promo copy triggers X spam filters more often.
-  return `Launch this post on Redcircle: ${link}`;
+  return prefixForRequester(requesterUsername, `Launch this post on Redcircle: ${link}`);
 }
 
-export function buildHelpReplyText(): string {
-  return `Reply to a post with @${BOT_USERNAME} tokenize to get a launch link.`;
+export function buildHelpReplyText(requesterUsername?: string | null): string {
+  return prefixForRequester(
+    requesterUsername,
+    `Reply to a post with @${BOT_USERNAME} tokenize to get a launch link.`,
+  );
 }
 
 function sleep(ms: number): Promise<void> {
@@ -507,6 +520,7 @@ async function handleMention(
   }
 
   const ctx = mention._ctx ?? { referenced: new Map(), usernames: new Map() };
+  const requesterUsername = ctx.usernames.get(mention.author_id) ?? null;
   const targetUrl = resolveTargetPostUrl(mention, ctx.referenced, ctx.usernames);
 
   if (targetUrl) {
@@ -517,8 +531,8 @@ async function handleMention(
         await markProcessed(mention.id, `existing:${existing.tokenSlug}`, null);
         const replyId = await sendBotReply(
           mention.id,
-          buildAlreadyLaunchedReplyText(existing.tokenSlug, existing.tokenSymbol),
-          `Already-launched for mention ${mention.id} → ${existing.tokenSlug}`,
+          buildAlreadyLaunchedReplyText(existing.tokenSlug, existing.tokenSymbol, requesterUsername),
+          `Already-launched for @${requesterUsername ?? mention.author_id} on mention ${mention.id} → ${existing.tokenSlug}`,
         );
         if (replyId) {
           await db.update(xBotMentions)
@@ -530,14 +544,19 @@ async function handleMention(
     }
   }
 
-  const replyText = targetUrl ? buildMentionReplyText(targetUrl) : buildHelpReplyText();
+  const replyText = targetUrl
+    ? buildMentionReplyText(targetUrl, requesterUsername)
+    : buildHelpReplyText(requesterUsername);
 
   // Mark before replying so a crash/restart can't double-post.
   await markProcessed(mention.id, targetUrl ?? "help", null);
 
   const logContext = targetUrl
-    ? `Replied to mention ${mention.id} → ${targetUrl}`
-    : `Replied help to mention ${mention.id}`;
+    ? `Replied to @${requesterUsername ?? mention.author_id} on mention ${mention.id} → ${targetUrl}`
+    : `Replied help to @${requesterUsername ?? mention.author_id} on mention ${mention.id}`;
+  if (!requesterUsername) {
+    console.warn(`⚠️ [XBot] Missing username for author ${mention.author_id} — reply sent without @mention`);
+  }
   const replyId = await sendBotReply(mention.id, replyText, logContext);
   if (replyId) {
     await db.update(xBotMentions)
