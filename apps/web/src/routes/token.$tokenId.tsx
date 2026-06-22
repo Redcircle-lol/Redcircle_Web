@@ -608,7 +608,7 @@ function TokenDetailsPage() {
               <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4 space-y-2">
                 <p className="text-[10px] font-semibold text-white/40 uppercase tracking-wider mb-3">Trade</p>
                 <a
-                  href={`https://jup.ag/swap?inputMint=So11111111111111111111111111111111111111112&outputMint=${post.tokenMintAddress}`}
+                  href={`https://jup.ag/tokens/${post.tokenMintAddress}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex w-full items-center justify-center gap-2 rounded-xl bg-green-500 py-2.5 text-sm font-bold text-black hover:bg-green-400 transition-colors"
