@@ -616,6 +616,7 @@ function TokenDetailsPage() {
                   <ArrowRightLeft className="h-4 w-4" />
                   Trade on Jupiter
                 </a>
+
               </div>
             ) : (
               <TradingModal post={post} isOpen={true} onClose={() => { setChartRefreshKey(k => k + 1); void fetchTokenDetails(false); }} />
