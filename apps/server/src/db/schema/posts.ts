@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, integer, numeric, uuid, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, integer, numeric, uuid, pgEnum, index } from "drizzle-orm/pg-core";
 import { users } from "./users";
 
 // Enum for tokenization status
@@ -25,9 +25,15 @@ export const posts = pgTable("posts", {
   thumbnail: text("thumbnail"),
   content: text("content"), // Post body/selftext if available
   
-  // Engagement metrics — upvotes=likes, comments=replies for X posts
+  // Engagement metrics — upvotes=likes, comments=replies for X posts.
+  // NOTE: `upvotes` is the *source* (Reddit/X) score, NOT platform upvotes.
   upvotes: integer("upvotes").default(0).notNull(),
   comments: integer("comments").default(0).notNull(),
+
+  // Platform upvotes — count of RedCircle users who upvoted this post.
+  // Denormalized mirror of post_votes; kept in sync transactionally. Used for
+  // the "Top Voted" feed sort.
+  voteCount: integer("vote_count").default(0).notNull(),
   redditCreatedAt: timestamp("reddit_created_at", { withTimezone: true }),
   
   // Token Configuration
@@ -63,7 +69,10 @@ export const posts = pgTable("posts", {
   tokenizedAt: timestamp("tokenized_at", { withTimezone: true }).defaultNow().notNull(),
   mintedAt: timestamp("minted_at", { withTimezone: true }), // When token was actually minted
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-});
+}, (t) => [
+  // Supports the "Top Voted" feed sort (ORDER BY vote_count DESC).
+  index("posts_vote_count_idx").on(t.voteCount),
+]);
 
 export type Post = typeof posts.$inferSelect;
 export type NewPost = typeof posts.$inferInsert;

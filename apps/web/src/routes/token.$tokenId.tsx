@@ -7,6 +7,7 @@ import { ArrowLeft, ArrowRightLeft, Copy, Check, Wallet, X, AlertCircle } from "
 import { Button } from "@/components/ui/button";
 import TradingModal from "@/components/TradingModal";
 import PriceChart from "@/components/PriceChart";
+import UpvoteButton from "@/components/UpvoteButton";
 import type { FeedPost } from "@/components/FeedCard";
 import { cn, formatUsd } from "@/lib/utils";
 import { useWallet } from "@solana/wallet-adapter-react";
@@ -48,6 +49,7 @@ type BackendPost = {
   platform?: "reddit" | "x";
   upvotes?: number;
   comments?: number;
+  voteCount?: number;
   tokenizedAt?: string;
   createdAt?: string;
   thumbnail?: string | null;
@@ -81,6 +83,7 @@ function normalizePost(post: BackendPost): FeedPost {
     platform: post.platform ?? "reddit",
     upvotes: post.upvotes || 0,
     comments: post.comments || 0,
+    voteCount: post.voteCount ?? 0,
     createdAt: post.tokenizedAt || post.createdAt || new Date().toISOString(),
     imageUrl: post.thumbnail || undefined,
     tokenPrice: toNumber(post.currentPrice),
@@ -697,6 +700,16 @@ function TokenDetailsPage() {
                         <span>💬 {post.comments}</span>
                       </>
                     )}
+                  </div>
+                  <div className="flex items-center gap-2 pt-1">
+                    <UpvoteButton
+                      postId={post.id}
+                      platform={post.platform}
+                      initialCount={post.voteCount ?? 0}
+                      autoFetchStatus
+                      size="sm"
+                    />
+                    <span className="text-[10px] text-white/30">upvote on RedCircle</span>
                   </div>
                   {post.redditUrl && (
                     <a

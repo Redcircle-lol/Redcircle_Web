@@ -3,13 +3,13 @@ import { RedditService } from "../services/reddit.service";
 import { XService, XServiceError } from "../services/x.service";
 import { db } from "../db";
 import * as schema from "../db";
-import { eq, desc, asc, and, gte, ilike, inArray, or } from "drizzle-orm";
+import { eq, desc, asc, and, gte, ilike, inArray, or, sql } from "drizzle-orm";
 import * as Orynth from "../services/orynth.service";
-import { authenticateToken } from "../middleware/auth";
+import { authenticateToken, optionalAuth } from "../middleware/auth";
 import { resolvePostById, matchesPostAuthor } from "../db/helpers";
 import { GEMINI_MODEL } from "../config/gemini";
 
-const { posts, launches } = schema;
+const { posts, launches, postVotes, users } = schema;
 const router: import("express").Router = Router();
 
 // Token-status values accepted by status filters (matches tokenizationStatusEnum).
@@ -437,12 +437,16 @@ router.get("/search", async (req, res) => {
           cmp(parseFloat(a.marketCap || "0"), parseFloat(b.marketCap || "0")),
         );
         break;
+      case "voteCount":
+      case "votes":
+        allPosts.sort((a, b) => cmp(a.voteCount || 0, b.voteCount || 0));
+        break;
       case "trending":
       default:
-        // Trending = combination of volume, upvotes, and recency
+        // Trending = combination of volume, platform upvotes, and recency
         allPosts.sort((a, b) => {
-          const scoreA = (parseFloat(a.totalVolume || "0") * 10) + (a.upvotes || 0) + (a.featured || 0) * 1000;
-          const scoreB = (parseFloat(b.totalVolume || "0") * 10) + (b.upvotes || 0) + (b.featured || 0) * 1000;
+          const scoreA = (parseFloat(a.totalVolume || "0") * 10) + (a.voteCount || 0) * 5 + (a.upvotes || 0) + (a.featured || 0) * 1000;
+          const scoreB = (parseFloat(b.totalVolume || "0") * 10) + (b.voteCount || 0) * 5 + (b.upvotes || 0) + (b.featured || 0) * 1000;
           return cmp(scoreA, scoreB);
         });
     }
@@ -537,6 +541,10 @@ router.get("/", async (req, res) => {
       case "upvotes":
         orderColumn = dir(posts.upvotes);
         break;
+      case "voteCount":
+      case "votes":
+        orderColumn = dir(posts.voteCount);
+        break;
       case "marketCap":
         orderColumn = dir(posts.marketCap);
         break;
@@ -550,10 +558,16 @@ router.get("/", async (req, res) => {
         orderColumn = dir(posts.tokenizedAt);
     }
 
+    // Stable tiebreakers so equal sort values (e.g. many posts with the same
+    // vote_count) keep a deterministic order across paginated requests —
+    // otherwise LIMIT/OFFSET can duplicate or skip rows. `id` is unique, so it
+    // guarantees a total ordering.
+    const tiebreakers = [desc(posts.tokenizedAt), desc(posts.id)];
+
     // Execute query with all filters
     const postsList = await (conditions.length > 0
-      ? baseQuery.where(and(...conditions)).orderBy(orderColumn)
-      : baseQuery.orderBy(orderColumn)
+      ? baseQuery.where(and(...conditions)).orderBy(orderColumn, ...tiebreakers)
+      : baseQuery.orderBy(orderColumn, ...tiebreakers)
     )
       .limit(parseInt(limit as string))
       .offset(parseInt(offset as string));
@@ -817,6 +831,135 @@ router.post("/check-tokenized", async (req, res) => {
   } catch (err) {
     console.error("❌ Error checking tokenized posts:", err);
     res.status(500).json({ tokenized: {} });
+  }
+});
+
+// ── Platform upvotes ──────────────────────────────────────────────────────────
+// Distinct from `posts.upvotes` (the source Reddit/X score). A logged-in user
+// may upvote a post once. Voting is platform-gated: Reddit posts require a
+// Reddit-linked account, X posts require an X-linked account.
+
+type VotePlatform = "reddit" | "x";
+
+/** The login a user needs to vote on a post of the given platform. */
+function requiredLoginFor(platform: VotePlatform): { field: "redditId" | "xId"; errorCode: string; message: string } {
+  return platform === "x"
+    ? { field: "xId", errorCode: "x_login_required", message: "Sign in with X to upvote X posts" }
+    : { field: "redditId", errorCode: "reddit_login_required", message: "Sign in with Reddit to upvote Reddit posts" };
+}
+
+/**
+ * POST /api/posts/votes/status
+ * Given a list of post IDs, returns which ones the authenticated user has
+ * upvoted. Anonymous requests get an empty map (nothing voted).
+ */
+router.post("/votes/status", optionalAuth, async (req, res) => {
+  try {
+    // Cap the batch so a request can't ask about an unbounded id list.
+    const MAX_STATUS_IDS = 100;
+    const ids = (Array.isArray(req.body?.postIds) ? (req.body.postIds as unknown[]) : [])
+      .filter((x): x is string => typeof x === "string")
+      .slice(0, MAX_STATUS_IDS);
+    if (!req.userId || ids.length === 0) return res.json({ votes: {} });
+
+    const rows = await db
+      .select({ postId: postVotes.postId })
+      .from(postVotes)
+      .where(and(eq(postVotes.userId, req.userId), inArray(postVotes.postId, ids)));
+
+    const votes: Record<string, boolean> = {};
+    for (const row of rows) votes[row.postId] = true;
+    res.json({ votes });
+  } catch (err) {
+    console.error("❌ Error fetching vote status:", err);
+    res.json({ votes: {} });
+  }
+});
+
+/**
+ * POST /api/posts/:id/vote
+ * Upvote a post (idempotent). Requires the matching platform login.
+ */
+router.post("/:id/vote", authenticateToken, async (req, res) => {
+  try {
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ success: false, error: "unauthorized", message: "Authentication required" });
+
+    const post = await resolvePostById(req.params.id as string);
+    if (!post) return res.status(404).json({ success: false, error: "not_found", message: "Post not found" });
+
+    const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    if (!user) return res.status(401).json({ success: false, error: "unauthorized", message: "User not found" });
+
+    const platform: VotePlatform = post.platform === "x" ? "x" : "reddit";
+    const need = requiredLoginFor(platform);
+    if (!user[need.field]) {
+      return res.status(403).json({ success: false, error: need.errorCode, message: need.message, platform });
+    }
+
+    const result = await db.transaction(async (tx) => {
+      const inserted = await tx
+        .insert(postVotes)
+        .values({ postId: post.id, userId })
+        .onConflictDoNothing()
+        .returning({ id: postVotes.id });
+
+      if (inserted.length > 0) {
+        const [updated] = await tx
+          .update(posts)
+          .set({ voteCount: sql`${posts.voteCount} + 1` })
+          .where(eq(posts.id, post.id))
+          .returning({ voteCount: posts.voteCount });
+        return updated?.voteCount ?? post.voteCount + 1;
+      }
+
+      const [current] = await tx.select({ voteCount: posts.voteCount }).from(posts).where(eq(posts.id, post.id));
+      return current?.voteCount ?? post.voteCount;
+    });
+
+    res.json({ success: true, voted: true, voteCount: result });
+  } catch (err) {
+    console.error("❌ Error upvoting post:", err);
+    res.status(500).json({ success: false, error: "server_error", message: "Failed to upvote post" });
+  }
+});
+
+/**
+ * DELETE /api/posts/:id/vote
+ * Remove the authenticated user's upvote (idempotent).
+ */
+router.delete("/:id/vote", authenticateToken, async (req, res) => {
+  try {
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ success: false, error: "unauthorized", message: "Authentication required" });
+
+    const post = await resolvePostById(req.params.id as string);
+    if (!post) return res.status(404).json({ success: false, error: "not_found", message: "Post not found" });
+
+    const result = await db.transaction(async (tx) => {
+      const removed = await tx
+        .delete(postVotes)
+        .where(and(eq(postVotes.postId, post.id), eq(postVotes.userId, userId)))
+        .returning({ id: postVotes.id });
+
+      if (removed.length > 0) {
+        const [updated] = await tx
+          .update(posts)
+          // GREATEST guards against the counter ever going negative.
+          .set({ voteCount: sql`GREATEST(${posts.voteCount} - 1, 0)` })
+          .where(eq(posts.id, post.id))
+          .returning({ voteCount: posts.voteCount });
+        return updated?.voteCount ?? Math.max(post.voteCount - 1, 0);
+      }
+
+      const [current] = await tx.select({ voteCount: posts.voteCount }).from(posts).where(eq(posts.id, post.id));
+      return current?.voteCount ?? post.voteCount;
+    });
+
+    res.json({ success: true, voted: false, voteCount: result });
+  } catch (err) {
+    console.error("❌ Error removing upvote:", err);
+    res.status(500).json({ success: false, error: "server_error", message: "Failed to remove upvote" });
   }
 });
 
