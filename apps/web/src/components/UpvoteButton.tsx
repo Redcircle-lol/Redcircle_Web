@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { ArrowUp } from "lucide-react";
+import { ArrowUp, ThumbsUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { setVote, fetchVoteStatus, canVoteOnPlatform, loginRequiredMessage, type PostPlatform } from "@/lib/votes";
@@ -14,7 +14,9 @@ type UpvoteButtonProps = {
   initialCount: number;
   /** When true, the button fetches its own voted state on mount (single-post pages). */
   autoFetchStatus?: boolean;
-  size?: "sm" | "md";
+  size?: "sm" | "md" | "lg";
+  /** Which glyph to show — "arrow" (feed cards) or "thumb" (token page, Orynth-style). */
+  icon?: "arrow" | "thumb";
   className?: string;
   /** Lets a parent keep its own list/sort in sync after a toggle. */
   onVoteChange?: (postId: string, voted: boolean, voteCount: number) => void;
@@ -33,6 +35,7 @@ export default function UpvoteButton({
   initialCount,
   autoFetchStatus = false,
   size = "md",
+  icon = "arrow",
   className,
   onVoteChange,
 }: UpvoteButtonProps) {
@@ -107,9 +110,13 @@ export default function UpvoteButton({
     }
   };
 
-  const sizing = size === "sm"
-    ? "h-[30px] px-2.5 text-[11px] gap-1"
+  const sizing =
+    size === "sm" ? "h-[30px] px-2.5 text-[11px] gap-1"
+    : size === "lg" ? "h-12 px-6 text-base gap-2.5 rounded-xl"
     : "h-9 px-3.5 text-xs gap-1.5";
+
+  const iconSize = size === "sm" ? "h-3.5 w-3.5" : size === "lg" ? "h-5 w-5" : "h-4 w-4";
+  const Icon = icon === "thumb" ? ThumbsUp : ArrowUp;
 
   return (
     <button
@@ -126,7 +133,7 @@ export default function UpvoteButton({
         className,
       )}
     >
-      <ArrowUp className={cn(size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4", voted && "fill-[#00FFA3]")} />
+      <Icon className={cn(iconSize, voted && "fill-[#00FFA3]")} />
       {Intl.NumberFormat("en-US", { notation: "compact" }).format(count)}
     </button>
   );

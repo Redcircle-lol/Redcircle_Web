@@ -330,6 +330,18 @@ function TokenDetailsPage() {
             </div>
           </div>
 
+          {/* Upvote — top-right, like Orynth's like button */}
+          <div className="flex items-center gap-2 shrink-0">
+            <UpvoteButton
+              postId={post.id}
+              platform={post.platform}
+              initialCount={post.voteCount ?? 0}
+              autoFetchStatus
+              size="lg"
+              icon="thumb"
+            />
+          </div>
+
         </motion.div>
 
 
@@ -700,16 +712,6 @@ function TokenDetailsPage() {
                         <span>💬 {post.comments}</span>
                       </>
                     )}
-                  </div>
-                  <div className="flex items-center gap-2 pt-1">
-                    <UpvoteButton
-                      postId={post.id}
-                      platform={post.platform}
-                      initialCount={post.voteCount ?? 0}
-                      autoFetchStatus
-                      size="sm"
-                    />
-                    <span className="text-[10px] text-white/30">upvote on RedCircle</span>
                   </div>
                   {post.redditUrl && (
                     <a
