@@ -24,7 +24,21 @@ if (isEnabled) {
 
 // In-memory PKCE store: state → { codeVerifier, expiry }
 // Fine for single-process deploys; swap for Redis if horizontally scaled.
-const pkceStore = new Map<string, { codeVerifier: string; expiry: number }>();
+const pkceStore = new Map<string, { codeVerifier: string; expiry: number; redirectPath?: string }>();
+
+function safeRedirectPath(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  if (!value.startsWith("/") || value.startsWith("//")) return undefined;
+  return value.slice(0, 300);
+}
+
+function signinUrl(params: Record<string, string | undefined>): string {
+  const qs = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value) qs.set(key, value);
+  }
+  return `${FRONTEND_URL}/signin?${qs}`;
+}
 
 function generateCodeVerifier(): string {
   return crypto.randomBytes(32).toString("base64url");
@@ -36,12 +50,13 @@ function generateCodeChallenge(verifier: string): string {
 
 if (isEnabled) {
   // ── Step 1: Redirect to X ────────────────────────────────────────────────
-  router.get("/auth/x", (_req, res) => {
+  router.get("/auth/x", (req, res) => {
     const state        = crypto.randomBytes(16).toString("hex");
     const codeVerifier = generateCodeVerifier();
+    const redirectPath = safeRedirectPath(req.query.redirect);
 
     // Store for 10 minutes
-    pkceStore.set(state, { codeVerifier, expiry: Date.now() + 10 * 60 * 1000 });
+    pkceStore.set(state, { codeVerifier, redirectPath, expiry: Date.now() + 10 * 60 * 1000 });
 
     const params = new URLSearchParams({
       response_type:         "code",
@@ -61,14 +76,14 @@ if (isEnabled) {
     const { code, state, error } = req.query as Record<string, string | undefined>;
 
     if (error || !code || !state) {
-      return res.redirect(`${FRONTEND_URL}/signin?error=x_auth_failed`);
+      return res.redirect(signinUrl({ error: "x_auth_failed" }));
     }
 
     const stored = pkceStore.get(state);
     pkceStore.delete(state);
 
     if (!stored || Date.now() > stored.expiry) {
-      return res.redirect(`${FRONTEND_URL}/signin?error=x_state_invalid`);
+      return res.redirect(signinUrl({ error: "x_state_invalid" }));
     }
 
     try {
@@ -91,7 +106,7 @@ if (isEnabled) {
       const tokenData = await tokenRes.json() as { access_token?: string; error?: string; error_description?: string };
       if (!tokenData.access_token) {
         console.error("X OAuth token exchange failed:", tokenData.error, tokenData.error_description);
-        return res.redirect(`${FRONTEND_URL}/signin?error=x_auth_failed`);
+        return res.redirect(signinUrl({ error: "x_auth_failed", redirect: stored.redirectPath }));
       }
 
       // Fetch authenticated user
@@ -101,7 +116,7 @@ if (isEnabled) {
       const { data: xUser } = await userRes.json() as { data?: { id: string; username: string; name: string; profile_image_url?: string } };
 
       if (!xUser?.id) {
-        return res.redirect(`${FRONTEND_URL}/signin?error=x_auth_failed`);
+        return res.redirect(signinUrl({ error: "x_auth_failed", redirect: stored.redirectPath }));
       }
 
       // Upsert user — match by xId, fall back to xUsername
@@ -139,9 +154,13 @@ if (isEnabled) {
 
       const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: "7d" });
 
-      res.redirect(`${FRONTEND_URL}/signin?token=${token}&user=${encodeURIComponent(JSON.stringify(user))}`);
+      res.redirect(signinUrl({
+        token,
+        user: JSON.stringify(user),
+        redirect: stored.redirectPath,
+      }));
     } catch {
-      res.redirect(`${FRONTEND_URL}/signin?error=x_auth_failed`);
+      res.redirect(signinUrl({ error: "x_auth_failed" }));
     }
   });
 }

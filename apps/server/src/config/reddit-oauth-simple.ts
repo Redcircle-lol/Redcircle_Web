@@ -18,6 +18,22 @@ const FRONTEND_URL = process.env.FRONTEND_URL;
 // (Reddit post fetching uses different OAuth flow and doesn't need these)
 const isUserAuthEnabled = REDDIT_REDIRECT_URI && FRONTEND_URL;
 
+const redditStateStore = new Map<string, { redirectPath?: string; expiry: number }>();
+
+function safeRedirectPath(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  if (!value.startsWith("/") || value.startsWith("//")) return undefined;
+  return value.slice(0, 300);
+}
+
+function signinUrl(params: Record<string, string | undefined>): string {
+  const qs = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value) qs.set(key, value);
+  }
+  return `${FRONTEND_URL}/signin?${qs}`;
+}
+
 if (!isUserAuthEnabled) {
   console.warn('⚠️ Reddit user authentication disabled. Set REDDIT_REDIRECT_URI and FRONTEND_URL to enable.');
 }
@@ -25,8 +41,12 @@ if (!isUserAuthEnabled) {
 // Only enable routes if user auth is configured
 if (isUserAuthEnabled && REDDIT_CLIENT_ID && REDDIT_CLIENT_SECRET && REDDIT_REDIRECT_URI && FRONTEND_URL) {
   // Step 1: Redirect to Reddit
-  router.get("/auth/reddit", (_req, res) => {
+  router.get("/auth/reddit", (req, res) => {
     const state = Math.random().toString(36).substring(7);
+    redditStateStore.set(state, {
+      redirectPath: safeRedirectPath(req.query.redirect),
+      expiry: Date.now() + 10 * 60 * 1000,
+    });
     // URL encode the redirect_uri to handle special characters
     const encodedRedirectUri = encodeURIComponent(REDDIT_REDIRECT_URI);
     const authUrl = `https://www.reddit.com/api/v1/authorize?client_id=${REDDIT_CLIENT_ID}&response_type=code&state=${state}&redirect_uri=${encodedRedirectUri}&duration=permanent&scope=identity`;
@@ -35,10 +55,14 @@ if (isUserAuthEnabled && REDDIT_CLIENT_ID && REDDIT_CLIENT_SECRET && REDDIT_REDI
 
   // Step 2: Handle callback from Reddit
   router.get("/auth/reddit/callback", async (req, res) => {
-  const { code, error } = req.query;
+  const { code, error, state } = req.query;
+  const stateKey = typeof state === "string" ? state : "";
+  const stored = redditStateStore.get(stateKey);
+  redditStateStore.delete(stateKey);
+  const redirectPath = stored && Date.now() <= stored.expiry ? stored.redirectPath : undefined;
 
   if (error) {
-    return res.redirect(`${FRONTEND_URL}/signin?error=auth_failed`);
+    return res.redirect(signinUrl({ error: "auth_failed", redirect: redirectPath }));
   }
 
   try {
@@ -114,11 +138,11 @@ if (isUserAuthEnabled && REDDIT_CLIENT_ID && REDDIT_CLIENT_SECRET && REDDIT_REDI
 
     // Redirect to frontend signin page with token and user
     res.redirect(
-      `${FRONTEND_URL}/signin?token=${token}&user=${encodeURIComponent(JSON.stringify(user))}`
+      signinUrl({ token, user: JSON.stringify(user), redirect: redirectPath })
     );
   } catch (error) {
     console.error("❌ Auth error:", error);
-    res.redirect(`${FRONTEND_URL}/signin?error=auth_failed`);
+    res.redirect(signinUrl({ error: "auth_failed", redirect: redirectPath }));
   }
 });
 } else {

@@ -231,7 +231,10 @@ export default function UpvoteButton({
             key={voted ? "voted" : "unvoted"}
             initial={voted ? { scale: 0 } : false}
             animate={voted ? { scale: 1, rotate: [0, -12, 0] } : { scale: 1 }}
-            transition={{ type: "spring", stiffness: 220, damping: 14 }}
+            transition={{
+              scale: { type: "spring", stiffness: 220, damping: 14 },
+              rotate: { type: "tween", duration: 0.3, ease: "easeOut" },
+            }}
             className="inline-flex"
           >
             <Icon className={cn(iconSize, voted && "fill-[#00FFA3]")} />

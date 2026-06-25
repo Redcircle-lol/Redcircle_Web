@@ -164,7 +164,7 @@ export default function RedditFeed() {
   const [loadingMore, setLoadingMore] = useState(false);
   const { isAuthenticated } = useAuth();
   const [searchFilters, setSearchFilters] = useState<SearchFilters>({});
-  const [sortField,      setSortField]      = useState<SortField>("voteCount");
+  const [sortField,      setSortField]      = useState<SortField>("totalVolume");
   const [sortOrder,      setSortOrder]      = useState<SortOrder>("desc");
   const [timeWindow,     setTimeWindow]     = useState<TimeWindow>("all");
   const [platformFilter, setPlatformFilter] = useState<PlatformFilter>("all");

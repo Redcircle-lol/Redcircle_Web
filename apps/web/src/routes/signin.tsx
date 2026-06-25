@@ -72,11 +72,13 @@ function SignIn() {
   }, [login, navigate, redirect]);
 
   const startRedditSignIn = () => {
-    window.location.href = `${getApiUrl()}/auth/reddit`;
+    const qs = redirect ? `?redirect=${encodeURIComponent(redirect)}` : "";
+    window.location.href = `${getApiUrl()}/auth/reddit${qs}`;
   };
 
   const startXSignIn = () => {
-    window.location.href = `${getApiUrl()}/auth/x`;
+    const qs = redirect ? `?redirect=${encodeURIComponent(redirect)}` : "";
+    window.location.href = `${getApiUrl()}/auth/x${qs}`;
   };
 
   return (

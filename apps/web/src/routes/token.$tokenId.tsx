@@ -3,11 +3,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchWithAuth, matchesPostAuthor } from "@/lib/auth";
 import { useAuth } from "@/contexts/AuthContext";
 import { motion, AnimatePresence } from "motion/react";
-import { ArrowLeft, ArrowRightLeft, Copy, Check, Wallet, X, AlertCircle, TrendingUp, TrendingDown } from "lucide-react";
+import { ArrowLeft, ArrowRightLeft, Copy, Check, Wallet, X, AlertCircle, Share2, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import TradingModal from "@/components/TradingModal";
 import PriceChart from "@/components/PriceChart";
 import UpvoteButton from "@/components/UpvoteButton";
+import CommentsSection from "@/components/CommentsSection";
 import type { FeedPost } from "@/components/FeedCard";
 import { cn, formatUsd } from "@/lib/utils";
 import { useWallet } from "@solana/wallet-adapter-react";
@@ -101,26 +102,16 @@ function normalizePost(post: BackendPost): FeedPost {
 
 
 function ChartEmbed({ poolAddress, mintAddress }: { poolAddress: string | null; mintAddress: string }) {
-  const [geckoFailed, setGeckoFailed] = useState(false);
-
-  if (!poolAddress || geckoFailed) {
-    // Fallback: DexScreener always works with just the mint address
-    return (
-      <iframe
-        src={`https://dexscreener.com/solana/${mintAddress}?embed=1&theme=dark&trades=1&info=0`}
-        style={{ width: "100%", height: "100%", border: "none" }}
-        title="Live Chart"
-      />
-    );
-  }
+  const src = poolAddress
+    ? `https://www.geckoterminal.com/solana/pools/${poolAddress}?embed=1&info=0&swaps=1`
+    : `https://www.geckoterminal.com/solana/tokens/${mintAddress}?embed=1&info=0`;
 
   return (
     <iframe
-      key={poolAddress}
-      src={`https://www.geckoterminal.com/solana/pools/${poolAddress}?embed=1&info=0&swaps=1`}
+      key={src}
+      src={src}
       style={{ width: "100%", height: "100%", border: "none" }}
       title="Live Chart"
-      onError={() => setGeckoFailed(true)}
     />
   );
 }
@@ -150,6 +141,7 @@ function TokenDetailsPage() {
   const [curatorClaiming, setCuratorClaiming] = useState(false);
   const [curatorClaimResult, setCuratorClaimResult] = useState<{ success: boolean; amount?: string; error?: string } | null>(null);
   const [showCuratorClaimConfirm, setShowCuratorClaimConfirm] = useState(false);
+  const [showMarketView, setShowMarketView] = useState(false);
 
   const fetchTokenDetails = useCallback(async (showLoading = true) => {
     try {
@@ -301,116 +293,244 @@ function TokenDetailsPage() {
   }
 
   const isOnChain = !!post.tokenMintAddress;
+  const isXPost = post.platform === "x";
+  const tokenImage = post.imageUrl;
 
   return (
-    <div className="min-h-screen pb-16 bg-black">
-      <div className="mx-auto w-full max-w-7xl px-3 sm:px-4 lg:px-6">
+    <div className="min-h-screen overflow-hidden bg-[#050505] pb-28 text-white lg:pb-16">
+      <div className="pointer-events-none fixed inset-0 opacity-80">
+        <div className="absolute -top-40 left-1/2 h-[420px] w-[420px] -translate-x-1/2 rounded-full bg-[#E8431C]/10 blur-[120px]" />
+        <div className="absolute right-0 top-28 h-[320px] w-[320px] rounded-full bg-[#00FFD1]/8 blur-[120px]" />
+      </div>
+
+      <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-5 lg:px-8">
 
         {/* ── Token header ── */}
         <motion.div
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 py-3 sm:py-4 border-b border-white/8"
+          className="py-5 sm:py-7"
         >
-          {/* Identity */}
-          <div className="flex items-center gap-3 flex-1 min-w-0">
-            {post.imageUrl ? (
-              <img src={post.imageUrl} alt={post.tokenSymbol}
-                className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl object-cover flex-shrink-0 border border-white/10" />
-            ) : (
-              <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-gradient-to-br from-purple-500/30 to-pink-500/30 flex items-center justify-center flex-shrink-0 border border-white/10">
-                <span className="text-xs font-bold text-white">{post.tokenSymbol?.slice(0, 2)}</span>
-              </div>
-            )}
-            <div className="min-w-0">
-              <div className="flex items-center gap-2.5 flex-wrap">
-                <h1 className="text-lg sm:text-xl font-mono font-bold text-white">${post.tokenSymbol}</h1>
-                <span className="text-sm text-white/40 truncate max-w-[160px] sm:max-w-xs md:max-w-md">{post.title}</span>
-              </div>
-              <p className="text-xs text-white/40 mt-0.5 font-mono">
-                {post.platform === "x" ? `@${post.author}` : `r/${post.subreddit}`}
-              </p>
-            </div>
-          </div>
+          <div className="rounded-[28px] border border-white/10 bg-white/[0.045] p-4 shadow-2xl shadow-black/30 backdrop-blur-xl sm:p-5">
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+              <div className="flex min-w-0 gap-4">
+                {tokenImage ? (
+                  <img
+                    src={tokenImage}
+                    alt={post.tokenSymbol}
+                    className="h-16 w-16 shrink-0 rounded-2xl border border-white/15 object-cover shadow-lg shadow-black/30 sm:h-20 sm:w-20"
+                  />
+                ) : (
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-white/15 bg-gradient-to-br from-[#E8431C]/30 via-white/5 to-[#00FFD1]/20 shadow-lg shadow-black/30 sm:h-20 sm:w-20">
+                    <span className="text-lg font-black text-white">{post.tokenSymbol?.slice(0, 2)}</span>
+                  </div>
+                )}
 
-          {/* Upvote — top-right, like Orynth's like button */}
-          <div className="flex items-center gap-2 shrink-0">
-            <UpvoteButton
-              postId={post.id}
-              platform={post.platform}
-              initialCount={post.voteCount ?? 0}
-              autoFetchStatus
-              size="lg"
-              icon="thumb"
-            />
+                <div className="min-w-0">
+                  <div className="mb-2 flex flex-wrap items-center gap-2">
+                    <span className="rounded-full border border-[#00FFD1]/20 bg-[#00FFD1]/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#00FFD1]">
+                      Live Market
+                    </span>
+                    <span className="rounded-full border border-white/10 bg-black/30 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/45">
+                      {isXPost ? "X Source" : "Reddit Source"}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                    <h1 className="font-mono text-3xl font-black tracking-tight text-white sm:text-5xl">
+                      ${post.tokenSymbol}
+                    </h1>
+                    {dex?.priceUsd ? (
+                      <span className="font-mono text-sm font-semibold text-white/45">
+                        ${Number(dex.priceUsd).toFixed(Number(dex.priceUsd) < 0.01 ? 6 : 4)}
+                      </span>
+                    ) : null}
+                  </div>
+                  <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-white/40">
+                    <span>{isXPost ? `@${post.author}` : `r/${post.subreddit}`}</span>
+                    <span className="text-white/20">•</span>
+                    <span>{isXPost ? `${post.upvotes.toLocaleString()} likes` : `${post.upvotes.toLocaleString()} upvotes`}</span>
+                    <span className="text-white/20">•</span>
+                    <span>{post.comments.toLocaleString()} comments</span>
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {post.tokenMintAddress && (
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(post.tokenMintAddress!);
+                          setCopied(true);
+                          setTimeout(() => setCopied(false), 2000);
+                        }}
+                        className="inline-flex items-center gap-2 rounded-full bg-black/30 px-3 py-1.5 text-[11px] font-medium text-white/45 ring-1 ring-white/[0.08] transition-colors hover:bg-white/[0.06] hover:text-white/70"
+                        title="Copy mint address"
+                      >
+                        Mint {post.tokenMintAddress.slice(0, 6)}…{post.tokenMintAddress.slice(-4)}
+                        {copied ? <Check className="h-3 w-3 text-[#00FFA3]" /> : <Copy className="h-3 w-3" />}
+                      </button>
+                    )}
+                    {dex?.marketCap ? (
+                      <span className="rounded-full bg-black/30 px-3 py-1.5 text-[11px] font-medium text-white/45 ring-1 ring-white/[0.08]">
+                        MC {formatUsd(dex.marketCap)}
+                      </span>
+                    ) : null}
+                    {dex?.fdv ? (
+                      <span className="rounded-full bg-black/30 px-3 py-1.5 text-[11px] font-medium text-white/45 ring-1 ring-white/[0.08]">
+                        FDV {formatUsd(dex.fdv)}
+                      </span>
+                    ) : null}
+                    {post.holders != null && post.holders > 0 && (
+                      <span className="rounded-full bg-black/30 px-3 py-1.5 text-[11px] font-medium text-white/45 ring-1 ring-white/[0.08]">
+                        {post.holders.toLocaleString()} holders
+                      </span>
+                    )}
+                    {post.totalSupply != null && post.totalSupply > 0 && (
+                      <span className="rounded-full bg-black/30 px-3 py-1.5 text-[11px] font-medium text-white/45 ring-1 ring-white/[0.08]">
+                        Supply {post.totalSupply >= 1e9
+                          ? `${(post.totalSupply / 1e9).toFixed(0)}B`
+                          : post.totalSupply >= 1e6
+                            ? `${(post.totalSupply / 1e6).toFixed(0)}M`
+                            : post.totalSupply.toLocaleString()}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex shrink-0 items-center gap-2">
+                <button
+                  onClick={() => {
+                    const url = `https://www.redcircle.lol/token/${tokenId}`;
+                    const text = `$${post.tokenSymbol} is live on @redcircle_sol\n\nTrade the post on Solana:\n${url}`;
+                    window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
+                  }}
+                  className="inline-flex h-12 items-center gap-2 rounded-2xl border border-white/[0.12] bg-white/[0.06] px-4 text-sm font-bold text-white/70 transition-all hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/[0.1] hover:text-white"
+                >
+                  <Share2 className="h-4 w-4" />
+                  Share
+                </button>
+                <UpvoteButton
+                  postId={post.id}
+                  platform={post.platform}
+                  initialCount={post.voteCount ?? 0}
+                  autoFetchStatus
+                  size="lg"
+                  icon="thumb"
+                />
+              </div>
+            </div>
+
           </div>
 
         </motion.div>
 
 
         {/* ── Main grid: chart (top/left) + right panel (bottom/right) ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] xl:grid-cols-[1fr_340px] gap-4 mt-4">
+        <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_380px]">
 
-          {/* Chart */}
+          {/* Overview + chart */}
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}
-            className="order-2 lg:order-1"
+            className="order-2 space-y-5 lg:order-1"
           >
-            {isOnChain ? (
-              <div className="rounded-2xl border border-white/8 overflow-hidden bg-[#0d0d0d]"
-                style={{ height: "calc(100vh - 220px)", minHeight: 400, maxHeight: 680 }}>
-                <ChartEmbed
-                  poolAddress={poolAddress}
-                  mintAddress={post.tokenMintAddress!}
-                />
-              </div>
-            ) : (
-              <PriceChart
-                postId={post.id}
-                currentPrice={post.tokenPrice || 0}
-                initialPrice={parseFloat(post.initialPrice || "0.001")}
-                tokenSymbol={post.tokenSymbol}
-                refreshKey={chartRefreshKey}
-              />
-            )}
-
-            {/* Live price stats — all values from the GeckoTerminal price feed (dex) */}
-            {dex && (
-              <div className="mt-3 grid grid-cols-3 gap-3 rounded-2xl border border-white/8 bg-[#0d0d0d] p-4">
-                <div>
-                  <div className="text-[10px] font-semibold uppercase tracking-wider text-white/40 mb-1">Current Price</div>
-                  <div className="text-base sm:text-lg font-mono font-bold text-white tabular-nums">
-                    {(() => {
-                      const p = Number(dex.priceUsd);
-                      if (!p) return "—";
-                      return `$${p.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: p < 0.01 ? 6 : 4 })}`;
-                    })()}
+            <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+              <div className="overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.035] shadow-2xl shadow-black/25 xl:h-[320px]">
+                <div className="flex items-center justify-between gap-3 border-b border-white/[0.08] px-4 py-3 sm:px-5">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/30">Market</p>
+                    <h2 className="text-sm font-bold text-white">{isOnChain ? "Market snapshot" : "Price curve"}</h2>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {dexLoading ? <span className="hidden text-xs text-white/35 sm:inline">Updating…</span> : null}
+                    <button
+                      onClick={() => setShowMarketView(true)}
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.06] px-3 py-2 text-xs font-bold text-white/55 transition-all hover:border-white/20 hover:bg-white/[0.1] hover:text-white"
+                    >
+                      <Maximize2 className="h-3.5 w-3.5" />
+                      Market view
+                    </button>
                   </div>
                 </div>
-                <div>
-                  <div className="text-[10px] font-semibold uppercase tracking-wider text-white/40 mb-1">Change (24h)</div>
-                  {dex.priceChange?.h24 != null ? (
-                    <div className={cn(
-                      "text-base sm:text-lg font-mono font-bold tabular-nums flex items-center gap-1",
-                      dex.priceChange.h24 >= 0 ? "text-[#00FFA3]" : "text-red-400",
-                    )}>
-                      {dex.priceChange.h24 >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
-                      {dex.priceChange.h24 >= 0 ? "+" : ""}{dex.priceChange.h24.toFixed(2)}%
+                <div className={cn(isOnChain ? "bg-[#0d0d0d]" : "p-4")}>
+                  {isOnChain ? (
+                    <div style={{ height: 240 }}>
+                      <ChartEmbed poolAddress={poolAddress} mintAddress={post.tokenMintAddress!} />
                     </div>
                   ) : (
-                    <div className="text-base sm:text-lg font-mono font-bold text-white/30">—</div>
+                    <PriceChart
+                      postId={post.id}
+                      currentPrice={post.tokenPrice || 0}
+                      initialPrice={parseFloat(post.initialPrice || "0.001")}
+                      tokenSymbol={post.tokenSymbol}
+                      refreshKey={chartRefreshKey}
+                    />
                   )}
                 </div>
-                <div>
-                  <div className="text-[10px] font-semibold uppercase tracking-wider text-white/40 mb-1">Volume (24h)</div>
-                  <div className="text-base sm:text-lg font-mono font-bold text-white tabular-nums">
-                    {dex.volume?.h24 ? formatUsd(dex.volume.h24) : "—"}
-                  </div>
-                </div>
               </div>
-            )}
+
+              {(() => {
+                const isX = post.platform === "x";
+                return (
+                  <div className="space-y-3 rounded-[28px] border border-white/[0.1] bg-white/[0.045] p-5 shadow-xl shadow-black/20 backdrop-blur-xl xl:h-[320px]">
+                    <div className="flex items-center gap-1.5">
+                      {isX ? (
+                        <span className="text-sm font-black text-white/60">𝕏</span>
+                      ) : (
+                        <svg className="h-3.5 w-3.5 text-[#FF4500]" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.561-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.249 0-.687-.562-1.249-1.25-1.249zm-5.466 3.99a.327.327 0 0 0-.231.094.33.33 0 0 0 0 .463c.842.842 2.484.913 2.961.913.477 0 2.105-.056 2.961-.913a.361.361 0 0 0 .029-.463.33.33 0 0 0-.464 0c-.547.533-1.684.73-2.512.73-.828 0-1.979-.196-2.512-.73a.326.326 0 0 0-.232-.095z"/></svg>
+                      )}
+                      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/35">Source Post</p>
+                    </div>
+                    <p className="line-clamp-5 text-sm font-medium leading-relaxed text-white/85">{post.title}</p>
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-white/40">
+                      {isX ? (
+                        <span>@{post.author}</span>
+                      ) : (
+                        <>
+                          <span>r/{post.subreddit}</span>
+                          <span>·</span>
+                          <span>u/{post.author}</span>
+                        </>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-white/30">
+                      {isX ? (
+                        <>
+                          <span>♥ {post.upvotes}</span>
+                          <span>🔁 {post.comments}</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>↑ {post.upvotes}</span>
+                          <span>💬 {post.comments}</span>
+                        </>
+                      )}
+                    </div>
+                    {post.redditUrl && (
+                      <a
+                        href={post.redditUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={cn(
+                          "inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold transition-all",
+                          isX
+                            ? "bg-white/5 hover:bg-white/10 border border-white/15 hover:border-white/30 text-white/60 hover:text-white"
+                            : "bg-[#FF4500]/10 hover:bg-[#FF4500]/20 border border-[#FF4500]/25 hover:border-[#FF4500]/50 text-[#FF4500]",
+                        )}
+                      >
+                        {isX ? (
+                          <span className="font-black text-sm leading-none">𝕏</span>
+                        ) : (
+                          <svg className="h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.561-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.249 0-.687-.562-1.249-1.25-1.249zm-5.466 3.99a.327.327 0 0 0-.231.094.33.33 0 0 0 0 .463c.842.842 2.484.913 2.961.913.477 0 2.105-.056 2.961-.913a.361.361 0 0 0 .029-.463.33.33 0 0 0-.464 0c-.547.533-1.684.73-2.512.73-.828 0-1.979-.196-2.512-.73a.326.326 0 0 0-.232-.095z"/></svg>
+                        )}
+                        {isX ? "View on X" : "View on Reddit"}
+                      </a>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+
+            <CommentsSection postId={tokenId} platform={post.platform} />
           </motion.div>
 
           {/* Right panel */}
@@ -418,14 +538,17 @@ function TokenDetailsPage() {
             initial={{ opacity: 0, x: 0, y: 8 }}
             animate={{ opacity: 1, x: 0, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="order-1 lg:order-2 space-y-3"
+            className="order-1 space-y-3 lg:sticky lg:top-4 lg:order-2"
           >
             {/* Creator earnings */}
-            <div className="rounded-xl border border-white/[0.08] bg-[#0f0f0f] p-5 space-y-3">
-              <h3 className="text-xs font-mono text-white/40">Creator Earnings</h3>
-              <p className="text-2xl font-mono font-bold text-[#E8431C]">
+            <div className="space-y-3 rounded-[24px] border border-white/[0.1] bg-white/[0.045] p-5 shadow-xl shadow-black/20 backdrop-blur-xl">
+              <div className="flex items-center justify-between">
+                <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/35">Creator Earnings</h3>
+                <span className="rounded-full bg-[#E8431C]/10 px-2 py-1 text-[10px] font-semibold text-[#ff7a57]">0.40%</span>
+              </div>
+              <p className="font-mono text-3xl font-black text-[#E8431C]">
                 ${parseFloat(creatorEarnings).toFixed(2)}{" "}
-                <span className="text-sm font-normal text-white/40">USDC</span>
+                <span className="text-sm font-normal text-white/35">USDC</span>
               </p>
 
               {claimResult?.success && (
@@ -464,9 +587,9 @@ function TokenDetailsPage() {
                     onClick={handleClaimClick}
                     title={claimTitle}
                     className={cn(
-                      "w-full rounded-lg py-2.5 text-xs font-mono font-bold transition-all flex items-center justify-center gap-1.5",
+                      "flex w-full items-center justify-center gap-1.5 rounded-xl py-3 text-xs font-mono font-bold transition-all",
                       canClaim && !claiming
-                        ? "bg-[#00FFD1] text-black hover:bg-[#00FFD1]/85 cursor-pointer"
+                        ? "cursor-pointer bg-[#00FFD1] text-black shadow-[0_0_24px_rgba(0,255,209,0.22)] hover:-translate-y-0.5 hover:bg-[#00FFD1]/85"
                         : "bg-white/[0.04] text-white/25 cursor-not-allowed border border-white/[0.08]",
                     )}
                   >
@@ -478,11 +601,14 @@ function TokenDetailsPage() {
             </div>
 
             {/* Curator reward — only shown for posts launched with a curator wallet */}
-            {curatorWalletSet && <div className="rounded-xl border border-white/[0.08] bg-[#0f0f0f] p-5 space-y-3">
-              <h3 className="text-xs font-mono text-white/40">Curator Reward</h3>
-              <p className="text-2xl font-mono font-bold text-[#00FFA3]">
+            {curatorWalletSet && <div className="space-y-3 rounded-[24px] border border-white/[0.1] bg-white/[0.045] p-5 shadow-xl shadow-black/20 backdrop-blur-xl">
+              <div className="flex items-center justify-between">
+                <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/35">Curator Reward</h3>
+                <span className="rounded-full bg-[#00FFA3]/10 px-2 py-1 text-[10px] font-semibold text-[#00FFA3]">0.15%</span>
+              </div>
+              <p className="font-mono text-3xl font-black text-[#00FFA3]">
                 ${parseFloat(curatorEarnings).toFixed(2)}{" "}
-                <span className="text-sm font-normal text-white/40">USDC</span>
+                <span className="text-sm font-normal text-white/35">USDC</span>
               </p>
 
               <p className="text-[10px] text-white/30 leading-relaxed">
@@ -508,9 +634,9 @@ function TokenDetailsPage() {
                     disabled={!canClaimCurator}
                     onClick={handleCuratorClaimClick}
                     className={cn(
-                      "w-full rounded-lg py-2.5 text-xs font-mono font-bold transition-all flex items-center justify-center gap-1.5",
+                      "flex w-full items-center justify-center gap-1.5 rounded-xl py-3 text-xs font-mono font-bold transition-all",
                       canClaimCurator
-                        ? "bg-white/10 hover:bg-white/15 border border-white/20 text-white cursor-pointer"
+                        ? "cursor-pointer border border-white/20 bg-white/10 text-white hover:-translate-y-0.5 hover:bg-white/15"
                         : "bg-white/[0.04] text-white/25 cursor-not-allowed border border-white/[0.08]",
                     )}
                   >
@@ -659,13 +785,13 @@ function TokenDetailsPage() {
 
             {/* Trade */}
             {isOnChain ? (
-              <div className="rounded-xl border border-white/[0.08] bg-[#0f0f0f] p-5 space-y-3">
-                <h3 className="text-xs font-mono text-white/40">Trade</h3>
+              <div className="space-y-3 rounded-[24px] border border-[#00FFA3]/15 bg-[#00FFA3]/[0.035] p-5 shadow-xl shadow-[#00FFA3]/5 backdrop-blur-xl">
+                <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#00FFA3]/55">Start Trading</h3>
                 <a
                   href={`https://jup.ag/tokens/${post.tokenMintAddress}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#00FFA3] py-3 text-sm font-mono font-bold text-black transition-all hover:bg-[#33ffb8] hover:-translate-y-0.5 shadow-[0_0_20px_rgba(0,255,163,0.25)] hover:shadow-[0_0_30px_rgba(0,255,163,0.5)]"
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#00FFA3] py-3.5 text-sm font-mono font-black text-black shadow-[0_0_28px_rgba(0,255,163,0.26)] transition-all hover:-translate-y-0.5 hover:bg-[#33ffb8] hover:shadow-[0_0_40px_rgba(0,255,163,0.45)]"
                 >
                   <ArrowRightLeft className="h-4 w-4" />
                   Trade on Jupiter
@@ -676,112 +802,78 @@ function TokenDetailsPage() {
               <TradingModal post={post} isOpen={true} onClose={() => { setChartRefreshKey(k => k + 1); void fetchTokenDetails(false); }} />
             )}
 
-            {/* Token info */}
-            <div className="rounded-xl border border-white/[0.08] bg-[#0f0f0f] p-5 space-y-4">
-              <h3 className="text-xs font-mono text-white/40">Token Info</h3>
-              {post.tokenMintAddress && (
-                <div>
-                  <p className="text-[10px] font-mono text-white/30 mb-1.5">Mint Address</p>
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(post.tokenMintAddress!);
-                      setCopied(true);
-                      setTimeout(() => setCopied(false), 2000);
-                    }}
-                    className="w-full flex items-center justify-between gap-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.07] border border-white/[0.08] px-3 py-2 transition-colors group"
-                    title="Copy mint address"
-                  >
-                    <span className="text-[11px] text-white/60 font-mono" title={post.tokenMintAddress}>
-                      {post.tokenMintAddress.slice(0, 16)}…
-                    </span>
-                    {copied ? <Check className="h-3.5 w-3.5 text-[#00FFA3] shrink-0" /> : <Copy className="h-3.5 w-3.5 text-white/40 group-hover:text-white shrink-0 transition-colors" />}
-                  </button>
-                </div>
-              )}
-              <div className="grid grid-cols-2 gap-y-4 gap-x-3">
-                <div>
-                  <p className="text-[10px] font-mono text-white/30 mb-1">Symbol</p>
-                  <p className="text-sm font-mono font-bold text-[#E8431C]">${post.tokenSymbol}</p>
-                </div>
-                {dex?.fdv ? (
-                  <div>
-                    <p className="text-[10px] font-mono text-white/30 mb-1">FDV</p>
-                    <p className="text-sm font-mono font-bold text-white">{formatUsd(dex.fdv)}</p>
-                  </div>
-                ) : null}
-                {dex?.marketCap ? (
-                  <div>
-                    <p className="text-[10px] font-mono text-white/30 mb-1">Market Cap</p>
-                    <p className="text-sm font-mono font-bold text-white">{formatUsd(dex.marketCap)}</p>
-                  </div>
-                ) : null}
-              </div>
-            </div>
-
-            {/* Original post — platform-aware */}
-            {(() => {
-              const isX = post.platform === "x";
-              return (
-                <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4 space-y-2.5">
-                  <div className="flex items-center gap-1.5">
-                    {isX ? (
-                      <span className="text-sm font-black text-white/60">𝕏</span>
-                    ) : (
-                      <svg className="h-3.5 w-3.5 text-[#FF4500]" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.561-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.249 0-.687-.562-1.249-1.25-1.249zm-5.466 3.99a.327.327 0 0 0-.231.094.33.33 0 0 0 0 .463c.842.842 2.484.913 2.961.913.477 0 2.105-.056 2.961-.913a.361.361 0 0 0 .029-.463.33.33 0 0 0-.464 0c-.547.533-1.684.73-2.512.73-.828 0-1.979-.196-2.512-.73a.326.326 0 0 0-.232-.095z"/></svg>
-                    )}
-                    <p className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">Source Post</p>
-                  </div>
-                  <p className="text-sm font-medium text-white leading-snug line-clamp-2">{post.title}</p>
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-white/40">
-                    {isX ? (
-                      <span>@{post.author}</span>
-                    ) : (
-                      <>
-                        <span>r/{post.subreddit}</span>
-                        <span>·</span>
-                        <span>u/{post.author}</span>
-                      </>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-3 text-xs text-white/30">
-                    {isX ? (
-                      <>
-                        <span>♥ {post.upvotes}</span>
-                        <span>🔁 {post.comments}</span>
-                      </>
-                    ) : (
-                      <>
-                        <span>↑ {post.upvotes}</span>
-                        <span>💬 {post.comments}</span>
-                      </>
-                    )}
-                  </div>
-                  {post.redditUrl && (
-                    <a
-                      href={post.redditUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={cn(
-                        "inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all",
-                        isX
-                          ? "bg-white/5 hover:bg-white/10 border border-white/15 hover:border-white/30 text-white/60 hover:text-white"
-                          : "bg-[#FF4500]/10 hover:bg-[#FF4500]/20 border border-[#FF4500]/25 hover:border-[#FF4500]/50 text-[#FF4500]",
-                      )}
-                    >
-                      {isX ? (
-                        <span className="font-black text-sm leading-none">𝕏</span>
-                      ) : (
-                        <svg className="h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.561-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.249 0-.687-.562-1.249-1.25-1.249zm-5.466 3.99a.327.327 0 0 0-.231.094.33.33 0 0 0 0 .463c.842.842 2.484.913 2.961.913.477 0 2.105-.056 2.961-.913a.361.361 0 0 0 .029-.463.33.33 0 0 0-.464 0c-.547.533-1.684.73-2.512.73-.828 0-1.979-.196-2.512-.73a.326.326 0 0 0-.232-.095z"/></svg>
-                      )}
-                      {isX ? "View on X" : "View on Reddit"}
-                    </a>
-                  )}
-                </div>
-              );
-            })()}
           </motion.div>
         </div>
       </div>
+
+      <AnimatePresence>
+        {showMarketView && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6"
+          >
+            <button
+              aria-label="Close market view"
+              className="absolute inset-0 bg-black/80 backdrop-blur-md"
+              onClick={() => setShowMarketView(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, y: 18, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 18, scale: 0.98 }}
+              className="relative flex h-[84vh] w-full max-w-6xl flex-col overflow-hidden rounded-[28px] border border-white/[0.12] bg-[#080808] shadow-2xl shadow-black/60"
+            >
+              <div className="flex items-center justify-between gap-4 border-b border-white/[0.08] px-4 py-3 sm:px-5">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/30">Market View</p>
+                  <h2 className="truncate text-base font-bold text-white">
+                    ${post.tokenSymbol} live chart
+                  </h2>
+                </div>
+                <button
+                  onClick={() => setShowMarketView(false)}
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-white/50 transition-colors hover:bg-white/[0.1] hover:text-white"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="min-h-0 flex-1">
+                {isOnChain ? (
+                  <ChartEmbed poolAddress={poolAddress} mintAddress={post.tokenMintAddress!} />
+                ) : (
+                  <div className="h-full p-4">
+                    <PriceChart
+                      postId={post.id}
+                      currentPrice={post.tokenPrice || 0}
+                      initialPrice={parseFloat(post.initialPrice || "0.001")}
+                      tokenSymbol={post.tokenSymbol}
+                      refreshKey={chartRefreshKey}
+                    />
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Mobile sticky trade CTA — hidden on desktop where the right panel is always visible */}
+      {isOnChain && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden px-4 pb-4 pt-3 bg-gradient-to-t from-black via-black/95 to-transparent">
+          <a
+            href={`https://jup.ag/tokens/${post.tokenMintAddress}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#00FFA3] py-3.5 text-sm font-mono font-bold text-black shadow-[0_0_24px_rgba(0,255,163,0.3)] active:scale-[0.98] transition-transform"
+          >
+            <ArrowRightLeft className="h-4 w-4" />
+            Trade ${post.tokenSymbol} on Jupiter
+          </a>
+        </div>
+      )}
     </div>
   );
 }
