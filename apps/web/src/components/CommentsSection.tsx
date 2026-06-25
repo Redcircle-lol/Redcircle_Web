@@ -389,7 +389,17 @@ export default function CommentsSection({ postId, platform }: { postId: string; 
             avatarName={displayName}
             onSubmit={(body) => postComment(body)}
           />
-          {submitError && <p className="mt-2 text-xs text-red-400/80">{submitError}</p>}
+          {submitError && (
+            <div className="mt-2 flex items-center justify-between gap-3 rounded-2xl bg-red-500/5 px-3 py-2 ring-1 ring-red-500/10">
+              <p className="text-xs text-red-300/80">{submitError}</p>
+              <a
+                href={providerAuthUrl}
+                className="shrink-0 rounded-full bg-white px-3 py-1.5 text-[11px] font-bold text-black transition-colors hover:bg-white/85"
+              >
+                Continue with {provider}
+              </a>
+            </div>
+          )}
         </div>
       ) : (
         <div className="mb-5 flex items-center justify-between gap-4 rounded-2xl bg-black/25 px-4 py-3 ring-1 ring-white/[0.06]">
