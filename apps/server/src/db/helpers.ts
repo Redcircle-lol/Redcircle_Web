@@ -1,4 +1,4 @@
-import { eq, and, or, like } from "drizzle-orm";
+import { eq, and, or, ilike } from "drizzle-orm";
 import { db } from "./index";
 import { posts } from "./index";
 
@@ -24,7 +24,7 @@ export async function resolvePostById(tokenId: string) {
   // 2. Legacy {SYMBOL}-{6charMintPrefix} format
   const dash = tokenId.lastIndexOf("-");
   if (dash > 0) {
-    const sym       = tokenId.slice(0, dash).toUpperCase();
+    const sym       = tokenId.slice(0, dash);
     const shortMint = tokenId.slice(dash + 1);
     if (shortMint.length === 6) {
       const [byLegacy] = await db
@@ -32,8 +32,8 @@ export async function resolvePostById(tokenId: string) {
         .from(posts)
         .where(
           and(
-            like(posts.tokenSymbol,      sym),
-            like(posts.tokenMintAddress, `${shortMint}%`),
+            ilike(posts.tokenSymbol, sym),
+            ilike(posts.tokenMintAddress, `${shortMint}%`),
           ),
         )
         .limit(1);

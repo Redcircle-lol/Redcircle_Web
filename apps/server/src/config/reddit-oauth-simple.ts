@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import { db } from "../db";
 import * as schema from "../db";
 import { eq } from "drizzle-orm";
+import { linkRedditToUser } from "../lib/link-provider";
 
 const { users } = schema;
 
@@ -18,7 +19,7 @@ const FRONTEND_URL = process.env.FRONTEND_URL;
 // (Reddit post fetching uses different OAuth flow and doesn't need these)
 const isUserAuthEnabled = REDDIT_REDIRECT_URI && FRONTEND_URL;
 
-const redditStateStore = new Map<string, { redirectPath?: string; expiry: number }>();
+const redditStateStore = new Map<string, { redirectPath?: string; linkUserId?: string; expiry: number }>();
 
 function safeRedirectPath(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined;
@@ -43,8 +44,10 @@ if (isUserAuthEnabled && REDDIT_CLIENT_ID && REDDIT_CLIENT_SECRET && REDDIT_REDI
   // Step 1: Redirect to Reddit
   router.get("/auth/reddit", (req, res) => {
     const state = Math.random().toString(36).substring(7);
+    const linkUserId = typeof req.query.linkUserId === "string" ? req.query.linkUserId : undefined;
     redditStateStore.set(state, {
       redirectPath: safeRedirectPath(req.query.redirect),
+      linkUserId,
       expiry: Date.now() + 10 * 60 * 1000,
     });
     // URL encode the redirect_uri to handle special characters
@@ -60,6 +63,7 @@ if (isUserAuthEnabled && REDDIT_CLIENT_ID && REDDIT_CLIENT_SECRET && REDDIT_REDI
   const stored = redditStateStore.get(stateKey);
   redditStateStore.delete(stateKey);
   const redirectPath = stored && Date.now() <= stored.expiry ? stored.redirectPath : undefined;
+  const linkUserId = stored && Date.now() <= stored.expiry ? stored.linkUserId : undefined;
 
   if (error) {
     return res.redirect(signinUrl({ error: "auth_failed", redirect: redirectPath }));
@@ -91,6 +95,28 @@ if (isUserAuthEnabled && REDDIT_CLIENT_ID && REDDIT_CLIENT_SECRET && REDDIT_REDI
     });
 
     const redditUser = await userResponse.json() as any;
+
+    // If already signed in, link Reddit onto the current account (keep X if present).
+    if (linkUserId) {
+      try {
+        const user = await linkRedditToUser(linkUserId, {
+          id: redditUser.id,
+          name: redditUser.name,
+          icon_img: redditUser.icon_img,
+        });
+
+        const JWT_SECRET = process.env.JWT_SECRET;
+        if (!JWT_SECRET) {
+          throw new Error("❌ JWT_SECRET is not set in environment variables");
+        }
+
+        const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: "7d" });
+        return res.redirect(signinUrl({ token, user: JSON.stringify(user), redirect: redirectPath }));
+      } catch (linkErr) {
+        console.error("❌ Reddit link error:", linkErr);
+        return res.redirect(signinUrl({ error: "auth_failed", redirect: redirectPath }));
+      }
+    }
 
     // Check if user exists in our database
     const existingUser = await db

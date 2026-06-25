@@ -719,11 +719,12 @@ router.get("/:id/creator-earnings", async (req, res) => {
       : 0;
 
     return res.json({
-      success:             true,
-      earningsUsdc:        creatorUsdc.toFixed(4),
-      curatorEarningsUsdc: curatorUsdc.toFixed(4),
-      curatorWalletSet:    !!launch.curatorWalletAddress,
-      poolAddress:         launch.poolAddress,
+      success:              true,
+      earningsUsdc:         creatorUsdc.toFixed(4),
+      curatorEarningsUsdc:  curatorUsdc.toFixed(4),
+      curatorWalletSet:     !!launch.curatorWalletAddress,
+      curatorWalletAddress: launch.curatorWalletAddress ?? null,
+      poolAddress:          launch.poolAddress,
     });
   } catch (err) {
     console.error("❌ Error fetching creator earnings:", err);
@@ -1039,13 +1040,13 @@ router.post("/:id/comments", authenticateToken, async (req, res) => {
     const [author] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
     if (!author) return res.status(401).json({ error: "unauthorized" });
 
-    if (post.platform === "x" && !author.xUsername) {
+    if (post.platform === "x" && !author.xId && !author.xUsername) {
       return res.status(403).json({
         error: "x_signin_required",
         message: "Sign in with X to comment on X post tokens.",
       });
     }
-    if (post.platform !== "x" && !author.username) {
+    if (post.platform !== "x" && !author.redditId && !author.username) {
       return res.status(403).json({
         error: "reddit_signin_required",
         message: "Sign in with Reddit to comment on Reddit post tokens.",
@@ -1094,7 +1095,17 @@ router.post("/:id/comments", authenticateToken, async (req, res) => {
     });
   } catch (err) {
     console.error("❌ Error posting comment:", err);
-    res.status(500).json({ error: "server_error" });
+    const msg = err instanceof Error ? err.message : "";
+    const isDbSetup =
+      msg.includes("post_comments") ||
+      msg.includes("relation") ||
+      msg.includes("does not exist");
+    res.status(500).json({
+      error: "server_error",
+      message: isDbSetup
+        ? "Comments are not set up on this server yet."
+        : "Failed to post comment. Please try again.",
+    });
   }
 });
 

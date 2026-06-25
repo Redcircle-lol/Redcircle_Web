@@ -2,8 +2,6 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { SignInPage } from "../components/ui/sign-in";
 import { useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
-import { getApiUrl } from "../lib/auth";
-import { toast } from "sonner";
 
 export const Route = createFileRoute("/signin")({
   component: SignIn,
@@ -16,74 +14,30 @@ export const Route = createFileRoute("/signin")({
 
 function SignIn() {
   const navigate = useNavigate();
-  const { login, isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading, startProviderSignIn } = useAuth();
   const { redirect } = Route.useSearch();
 
-  // Redirect if already authenticated
+  // Redirect if already authenticated (OAuth callbacks are handled globally in AuthContext).
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    // OAuth callbacks also land on /signin. Process token/user first so a
-    // provider re-auth can replace an older session before redirecting.
     if (params.has("token") || params.has("user") || params.has("error")) return;
+    if (isLoading) return;
 
     if (isAuthenticated) {
+      if (redirect?.startsWith("/")) {
+        window.location.assign(redirect);
+      } else {
         navigate({ to: redirect || "/" });
-    }
-  }, [isAuthenticated, navigate, redirect]);
-
-  // Handle OAuth callback
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get("token");
-    const userStr = params.get("user");
-    const error = params.get("error");
-
-    if (error) {
-      const errorMessages: { [key: string]: string } = {
-        auth_failed:      "Reddit authentication failed. Please try again.",
-        no_user:          "Reddit authentication succeeded but no user was returned. Please try again.",
-        x_auth_failed:    "X sign-in failed. Please try again.",
-        x_state_invalid:  "X sign-in session expired or invalid. Please try again.",
-        session_failed:   "Failed to create session. Please try again.",
-        server_error:     "Server error occurred. Please try again.",
-      };
-
-      const message = errorMessages[error] || `Unknown error: ${error}`;
-      toast.error("Authentication error", { description: message });
-
-      // Clean up URL
-      window.history.replaceState({}, document.title, "/signin");
-      return;
-    }
-
-    if (token && userStr) {
-      try {
-        const user = JSON.parse(decodeURIComponent(userStr));
-        login(token, user);
-
-        // Clean up URL immediately to prevent double processing
-        window.history.replaceState({}, document.title, "/signin");
-
-        // Redirect to dashboard - increased timeout to ensure localStorage is updated
-          setTimeout(() => {
-            navigate({ to: redirect || "/" });
-        }, 300);
-      } catch {
-        toast.error("Failed to complete sign in", {
-          description: "We couldn't complete sign in. Please try again.",
-        });
       }
     }
-  }, [login, navigate, redirect]);
+  }, [isAuthenticated, isLoading, navigate, redirect]);
 
   const startRedditSignIn = () => {
-    const qs = redirect ? `?redirect=${encodeURIComponent(redirect)}` : "";
-    window.location.href = `${getApiUrl()}/auth/reddit${qs}`;
+    startProviderSignIn("reddit", redirect);
   };
 
   const startXSignIn = () => {
-    const qs = redirect ? `?redirect=${encodeURIComponent(redirect)}` : "";
-    window.location.href = `${getApiUrl()}/auth/x${qs}`;
+    startProviderSignIn("x", redirect);
   };
 
   return (

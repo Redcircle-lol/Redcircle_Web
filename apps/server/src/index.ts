@@ -19,6 +19,7 @@ import trendingRoutes from "./routes/trending";
 import rewardRoutes from "./routes/reward";
 import curatorRewardRoutes from "./routes/curator-reward";
 import partnerRoutes from "./routes/partner";
+import authRoutes from "./routes/auth";
 
 const app = express();
 
@@ -69,6 +70,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/trending", trendingRoutes);
 app.use("/api/reward", rewardRoutes);
 app.use("/api/curator-reward", curatorRewardRoutes);
+app.use("/api/auth", authRoutes);
 app.use("/api/v1", partnerRoutes);
 
 // ── DexScreener proxy (avoids browser CORS restrictions) ──────────────────────

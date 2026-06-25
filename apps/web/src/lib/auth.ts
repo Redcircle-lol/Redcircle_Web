@@ -4,6 +4,7 @@ export interface User {
   id: string;
   redditId?: string | null;
   username?: string | null;
+  xId?: string | null;
   xUsername?: string | null;
   avatarUrl?: string;
   email?: string;

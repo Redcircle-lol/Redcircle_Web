@@ -4,6 +4,7 @@ import crypto from "node:crypto";
 import { db } from "../db";
 import * as schema from "../db";
 import { eq, or } from "drizzle-orm";
+import { linkXToUser } from "../lib/link-provider";
 
 const { users } = schema;
 
@@ -24,7 +25,7 @@ if (isEnabled) {
 
 // In-memory PKCE store: state → { codeVerifier, expiry }
 // Fine for single-process deploys; swap for Redis if horizontally scaled.
-const pkceStore = new Map<string, { codeVerifier: string; expiry: number; redirectPath?: string }>();
+const pkceStore = new Map<string, { codeVerifier: string; expiry: number; redirectPath?: string; linkUserId?: string }>();
 
 function safeRedirectPath(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined;
@@ -54,9 +55,10 @@ if (isEnabled) {
     const state        = crypto.randomBytes(16).toString("hex");
     const codeVerifier = generateCodeVerifier();
     const redirectPath = safeRedirectPath(req.query.redirect);
+    const linkUserId   = typeof req.query.linkUserId === "string" ? req.query.linkUserId : undefined;
 
     // Store for 10 minutes
-    pkceStore.set(state, { codeVerifier, redirectPath, expiry: Date.now() + 10 * 60 * 1000 });
+    pkceStore.set(state, { codeVerifier, redirectPath, linkUserId, expiry: Date.now() + 10 * 60 * 1000 });
 
     const params = new URLSearchParams({
       response_type:         "code",
@@ -117,6 +119,30 @@ if (isEnabled) {
 
       if (!xUser?.id) {
         return res.redirect(signinUrl({ error: "x_auth_failed", redirect: stored.redirectPath }));
+      }
+
+      // If already signed in, link X onto the current account (keep Reddit if present).
+      if (stored.linkUserId) {
+        try {
+          const user = await linkXToUser(stored.linkUserId, {
+            id: xUser.id,
+            username: xUser.username,
+            profile_image_url: xUser.profile_image_url,
+          });
+
+          const JWT_SECRET = process.env.JWT_SECRET;
+          if (!JWT_SECRET) throw new Error("JWT_SECRET not set");
+
+          const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: "7d" });
+          return res.redirect(signinUrl({
+            token,
+            user: JSON.stringify(user),
+            redirect: stored.redirectPath,
+          }));
+        } catch (linkErr) {
+          console.error("❌ X link error:", linkErr);
+          return res.redirect(signinUrl({ error: "x_auth_failed", redirect: stored.redirectPath }));
+        }
       }
 
       // Upsert user — match by xId, fall back to xUsername

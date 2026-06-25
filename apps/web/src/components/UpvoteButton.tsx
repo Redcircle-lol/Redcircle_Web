@@ -4,7 +4,6 @@ import { toast } from "sonner";
 import { ArrowUp, ThumbsUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
-import { getApiUrl } from "@/lib/auth";
 import { setVote, fetchVoteStatus, canVoteOnPlatform, loginRequiredMessage, type PostPlatform } from "@/lib/votes";
 
 type UpvoteButtonProps = {
@@ -50,7 +49,7 @@ export default function UpvoteButton({
   onVoteChange,
 }: UpvoteButtonProps) {
   const showAttention = attention ?? size === "lg";
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, startProviderSignIn } = useAuth();
   const votePlatform: PostPlatform = platform === "x" ? "x" : "reddit";
 
   const [voted, setVoted] = useState(initialVoted);
@@ -59,11 +58,7 @@ export default function UpvoteButton({
   const [hovered, setHovered] = useState(false);
   const [burst, setBurst] = useState(false);
 
-  const startProviderSignIn = () => {
-    const redirect = `${window.location.pathname}${window.location.search}`;
-    const providerPath = votePlatform === "x" ? "x" : "reddit";
-    window.location.href = `${getApiUrl()}/auth/${providerPath}?redirect=${encodeURIComponent(redirect)}`;
-  };
+  const startVoteProviderSignIn = () => startProviderSignIn(votePlatform);
 
   // Re-sync when props change (parent refetch / navigation between posts).
   useEffect(() => {
@@ -87,7 +82,7 @@ export default function UpvoteButton({
     if (pending) return;
 
     if (!isAuthenticated) {
-      startProviderSignIn();
+      startVoteProviderSignIn();
       return;
     }
 
@@ -97,7 +92,7 @@ export default function UpvoteButton({
         description,
         action: {
           label: votePlatform === "x" ? "Sign in with X" : "Sign in with Reddit",
-          onClick: startProviderSignIn,
+          onClick: startVoteProviderSignIn,
         },
       });
       return;
@@ -119,7 +114,7 @@ export default function UpvoteButton({
         setVoted(!next);
         setCount((c) => Math.max(c + (next ? -1 : 1), 0));
         if (result.error === "unauthorized") {
-          startProviderSignIn();
+          startVoteProviderSignIn();
           return;
         }
         toast.error(result.message ?? "Could not register your vote.");

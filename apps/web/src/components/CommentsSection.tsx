@@ -22,6 +22,46 @@ type FlatComment = {
 };
 type Comment = FlatComment & { replies: Comment[] };
 
+function commentPostError(
+  res: Response,
+  data: { error?: string; message?: string },
+  provider: string,
+): { message: string; needsProvider: boolean } {
+  const authErrors = new Set([
+    "unauthorized",
+    "Authentication required",
+    "Invalid token",
+    "reddit_signin_required",
+    "x_signin_required",
+  ]);
+
+  if (res.status === 401 || res.status === 403 || (data.error && authErrors.has(data.error))) {
+    return {
+      message:
+        data.error === "reddit_signin_required" || data.error === "x_signin_required"
+          ? `Sign in with ${provider} to comment on this token.`
+          : `Your session expired. Sign in with ${provider} again to comment.`,
+      needsProvider: true,
+    };
+  }
+
+  if (res.status === 404 || data.error === "not_found") {
+    return { message: "This token could not be found.", needsProvider: false };
+  }
+
+  if (res.status >= 500 || data.error === "server_error") {
+    return {
+      message: data.message ?? "Comments are temporarily unavailable. Please try again later.",
+      needsProvider: false,
+    };
+  }
+
+  return {
+    message: data.message ?? "Could not post your comment. Please try again.",
+    needsProvider: false,
+  };
+}
+
 function nestComments(flat: FlatComment[]): Comment[] {
   const map = new Map<string, Comment>(flat.map((c) => [c.id, { ...c, replies: [] }]));
   const roots: Comment[] = [];
@@ -306,19 +346,23 @@ function CommentItem({
 }
 
 export default function CommentsSection({ postId, platform }: { postId: string; platform?: "reddit" | "x" }) {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, isLoading, user, hasLinkedProvider, startProviderSignIn, refreshUser } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitNeedsProvider, setSubmitNeedsProvider] = useState(false);
   const apiBase = getApiUrl();
 
   const displayName = user?.xUsername ?? user?.username ?? "You";
-  const provider = platform === "x" ? "X" : "Reddit";
-  const hasRequiredProvider = platform === "x" ? !!user?.xUsername : !!user?.username;
-  const canComment = isAuthenticated && !!user && hasRequiredProvider;
-  const currentPath = `${window.location.pathname}${window.location.search}`;
-  const providerAuthUrl = `${apiBase}${platform === "x" ? "/auth/x" : "/auth/reddit"}?redirect=${encodeURIComponent(currentPath)}`;
+  const authProvider = platform === "x" ? "x" : "reddit";
+  const provider = authProvider === "x" ? "X" : "Reddit";
+  const hasRequiredProvider = hasLinkedProvider(authProvider);
+  const canComment = !isLoading && isAuthenticated && !!user && hasRequiredProvider;
+
+  useEffect(() => {
+    if (isAuthenticated && !isLoading) void refreshUser();
+  }, [isAuthenticated, isLoading, refreshUser, postId, platform]);
 
   useEffect(() => {
     let cancelled = false;
@@ -335,13 +379,19 @@ export default function CommentsSection({ postId, platform }: { postId: string; 
 
   const postComment = async (body: string, parentId: string | null = null) => {
     setSubmitError(null);
+    setSubmitNeedsProvider(false);
     const res = await fetchWithAuth(`/api/posts/${postId}/comments`, {
       method: "POST",
       body: JSON.stringify({ body, parentId }),
     });
-    const data = await res.json() as { comment?: FlatComment };
+    const data = await res.json() as { comment?: FlatComment; error?: string; message?: string };
     if (!res.ok || !data?.comment) {
-      setSubmitError(`Sign in with ${provider} to comment on this token.`);
+      if (res.status === 401 || res.status === 403) {
+        await refreshUser();
+      }
+      const { message, needsProvider } = commentPostError(res, data, provider);
+      setSubmitError(message);
+      setSubmitNeedsProvider(needsProvider);
       throw new Error("Failed to post comment");
     }
     const newComment: Comment = { ...data.comment, replies: [] };
@@ -381,7 +431,9 @@ export default function CommentsSection({ postId, platform }: { postId: string; 
       </div>
 
       {/* Input / sign-in */}
-      {canComment ? (
+      {isLoading ? (
+        <div className="mb-5 h-24 animate-pulse rounded-2xl bg-black/25 ring-1 ring-white/[0.06]" />
+      ) : canComment ? (
         <div className="mb-5">
           <CommentInput
             placeholder="Write a comment…"
@@ -392,31 +444,39 @@ export default function CommentsSection({ postId, platform }: { postId: string; 
           {submitError && (
             <div className="mt-2 flex items-center justify-between gap-3 rounded-2xl bg-red-500/5 px-3 py-2 ring-1 ring-red-500/10">
               <p className="text-xs text-red-300/80">{submitError}</p>
-              <a
-                href={providerAuthUrl}
-                className="shrink-0 rounded-full bg-white px-3 py-1.5 text-[11px] font-bold text-black transition-colors hover:bg-white/85"
-              >
-                Continue with {provider}
-              </a>
+              {submitNeedsProvider && (
+                <button
+                  type="button"
+                  onClick={() => startProviderSignIn(authProvider)}
+                  className="shrink-0 rounded-full bg-white px-3 py-1.5 text-[11px] font-bold text-black transition-colors hover:bg-white/85"
+                >
+                  {isAuthenticated ? `Link ${provider}` : `Continue with ${provider}`}
+                </button>
+              )}
             </div>
           )}
         </div>
       ) : (
         <div className="mb-5 flex items-center justify-between gap-4 rounded-2xl bg-black/25 px-4 py-3 ring-1 ring-white/[0.06]">
           <div>
-            <p className="text-sm font-medium text-white/55">Sign in with {provider} to comment</p>
+            <p className="text-sm font-medium text-white/55">
+              {isAuthenticated
+                ? `Link your ${provider} account to comment`
+                : `Sign in with ${provider} to comment`}
+            </p>
             {isAuthenticated && (
               <p className="mt-0.5 text-xs text-white/25">
-                This token came from {provider}, so comments require that identity.
+                Your account keeps both Reddit and X linked — linking {provider} won&apos;t remove your other login.
               </p>
             )}
           </div>
-          <a
-            href={providerAuthUrl}
+          <button
+            type="button"
+            onClick={() => startProviderSignIn(authProvider)}
             className="shrink-0 rounded-full bg-white px-3.5 py-2 text-xs font-bold text-black transition-colors hover:bg-white/85"
           >
-            Sign in
-          </a>
+            {isAuthenticated ? `Link ${provider}` : "Sign in"}
+          </button>
         </div>
       )}
 

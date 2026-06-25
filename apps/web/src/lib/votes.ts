@@ -22,7 +22,7 @@ export type PostPlatform = "reddit" | "x";
 /** Does this user have the login required to upvote a post of `platform`? */
 export function canVoteOnPlatform(user: User | null | undefined, platform: PostPlatform): boolean {
   if (!user) return false;
-  return platform === "x" ? !!user.xUsername : !!user.redditId;
+  return platform === "x" ? !!(user.xId || user.xUsername) : !!(user.redditId || user.username);
 }
 
 /** Human-readable prompt when a user lacks the right login for `platform`. */

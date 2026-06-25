@@ -135,6 +135,7 @@ function TokenDetailsPage() {
   const [creatorEarnings, setCreatorEarnings] = useState<string>("0");
   const [curatorEarnings, setCuratorEarnings] = useState<string>("0");
   const [curatorWalletSet, setCuratorWalletSet] = useState(false);
+  const [curatorWalletAddress, setCuratorWalletAddress] = useState<string | null>(null);
   const [claiming, setClaiming] = useState(false);
   const [claimResult, setClaimResult] = useState<{ success: boolean; amount?: string; error?: string } | null>(null);
   const [showClaimConfirm, setShowClaimConfirm] = useState(false);
@@ -160,10 +161,18 @@ function TokenDetailsPage() {
       // Fetch creator earnings — also gives us the pool address for free
       try {
         const erRes  = await fetch(`${getApiUrl()}/api/posts/${tokenId}/creator-earnings`);
-        const erData = await erRes.json() as { success: boolean; earningsUsdc?: string; curatorEarningsUsdc?: string; curatorWalletSet?: boolean; poolAddress?: string };
+        const erData = await erRes.json() as {
+          success: boolean;
+          earningsUsdc?: string;
+          curatorEarningsUsdc?: string;
+          curatorWalletSet?: boolean;
+          curatorWalletAddress?: string | null;
+          poolAddress?: string;
+        };
         if (erData.success && erData.earningsUsdc != null) setCreatorEarnings(erData.earningsUsdc);
         if (erData.success && erData.curatorEarningsUsdc != null) setCuratorEarnings(erData.curatorEarningsUsdc);
         if (erData.curatorWalletSet != null) setCuratorWalletSet(erData.curatorWalletSet);
+        if (erData.curatorWalletAddress !== undefined) setCuratorWalletAddress(erData.curatorWalletAddress);
         if (erData.poolAddress) setPoolAddress(erData.poolAddress);
       } catch { /* non-critical */ }
 
@@ -193,6 +202,12 @@ function TokenDetailsPage() {
   }, [post?.tokenMintAddress]);
 
   const isCreator = matchesPostAuthor(post ?? null, user);
+  const isCuratorWallet = !!(
+    connected &&
+    publicKey &&
+    curatorWalletAddress &&
+    publicKey.toBase58().toLowerCase() === curatorWalletAddress.toLowerCase()
+  );
 
   // When wallet connects while a claim was pending, open the relevant confirm dialog
   useEffect(() => {
@@ -261,12 +276,13 @@ function TokenDetailsPage() {
       const data = await res.json() as { success: boolean; amount?: string; error?: string };
       if (!res.ok) throw new Error(data.error ?? "Curator claim failed");
       setCuratorClaimResult({ success: true, amount: data.amount });
+      void fetchTokenDetails(false);
     } catch (err) {
       setCuratorClaimResult({ success: false, error: err instanceof Error ? err.message : "Claim failed" });
     } finally {
       setCuratorClaiming(false);
     }
-  }, [publicKey, tokenId]);
+  }, [publicKey, tokenId, fetchTokenDetails]);
 
   if (loading) {
     return (
@@ -530,7 +546,7 @@ function TokenDetailsPage() {
               })()}
             </div>
 
-            <CommentsSection postId={tokenId} platform={post.platform} />
+            <CommentsSection postId={post.id} platform={post.platform} />
           </motion.div>
 
           {/* Right panel */}
@@ -628,11 +644,27 @@ function TokenDetailsPage() {
 
               {(() => {
                 const curatorEarningsNum = parseFloat(curatorEarnings);
-                const canClaimCurator    = curatorEarningsNum > 0 && !curatorClaiming;
+                const hasEarnings        = curatorEarningsNum > 0;
+                const wrongWallet        = connected && !isCuratorWallet;
+                const canClaimCurator    = hasEarnings && !curatorClaiming && !wrongWallet;
+                const claimLabel         = curatorClaiming
+                  ? "Claiming…"
+                  : !connected
+                    ? "Connect Wallet to Claim"
+                    : wrongWallet
+                      ? "Connect the Right Wallet"
+                      : "Claim Curator Reward";
+                const claimTitle         = !hasEarnings
+                  ? "No curator earnings to claim yet"
+                  : wrongWallet
+                    ? "Connect the same wallet you used when tokenizing this post"
+                    : undefined;
+
                 return (
                   <button
                     disabled={!canClaimCurator}
                     onClick={handleCuratorClaimClick}
+                    title={claimTitle}
                     className={cn(
                       "flex w-full items-center justify-center gap-1.5 rounded-xl py-3 text-xs font-mono font-bold transition-all",
                       canClaimCurator
@@ -641,7 +673,7 @@ function TokenDetailsPage() {
                     )}
                   >
                     {!connected && canClaimCurator && <Wallet className="w-3 h-3" />}
-                    {curatorClaiming ? "Claiming…" : !connected ? "Connect Wallet to Claim" : "Claim Curator Reward"}
+                    {claimLabel}
                   </button>
                 );
               })()}
