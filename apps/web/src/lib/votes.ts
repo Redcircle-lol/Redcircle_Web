@@ -22,7 +22,7 @@ export type PostPlatform = "reddit" | "x";
 /** Does this user have the login required to upvote a post of `platform`? */
 export function canVoteOnPlatform(user: User | null | undefined, platform: PostPlatform): boolean {
   if (!user) return false;
-  return platform === "x" ? !!user.xUsername : !!user.username;
+  return platform === "x" ? !!user.xUsername : !!user.redditId;
 }
 
 /** Human-readable prompt when a user lacks the right login for `platform`. */
@@ -46,11 +46,18 @@ export async function setVote(postId: string, voted: boolean): Promise<VoteRespo
   }
 
   if (!res.ok) {
+    const normalizedError =
+      res.status === 401
+        ? "unauthorized"
+        : res.status === 403 && data.error === "Invalid token"
+          ? "unauthorized"
+          : data.error ?? "request_failed";
+
     return {
       success: false,
       voted: !voted, // unchanged
       voteCount: typeof data.voteCount === "number" ? data.voteCount : 0,
-      error: data.error ?? (res.status === 401 ? "unauthorized" : "request_failed"),
+      error: normalizedError,
       message: data.message ?? "Could not register your vote.",
       platform: data.platform,
     };
