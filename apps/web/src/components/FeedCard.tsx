@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion } from "motion/react";
 import { Link } from "@tanstack/react-router";
 import { cn, formatUsd, timeAgo, tokenSlug } from "@/lib/utils";
+import UpvoteButton from "@/components/UpvoteButton";
 import { ArrowUp, MessageSquare, ExternalLink, Copy, Check, Flame, Zap } from "lucide-react";
 
 // Live price data fetched in batch by the parent (RedditFeed) — one request
@@ -34,6 +35,9 @@ export type FeedPost = {
   redditUrl?: string;
   totalSupply?: number;
   holders?: number;
+  // Platform upvotes (distinct from `upvotes`, the source Reddit/X score).
+  voteCount?: number;
+  hasVoted?: boolean;
 };
 
 type FeedCardProps = {
@@ -42,9 +46,11 @@ type FeedCardProps = {
   onTrade?: (post: FeedPost) => void;
   index?: number;
   livePair?: LivePair;
+  /** Notifies the parent so it can keep its list (and sort) in sync. */
+  onVoteChange?: (postId: string, voted: boolean, voteCount: number) => void;
 };
 
-export default function FeedCard({ post, className, index = 0, livePair }: FeedCardProps) {
+export default function FeedCard({ post, className, index = 0, livePair, onVoteChange }: FeedCardProps) {
   const [copied, setCopied] = useState(false);
 
   // Live values come from the parent's batch fetch; DB values are the fallback
@@ -195,8 +201,16 @@ export default function FeedCard({ post, className, index = 0, livePair }: FeedC
           )}
         </div>
 
-        {/* ── Footer: CA + Reddit ── */}
+        {/* ── Footer: Upvote + CA + Reddit ── */}
         <div className="flex items-center gap-2 px-3.5 pt-3 pb-3.5">
+          <UpvoteButton
+            postId={post.id}
+            platform={post.platform}
+            initialVoted={post.hasVoted}
+            initialCount={post.voteCount ?? 0}
+            size="sm"
+            onVoteChange={onVoteChange}
+          />
           {post.tokenMintAddress && (
             <div
               className="flex items-center gap-1.5 flex-1 min-w-0 px-2 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.06] hover:border-white/15 hover:bg-white/[0.07] transition-all cursor-pointer"
@@ -219,16 +233,20 @@ export default function FeedCard({ post, className, index = 0, livePair }: FeedC
             </div>
           )}
           {post.redditUrl && (
-            <a
-              href={post.redditUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="flex items-center justify-center h-[30px] w-[30px] shrink-0 rounded-lg bg-[#E8431C]/10 hover:bg-[#E8431C]/25 border border-[#E8431C]/20 hover:border-[#E8431C]/50 text-[#E8431C]/70 hover:text-[#E8431C] transition-all"
+            // Rendered as a button (not <a>) because the whole card is already a
+            // <Link> — nesting <a> inside <a> is invalid HTML and breaks hydration.
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                window.open(post.redditUrl!, "_blank", "noopener,noreferrer");
+              }}
+              className="flex items-center justify-center h-[30px] w-[30px] shrink-0 rounded-lg bg-[#E8431C]/10 hover:bg-[#E8431C]/25 border border-[#E8431C]/20 hover:border-[#E8431C]/50 text-[#E8431C]/70 hover:text-[#E8431C] transition-all cursor-pointer"
               title={isX ? "View on X" : "View on Reddit"}
             >
               <ExternalLink className="h-3 w-3" />
-            </a>
+            </button>
           )}
         </div>
       </motion.article>

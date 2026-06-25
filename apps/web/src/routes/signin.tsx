@@ -21,6 +21,11 @@ function SignIn() {
 
   // Redirect if already authenticated
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    // OAuth callbacks also land on /signin. Process token/user first so a
+    // provider re-auth can replace an older session before redirecting.
+    if (params.has("token") || params.has("user") || params.has("error")) return;
+
     if (isAuthenticated) {
         navigate({ to: redirect || "/" });
     }
@@ -72,11 +77,13 @@ function SignIn() {
   }, [login, navigate, redirect]);
 
   const startRedditSignIn = () => {
-    window.location.href = `${getApiUrl()}/auth/reddit`;
+    const qs = redirect ? `?redirect=${encodeURIComponent(redirect)}` : "";
+    window.location.href = `${getApiUrl()}/auth/reddit${qs}`;
   };
 
   const startXSignIn = () => {
-    window.location.href = `${getApiUrl()}/auth/x`;
+    const qs = redirect ? `?redirect=${encodeURIComponent(redirect)}` : "";
+    window.location.href = `${getApiUrl()}/auth/x${qs}`;
   };
 
   return (

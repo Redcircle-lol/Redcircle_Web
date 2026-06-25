@@ -33,3 +33,5 @@ export * from "./schema/waitlist";
 export * from "./schema/launches";
 export * from "./schema/claims";
 export * from "./schema/x-bot";
+export * from "./schema/post-votes";
+export * from "./schema/post-comments";
