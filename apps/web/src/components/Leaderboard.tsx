@@ -1,6 +1,8 @@
 import { motion } from "motion/react";
 import { useState, useEffect } from "react";
+import { ExternalLink } from "lucide-react";
 import { getApiUrl } from "@/lib/auth";
+import { cn } from "@/lib/utils";
 
 type Entry = {
   rank: number;
@@ -8,10 +10,27 @@ type Entry = {
   user: string;
   platform?: "reddit" | "x" | null;
   avatar?: string;
-  pnl: number;           // creator USDC earnings
-  curatorEarned: number; // curator USDC earnings (0 for old posts)
-  volume: number;        // total trading volume in USDC
+  pnl: number;
+  curatorEarned: number;
+  volume: number;
 };
+
+/** Shared 12-col layout: creator | creator $ | curator $ | volume */
+const ROW_GRID = "grid grid-cols-12 items-center gap-x-1 px-3 sm:gap-x-2 sm:px-4";
+const COL_CREATOR = "col-span-4 min-w-0 sm:col-span-5";
+const COL_CREATOR_USD = "col-span-2 text-right tabular-nums";
+const COL_CURATOR_USD = "col-span-2 text-right tabular-nums";
+const COL_VOLUME = "col-span-4 text-right tabular-nums sm:col-span-3";
+
+function creatorProfileUrl(platform: Entry["platform"], user: string): string {
+  const handle = user.replace(/^@/, "").replace(/^u\//, "");
+  if (platform === "x") return `https://x.com/${encodeURIComponent(handle)}`;
+  return `https://www.reddit.com/user/${encodeURIComponent(handle)}`;
+}
+
+function formatUsd(value: number) {
+  return `$${value.toFixed(2)}`;
+}
 
 export default function Leaderboard() {
   const [data, setData] = useState<Entry[]>([]);
@@ -64,23 +83,23 @@ export default function Leaderboard() {
 
       <div className="mx-auto max-w-4xl overflow-hidden rounded-2xl border border-white/10">
         {/* Header */}
-        <div className="grid grid-cols-12 bg-white/[0.04] px-4 py-2 text-xs text-white/60">
-          <div className="col-span-5">Creator</div>
-          <div className="col-span-2 text-right">Creator</div>
-          <div className="col-span-2 text-right hidden sm:block">Curator</div>
-          <div className="col-span-3 text-right">Volume</div>
+        <div className={cn(ROW_GRID, "bg-white/[0.04] py-2 text-[10px] text-white/60 sm:text-xs")}>
+          <div className={COL_CREATOR}>Creator</div>
+          <div className={COL_CREATOR_USD}>Creator</div>
+          <div className={COL_CURATOR_USD}>Curator</div>
+          <div className={COL_VOLUME}>Volume</div>
         </div>
         {/* Sub-header units */}
-        <div className="grid grid-cols-12 bg-white/[0.02] px-4 py-1 text-[10px] text-white/30">
-          <div className="col-span-5" />
-          <div className="col-span-2 text-right">USDC</div>
-          <div className="col-span-2 text-right hidden sm:block">USDC</div>
-          <div className="col-span-3 text-right">USDC</div>
+        <div className={cn(ROW_GRID, "bg-white/[0.02] py-1 text-[9px] text-white/30 sm:text-[10px]")}>
+          <div className={COL_CREATOR} />
+          <div className={COL_CREATOR_USD}>USDC</div>
+          <div className={COL_CURATOR_USD}>USDC</div>
+          <div className={COL_VOLUME}>USDC</div>
         </div>
 
         {loading ? (
           <div className="bg-black/60 px-4 py-12 text-center backdrop-blur">
-            <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-white/20 border-t-white"></div>
+            <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-white/20 border-t-white" />
             <p className="mt-3 text-sm text-white/60">Loading leaderboard...</p>
           </div>
         ) : error ? (
@@ -94,33 +113,57 @@ export default function Leaderboard() {
           </div>
         ) : (
           <ul className="divide-y divide-white/10">
-            {data.map((e) => (
-              <li key={e.id} className="grid grid-cols-12 items-center bg-black/60 px-4 py-3 backdrop-blur">
-                <div className="col-span-5 flex items-center gap-3 min-w-0">
-                  <span className="w-5 shrink-0 text-white/40 text-sm">{e.rank}</span>
-                  {e.avatar ? (
-                    <img src={e.avatar} alt={e.user} className="w-7 h-7 rounded-full object-cover shrink-0 border border-white/10" />
-                  ) : (
-                    <div className="w-7 h-7 rounded-full bg-white/10 shrink-0 flex items-center justify-center text-[10px] text-white/40 font-bold">
-                      {e.user[0]?.toUpperCase()}
-                    </div>
-                  )}
-                  <span className="truncate text-white/90 text-sm">
-                    {e.platform === "x" ? "@" : "u/"}{e.user}
-                  </span>
-                </div>
-                <div className="col-span-2 text-right font-medium text-emerald-400 text-sm">
-                  ${e.pnl.toFixed(2)}
-                </div>
-                <div className="col-span-2 text-right hidden sm:block text-sm">
-                  {e.curatorEarned > 0
-                    ? <span className="text-violet-400">${e.curatorEarned.toFixed(2)}</span>
-                    : <span className="text-white/20">—</span>
-                  }
-                </div>
-                <div className="col-span-3 text-right text-white/70 text-sm">${e.volume.toFixed(2)}</div>
-              </li>
-            ))}
+            {data.map((e) => {
+              const profileUrl = creatorProfileUrl(e.platform, e.user);
+              const displayName = e.platform === "x" ? `@${e.user}` : `u/${e.user}`;
+
+              return (
+                <li
+                  key={e.id}
+                  className={cn(ROW_GRID, "bg-black/60 py-2.5 backdrop-blur sm:py-3")}
+                >
+                  <div className={cn(COL_CREATOR, "flex items-center gap-2 sm:gap-3")}>
+                    <span className="w-4 shrink-0 text-[11px] text-white/40 sm:w-5 sm:text-sm">{e.rank}</span>
+                    <a
+                      href={profileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group flex min-w-0 flex-1 items-center gap-1.5 rounded-lg outline-none transition-colors hover:bg-white/[0.04] focus-visible:ring-2 focus-visible:ring-[#E8431C]/50 sm:gap-2 sm:px-1 sm:py-0.5"
+                      title={e.platform === "x" ? `View @${e.user} on X` : `View u/${e.user} on Reddit`}
+                    >
+                      {e.avatar ? (
+                        <img
+                          src={e.avatar}
+                          alt={e.user}
+                          className="h-6 w-6 shrink-0 rounded-full border border-white/10 object-cover sm:h-7 sm:w-7"
+                        />
+                      ) : (
+                        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/10 text-[9px] font-bold text-white/40 sm:h-7 sm:w-7 sm:text-[10px]">
+                          {e.user[0]?.toUpperCase()}
+                        </div>
+                      )}
+                      <span className="truncate text-[11px] text-white/90 transition-colors group-hover:text-white sm:text-sm">
+                        {displayName}
+                      </span>
+                      <ExternalLink className="hidden h-3 w-3 shrink-0 text-white/25 transition-colors group-hover:text-white/50 sm:block" />
+                    </a>
+                  </div>
+                  <div className={cn(COL_CREATOR_USD, "text-[10px] font-medium text-emerald-400 sm:text-sm")}>
+                    {formatUsd(e.pnl)}
+                  </div>
+                  <div className={cn(COL_CURATOR_USD, "text-[10px] sm:text-sm")}>
+                    {e.curatorEarned > 0 ? (
+                      <span className="text-violet-400">{formatUsd(e.curatorEarned)}</span>
+                    ) : (
+                      <span className="text-white/20">—</span>
+                    )}
+                  </div>
+                  <div className={cn(COL_VOLUME, "text-[10px] text-white/70 sm:text-sm")}>
+                    {formatUsd(e.volume)}
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>
