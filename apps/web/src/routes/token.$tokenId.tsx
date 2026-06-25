@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import TradingModal from "@/components/TradingModal";
 import PriceChart from "@/components/PriceChart";
 import UpvoteButton from "@/components/UpvoteButton";
+import { useVotes } from "@/contexts/VoteContext";
+import { fetchVoteSnapshots } from "@/lib/votes";
 import CommentsSection from "@/components/CommentsSection";
 import type { FeedPost } from "@/components/FeedCard";
 import { cn, formatUsd } from "@/lib/utils";
@@ -120,6 +122,7 @@ function TokenDetailsPage() {
   const { tokenId } = Route.useParams();
   const navigate = Route.useNavigate();
   const { user } = useAuth();
+  const { hydrateSnapshots, getSnapshot } = useVotes();
   const { connected, publicKey } = useWallet();
   const { setVisible: openWalletModal } = useWalletModal();
   const pendingClaimRef = useRef(false);
@@ -155,6 +158,12 @@ function TokenDetailsPage() {
 
       const normalized = normalizePost(data.post);
       setPost(normalized);
+      hydrateSnapshots([{ postId: normalized.id, voteCount: normalized.voteCount ?? 0 }]);
+      void fetchVoteSnapshots([normalized.id]).then((snapshots) => {
+        const snap = snapshots[normalized.id];
+        if (!snap) return;
+        hydrateSnapshots([{ postId: normalized.id, voteCount: snap.voteCount, voted: snap.voted }], { force: true });
+      });
 
       const { getApiUrl } = await import("@/lib/auth");
 
@@ -187,7 +196,7 @@ function TokenDetailsPage() {
     } finally {
       if (showLoading) setLoading(false);
     }
-  }, [tokenId]);
+  }, [tokenId, hydrateSnapshots]);
 
   useEffect(() => { void fetchTokenDetails(true); }, [fetchTokenDetails]);
 
@@ -426,11 +435,15 @@ function TokenDetailsPage() {
                 <UpvoteButton
                   postId={post.id}
                   platform={post.platform}
-                  initialCount={post.voteCount ?? 0}
+                  initialCount={getSnapshot(post.id)?.voteCount ?? post.voteCount ?? 0}
+                  initialVoted={getSnapshot(post.id)?.voted}
                   autoFetchStatus
                   size="md"
                   icon="thumb"
                   className="sm:scale-105"
+                  onVoteChange={(_id, _voted, voteCount) => {
+                    setPost((prev) => (prev ? { ...prev, voteCount } : prev));
+                  }}
                 />
               </div>
             </div>

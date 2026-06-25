@@ -4,8 +4,8 @@ import { RefreshCw, ChevronDown, Check } from "lucide-react";
 import FeedCard, { type FeedPost, type LivePair } from "@/components/FeedCard";
 import SearchBar, { type SearchFilters } from "@/components/SearchBar";
 import { getApiUrl } from "@/lib/auth";
-import { useAuth } from "@/contexts/AuthContext";
-import { fetchVoteStatus } from "@/lib/votes";
+import { fetchVoteSnapshots } from "@/lib/votes";
+import { useVotes } from "@/contexts/VoteContext";
 import { cn } from "@/lib/utils";
 
 type BackendPost = {
@@ -190,7 +190,7 @@ export default function RedditFeed() {
   const [hasMore, setHasMore] = useState(true);
   const [offset, setOffset] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
-  const { isAuthenticated } = useAuth();
+  const { hydrateSnapshots } = useVotes();
   const [searchFilters, setSearchFilters] = useState<SearchFilters>({});
   const [sortField,      setSortField]      = useState<SortField>("totalVolume");
   const [sortOrder,      setSortOrder]      = useState<SortOrder>("desc");
@@ -212,14 +212,29 @@ export default function RedditFeed() {
     }
   }, []);
 
-  // Mark which of the loaded posts the logged-in user has already upvoted.
-  // One batched request per page, mirroring the price fetch above.
-  const applyVoteStatus = useCallback(async (ids: string[]) => {
-    if (!isAuthenticated || ids.length === 0) return;
-    const votes = await fetchVoteStatus(ids);
-    if (!Object.keys(votes).length) return;
-    setPosts((prev) => prev.map((p) => (p.id in votes ? { ...p, hasVoted: votes[p.id] } : p)));
-  }, [isAuthenticated]);
+  // Authoritative platform vote counts + per-user voted state (one batched request).
+  const applyVoteSnapshots = useCallback(async (ids: string[]) => {
+    if (ids.length === 0) return;
+    const snapshots = await fetchVoteSnapshots(ids);
+    if (!Object.keys(snapshots).length) return;
+
+    hydrateSnapshots(
+      Object.entries(snapshots).map(([postId, snap]) => ({
+        postId,
+        voteCount: snap.voteCount,
+        voted: snap.voted,
+      })),
+      { force: true },
+    );
+
+    setPosts((prev) =>
+      prev.map((p) => {
+        const snap = snapshots[p.id];
+        if (!snap) return p;
+        return { ...p, hasVoted: snap.voted, voteCount: snap.voteCount };
+      }),
+    );
+  }, [hydrateSnapshots]);
 
   // Re-sort the list when a card's platform upvote count changes.
   const handleVoteChange = useCallback((postId: string, voted: boolean, voteCount: number) => {
@@ -294,7 +309,10 @@ export default function RedditFeed() {
         setHasMore(data.hasMore || false);
 
         void fetchPrices(transformed.map((p) => p.tokenMintAddress!).filter(Boolean));
-        void applyVoteStatus(transformed.map((p) => p.id));
+        hydrateSnapshots(
+          transformed.map((p) => ({ postId: p.id, voteCount: p.voteCount ?? 0 })),
+        );
+        void applyVoteSnapshots(transformed.map((p) => p.id));
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load posts");
       } finally {
@@ -302,7 +320,7 @@ export default function RedditFeed() {
         setIsRefreshing(false);
       }
     },
-    [searchFilters, sortField, sortOrder, timeWindow, platformFilter, fetchPrices, applyVoteStatus],
+    [searchFilters, sortField, sortOrder, timeWindow, platformFilter, fetchPrices, applyVoteSnapshots, hydrateSnapshots],
   );
 
   // Initial load
@@ -381,6 +399,16 @@ export default function RedditFeed() {
     observer.observe(el);
     return () => observer.disconnect();
   }, [loadMorePosts]);
+
+  // Reconcile vote counts when the user returns to the tab.
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.hidden || posts.length === 0) return;
+      void applyVoteSnapshots(posts.map((p) => p.id));
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [posts, applyVoteSnapshots]);
 
   return (
     <section className="relative mx-auto w-full max-w-6xl">

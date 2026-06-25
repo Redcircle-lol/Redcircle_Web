@@ -70,11 +70,18 @@ export async function setVote(postId: string, voted: boolean): Promise<VoteRespo
   };
 }
 
+export type VoteSnapshotResponse = {
+  voteCount: number;
+  voted: boolean;
+};
+
 /**
- * Batch lookup: which of these post IDs has the current user upvoted?
- * Returns an empty map for anonymous users.
+ * Batch lookup: authoritative platform vote count + whether the current user voted.
+ * Works for anonymous users (voted is always false).
  */
-export async function fetchVoteStatus(postIds: string[]): Promise<Record<string, boolean>> {
+export async function fetchVoteSnapshots(
+  postIds: string[],
+): Promise<Record<string, VoteSnapshotResponse>> {
   const ids = [...new Set(postIds.filter(Boolean))];
   if (ids.length === 0) return {};
   try {
@@ -83,9 +90,42 @@ export async function fetchVoteStatus(postIds: string[]): Promise<Record<string,
       body: JSON.stringify({ postIds: ids }),
     });
     if (!res.ok) return {};
-    const data = (await res.json()) as { votes?: Record<string, boolean> };
-    return data.votes ?? {};
+    const data = (await res.json()) as {
+      posts?: Record<string, Partial<VoteSnapshotResponse>>;
+      /** @deprecated legacy shape */
+      votes?: Record<string, boolean>;
+    };
+
+    if (data.posts) {
+      const out: Record<string, VoteSnapshotResponse> = {};
+      for (const [id, snap] of Object.entries(data.posts)) {
+        if (!snap || typeof snap.voteCount !== "number") continue;
+        out[id] = {
+          voteCount: snap.voteCount,
+          voted: !!snap.voted,
+        };
+      }
+      return out;
+    }
+
+    // Back-compat for older servers
+    const legacy = data.votes ?? {};
+    const out: Record<string, VoteSnapshotResponse> = {};
+    for (const [id, voted] of Object.entries(legacy)) {
+      out[id] = { voteCount: 0, voted: !!voted };
+    }
+    return out;
   } catch {
     return {};
   }
+}
+
+/** @deprecated Use fetchVoteSnapshots */
+export async function fetchVoteStatus(postIds: string[]): Promise<Record<string, boolean>> {
+  const snapshots = await fetchVoteSnapshots(postIds);
+  const votes: Record<string, boolean> = {};
+  for (const [id, snap] of Object.entries(snapshots)) {
+    if (snap.voted) votes[id] = true;
+  }
+  return votes;
 }

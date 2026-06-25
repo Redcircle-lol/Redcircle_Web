@@ -143,8 +143,8 @@ export default function FeedCard({ post, className, index = 0, livePair, onVoteC
             <span className="text-base font-black tracking-tight text-white/30 leading-none">—</span>
           )}
           <div className="flex items-center gap-2.5 font-mono text-[10px] text-white/35">
-            <span className="flex items-center gap-0.5">
-              <ArrowUp className="h-3 w-3 text-[#00FFA3]/60" />
+            <span className="flex items-center gap-0.5" title={isX ? "X likes" : "Reddit score"}>
+              <ArrowUp className="h-3 w-3 text-white/30" />
               {Intl.NumberFormat("en-US", { notation: "compact" }).format(post.upvotes)}
             </span>
             <span className="flex items-center gap-0.5">

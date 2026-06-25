@@ -3,6 +3,7 @@ import { Toaster } from "@/components/ui/sonner";
 import Navbar from "@/components/Navbar";
 import MobileWalletBanner from "@/components/MobileWalletBanner";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { VoteProvider } from "@/contexts/VoteContext";
 import { WalletContextProvider } from "@/contexts/WalletContext";
 import {
 	HeadContent,
@@ -60,6 +61,7 @@ function RootComponent() {
 			>
 				<WalletContextProvider>
 					<AuthProvider>
+						<VoteProvider>
 						<ScrollToTop />
 						<Navbar />
 						<MobileWalletBanner />
@@ -67,6 +69,7 @@ function RootComponent() {
 							<Outlet />
 						</div>
 						<Toaster richColors />
+						</VoteProvider>
 					</AuthProvider>
 				</WalletContextProvider>
 			</ThemeProvider>

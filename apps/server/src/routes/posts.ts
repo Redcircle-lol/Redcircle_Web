@@ -866,19 +866,39 @@ router.post("/votes/status", optionalAuth, async (req, res) => {
     const ids = (Array.isArray(req.body?.postIds) ? (req.body.postIds as unknown[]) : [])
       .filter((x): x is string => typeof x === "string")
       .slice(0, MAX_STATUS_IDS);
-    if (!req.userId || ids.length === 0) return res.json({ votes: {} });
+    if (ids.length === 0) return res.json({ posts: {} });
 
-    const rows = await db
-      .select({ postId: postVotes.postId })
-      .from(postVotes)
-      .where(and(eq(postVotes.userId, req.userId), inArray(postVotes.postId, ids)));
+    const postRows = await db
+      .select({ id: posts.id, voteCount: posts.voteCount })
+      .from(posts)
+      .where(inArray(posts.id, ids));
 
-    const votes: Record<string, boolean> = {};
-    for (const row of rows) votes[row.postId] = true;
-    res.json({ votes });
+    const counts = new Map(postRows.map((row) => [row.id, Number(row.voteCount ?? 0)]));
+
+    const userVoted = new Set<string>();
+    if (req.userId) {
+      const rows = await db
+        .select({ postId: postVotes.postId })
+        .from(postVotes)
+        .where(and(eq(postVotes.userId, req.userId), inArray(postVotes.postId, ids)));
+      for (const row of rows) userVoted.add(row.postId);
+    }
+
+    const result: Record<string, { voteCount: number; voted: boolean }> = {};
+    const legacyVotes: Record<string, boolean> = {};
+    for (const id of ids) {
+      const voted = userVoted.has(id);
+      result[id] = {
+        voteCount: counts.get(id) ?? 0,
+        voted,
+      };
+      if (voted) legacyVotes[id] = true;
+    }
+
+    res.json({ posts: result, votes: legacyVotes });
   } catch (err) {
     console.error("❌ Error fetching vote status:", err);
-    res.json({ votes: {} });
+    res.json({ posts: {} });
   }
 });
 

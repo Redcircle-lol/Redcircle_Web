@@ -4,7 +4,8 @@ import { toast } from "sonner";
 import { ArrowUp, ThumbsUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
-import { setVote, fetchVoteStatus, canVoteOnPlatform, loginRequiredMessage, type PostPlatform } from "@/lib/votes";
+import { useVotes } from "@/contexts/VoteContext";
+import { setVote, fetchVoteSnapshots, canVoteOnPlatform, loginRequiredMessage, type PostPlatform } from "@/lib/votes";
 
 type UpvoteButtonProps = {
   postId: string;
@@ -50,31 +51,36 @@ export default function UpvoteButton({
 }: UpvoteButtonProps) {
   const showAttention = attention ?? size === "lg";
   const { isAuthenticated, user, startProviderSignIn } = useAuth();
+  const { getSnapshot, setSnapshot, hydrateSnapshots } = useVotes();
   const votePlatform: PostPlatform = platform === "x" ? "x" : "reddit";
 
-  const [voted, setVoted] = useState(initialVoted);
-  const [count, setCount] = useState(initialCount);
   const [pending, setPending] = useState(false);
   const [hovered, setHovered] = useState(false);
   const [burst, setBurst] = useState(false);
 
+  const snapshot = getSnapshot(postId);
+  const voted = snapshot?.voted ?? initialVoted;
+  const count = snapshot?.voteCount ?? initialCount;
+
   const startVoteProviderSignIn = () => startProviderSignIn(votePlatform);
 
-  // Re-sync when props change (parent refetch / navigation between posts).
+  // Seed shared cache when list/detail props arrive.
   useEffect(() => {
-    setVoted(initialVoted);
-    setCount(initialCount);
-  }, [postId, initialVoted, initialCount]);
+    hydrateSnapshots([{ postId, voteCount: initialCount, voted: initialVoted }]);
+  }, [postId, initialCount, initialVoted, hydrateSnapshots]);
 
-  // Single-post pages have no batched lookup — fetch this post's status once.
+  // Single-post pages: reconcile voted state + authoritative count from the server.
   useEffect(() => {
-    if (!autoFetchStatus || !isAuthenticated) return;
+    if (!autoFetchStatus) return;
     let cancelled = false;
-    void fetchVoteStatus([postId]).then((votes) => {
-      if (!cancelled && postId in votes) setVoted(!!votes[postId]);
+    void fetchVoteSnapshots([postId]).then((posts) => {
+      if (cancelled) return;
+      const snap = posts[postId];
+      if (!snap) return;
+      hydrateSnapshots([{ postId, voteCount: snap.voteCount, voted: snap.voted }], { force: true });
     });
     return () => { cancelled = true; };
-  }, [autoFetchStatus, isAuthenticated, postId]);
+  }, [autoFetchStatus, postId, isAuthenticated, hydrateSnapshots]);
 
   const handleVote = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -98,12 +104,13 @@ export default function UpvoteButton({
       return;
     }
 
-    const next = !voted;
-    setVoted(next);
-    setCount((c) => Math.max(c + (next ? 1 : -1), 0));
+    const prevVoted = voted;
+    const prevCount = count;
+    const next = !prevVoted;
+    const optimisticCount = Math.max(prevCount + (next ? 1 : -1), 0);
+    setSnapshot(postId, { voted: next, voteCount: optimisticCount });
     setPending(true);
     if (next) {
-      // Celebrate only when adding a vote, not removing one.
       setBurst(true);
       setTimeout(() => setBurst(false), 600);
     }
@@ -111,8 +118,7 @@ export default function UpvoteButton({
     try {
       const result = await setVote(postId, next);
       if (!result.success) {
-        setVoted(!next);
-        setCount((c) => Math.max(c + (next ? -1 : 1), 0));
+        setSnapshot(postId, { voted: prevVoted, voteCount: prevCount });
         if (result.error === "unauthorized") {
           startVoteProviderSignIn();
           return;
@@ -120,8 +126,7 @@ export default function UpvoteButton({
         toast.error(result.message ?? "Could not register your vote.");
         return;
       }
-      setVoted(result.voted);
-      setCount(result.voteCount);
+      setSnapshot(postId, { voted: result.voted, voteCount: result.voteCount });
       onVoteChange?.(postId, result.voted, result.voteCount);
     } finally {
       setPending(false);
