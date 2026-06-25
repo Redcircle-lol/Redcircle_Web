@@ -560,7 +560,6 @@ function TokenDetailsPage() {
             <div className="space-y-3 rounded-[24px] border border-white/[0.1] bg-white/[0.045] p-5 shadow-xl shadow-black/20 backdrop-blur-xl">
               <div className="flex items-center justify-between">
                 <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/35">Creator Earnings</h3>
-                <span className="rounded-full bg-[#E8431C]/10 px-2 py-1 text-[10px] font-semibold text-[#ff7a57]">0.40%</span>
               </div>
               <p className="font-mono text-3xl font-black text-[#E8431C]">
                 ${parseFloat(creatorEarnings).toFixed(2)}{" "}
@@ -620,7 +619,6 @@ function TokenDetailsPage() {
             {curatorWalletSet && <div className="space-y-3 rounded-[24px] border border-white/[0.1] bg-white/[0.045] p-5 shadow-xl shadow-black/20 backdrop-blur-xl">
               <div className="flex items-center justify-between">
                 <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/35">Curator Reward</h3>
-                <span className="rounded-full bg-[#00FFA3]/10 px-2 py-1 text-[10px] font-semibold text-[#00FFA3]">0.15%</span>
               </div>
               <p className="font-mono text-3xl font-black text-[#00FFA3]">
                 ${parseFloat(curatorEarnings).toFixed(2)}{" "}
@@ -778,7 +776,7 @@ function TokenDetailsPage() {
                     </div>
 
                     <p className="text-sm text-white/60 leading-relaxed">
-                      Claim your 0.15% curator reward for tokenizing this post.
+                      Claim your curator reward for tokenizing this post.
                     </p>
 
                     <div className="rounded-xl bg-white/[0.04] border border-white/[0.08] p-3 space-y-1">

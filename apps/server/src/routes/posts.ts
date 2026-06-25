@@ -439,7 +439,11 @@ router.get("/search", async (req, res) => {
         break;
       case "voteCount":
       case "votes":
-        allPosts.sort((a, b) => cmp(a.voteCount || 0, b.voteCount || 0));
+        allPosts.sort((a, b) => {
+          const primary = cmp(Number(a.voteCount ?? 0), Number(b.voteCount ?? 0));
+          if (primary !== 0) return primary;
+          return cmp(new Date(a.tokenizedAt).getTime(), new Date(b.tokenizedAt).getTime());
+        });
         break;
       case "trending":
       default:
@@ -558,11 +562,12 @@ router.get("/", async (req, res) => {
         orderColumn = dir(posts.tokenizedAt);
     }
 
-    // Stable tiebreakers so equal sort values (e.g. many posts with the same
-    // vote_count) keep a deterministic order across paginated requests —
-    // otherwise LIMIT/OFFSET can duplicate or skip rows. `id` is unique, so it
-    // guarantees a total ordering.
-    const tiebreakers = [desc(posts.tokenizedAt), desc(posts.id)];
+    // Stable tiebreakers — when sorting by platform upvotes, don't let tokenizedAt
+    // override vote_count order (which caused wrong ordering on the All tab).
+    const isVoteSort = sortBy === "voteCount" || sortBy === "votes";
+    const tiebreakers = isVoteSort
+      ? [dir(posts.id)]
+      : [dir(posts.tokenizedAt), dir(posts.id)];
 
     // Execute query with all filters
     const postsList = await (conditions.length > 0

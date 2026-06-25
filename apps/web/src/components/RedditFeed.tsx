@@ -135,7 +135,7 @@ function transformPost(post: BackendPost): FeedPost {
     author: post.author,
     upvotes: post.upvotes || 0,
     comments: post.comments || 0,
-    voteCount: post.voteCount ?? 0,
+    voteCount: Number(post.voteCount ?? 0),
     createdAt: post.tokenizedAt,
     platform: post.platform ?? "reddit",
     imageUrl: post.thumbnail || undefined,
@@ -152,6 +152,34 @@ function transformPost(post: BackendPost): FeedPost {
     totalSupply: post.tokenSupply ? Number(post.tokenSupply) : undefined,
     holders: post.holders || 0,
   };
+}
+
+function sortFeedPosts(posts: FeedPost[], field: SortField, order: SortOrder): FeedPost[] {
+  const desc = order === "desc";
+  const cmp = (a: number, b: number) => (desc ? b - a : a - b);
+
+  return [...posts].sort((a, b) => {
+    let primary = 0;
+    switch (field) {
+      case "voteCount":
+        primary = cmp(a.voteCount ?? 0, b.voteCount ?? 0);
+        break;
+      case "totalVolume":
+        primary = cmp(a.volume24h ?? 0, b.volume24h ?? 0);
+        break;
+      case "marketCap":
+        primary = cmp(a.marketCap ?? 0, b.marketCap ?? 0);
+        break;
+      case "currentPrice":
+        primary = cmp(a.tokenPrice ?? 0, b.tokenPrice ?? 0);
+        break;
+      default:
+        primary = cmp(new Date(a.createdAt).getTime(), new Date(b.createdAt).getTime());
+        break;
+    }
+    if (primary !== 0) return primary;
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
 }
 
 export default function RedditFeed() {
@@ -193,10 +221,13 @@ export default function RedditFeed() {
     setPosts((prev) => prev.map((p) => (p.id in votes ? { ...p, hasVoted: votes[p.id] } : p)));
   }, [isAuthenticated]);
 
-  // Keep the list (and its sort) consistent after a card's vote toggles.
+  // Re-sort the list when a card's platform upvote count changes.
   const handleVoteChange = useCallback((postId: string, voted: boolean, voteCount: number) => {
-    setPosts((prev) => prev.map((p) => (p.id === postId ? { ...p, hasVoted: voted, voteCount } : p)));
-  }, []);
+    setPosts((prev) => {
+      const updated = prev.map((p) => (p.id === postId ? { ...p, hasVoted: voted, voteCount } : p));
+      return sortField === "voteCount" ? sortFeedPosts(updated, sortField, sortOrder) : updated;
+    });
+  }, [sortField, sortOrder]);
 
   const fetchPosts = useCallback(
     async (opts: {
@@ -250,7 +281,8 @@ export default function RedditFeed() {
         if (!response.ok) throw new Error("Failed to fetch posts");
 
         const data = await response.json();
-        const transformed: FeedPost[] = (data.posts || []).map(transformPost);
+        let transformed: FeedPost[] = (data.posts || []).map(transformPost);
+        transformed = sortFeedPosts(transformed, field, order);
 
         if (reset) {
           setPosts(transformed);

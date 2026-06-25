@@ -56,7 +56,6 @@ export default function FeedCard({ post, className, index = 0, livePair, onVoteC
   // Live values come from the parent's batch fetch; DB values are the fallback
   const liveValue = livePair?.fdv ?? livePair?.marketCap;
   const liveMcap = liveValue && liveValue > 0 ? formatUsd(liveValue) : null;
-  const h24Change = livePair?.priceChange?.h24 ?? null;
 
   const dbMcap = post.marketCap && post.marketCap > 0 ? formatUsd(post.marketCap) : null;
   const mcapDisplay = liveMcap ?? dbMcap ?? "—";
@@ -64,7 +63,6 @@ export default function FeedCard({ post, className, index = 0, livePair, onVoteC
   const isX = post.platform === "x";
   const initial = isX ? "𝕏" : (post.subreddit ?? "R").slice(0, 1).toUpperCase();
   const isNew = Date.now() - new Date(post.createdAt).getTime() < 24 * 60 * 60 * 1000;
-  const isUp = h24Change == null || h24Change >= 0;
 
   return (
     <Link to="/token/$tokenId" params={{ tokenId: tokenSlug(post.tokenSymbol, post.tokenMintAddress) || post.id }}>
@@ -116,18 +114,6 @@ export default function FeedCard({ post, className, index = 0, livePair, onVoteC
               </span>
             )}
           </div>
-
-          {/* 24h change — top-right */}
-          {h24Change != null && (
-            <span className={cn(
-              "absolute top-2 right-2 rounded-md px-1.5 py-0.5 text-[10px] font-bold font-mono backdrop-blur-md border",
-              isUp
-                ? "bg-[#00FFA3]/10 border-[#00FFA3]/30 text-[#00FFA3]"
-                : "bg-red-500/10 border-red-500/30 text-red-400",
-            )}>
-              {isUp ? "▲" : "▼"} {Math.abs(h24Change).toFixed(1)}%
-            </span>
-          )}
 
           {/* Source platform + time — bottom-left over gradient */}
           <div className="absolute bottom-2 left-3 flex items-center gap-1.5">
