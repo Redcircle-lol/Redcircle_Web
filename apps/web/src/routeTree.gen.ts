@@ -17,6 +17,8 @@ import { Route as LeaderboardRouteImport } from './routes/leaderboard'
 import { Route as HotRouteImport } from './routes/hot'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as DocsRouteImport } from './routes/docs'
+import { Route as ChallengesRouteImport } from './routes/challenges'
+import { Route as CampaignsRouteImport } from './routes/campaigns'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TokenTokenIdRouteImport } from './routes/token.$tokenId'
@@ -61,6 +63,16 @@ const DocsRoute = DocsRouteImport.update({
   path: '/docs',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ChallengesRoute = ChallengesRouteImport.update({
+  id: '/challenges',
+  path: '/challenges',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CampaignsRoute = CampaignsRouteImport.update({
+  id: '/campaigns',
+  path: '/campaigns',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -80,6 +92,8 @@ const TokenTokenIdRoute = TokenTokenIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/campaigns': typeof CampaignsRoute
+  '/challenges': typeof ChallengesRoute
   '/docs': typeof DocsRoute
   '/home': typeof HomeRoute
   '/hot': typeof HotRoute
@@ -93,6 +107,8 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/campaigns': typeof CampaignsRoute
+  '/challenges': typeof ChallengesRoute
   '/docs': typeof DocsRoute
   '/home': typeof HomeRoute
   '/hot': typeof HotRoute
@@ -107,6 +123,8 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/campaigns': typeof CampaignsRoute
+  '/challenges': typeof ChallengesRoute
   '/docs': typeof DocsRoute
   '/home': typeof HomeRoute
   '/hot': typeof HotRoute
@@ -122,6 +140,8 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/campaigns'
+    | '/challenges'
     | '/docs'
     | '/home'
     | '/hot'
@@ -135,6 +155,8 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/admin'
+    | '/campaigns'
+    | '/challenges'
     | '/docs'
     | '/home'
     | '/hot'
@@ -148,6 +170,8 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/admin'
+    | '/campaigns'
+    | '/challenges'
     | '/docs'
     | '/home'
     | '/hot'
@@ -162,6 +186,8 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
+  CampaignsRoute: typeof CampaignsRoute
+  ChallengesRoute: typeof ChallengesRoute
   DocsRoute: typeof DocsRoute
   HomeRoute: typeof HomeRoute
   HotRoute: typeof HotRoute
@@ -231,6 +257,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DocsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/challenges': {
+      id: '/challenges'
+      path: '/challenges'
+      fullPath: '/challenges'
+      preLoaderRoute: typeof ChallengesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/campaigns': {
+      id: '/campaigns'
+      path: '/campaigns'
+      fullPath: '/campaigns'
+      preLoaderRoute: typeof CampaignsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin': {
       id: '/admin'
       path: '/admin'
@@ -258,6 +298,8 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
+  CampaignsRoute: CampaignsRoute,
+  ChallengesRoute: ChallengesRoute,
   DocsRoute: DocsRoute,
   HomeRoute: HomeRoute,
   HotRoute: HotRoute,
