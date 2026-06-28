@@ -5,6 +5,9 @@ export const Route = createFileRoute("/")({
 		if (typeof window !== "undefined" && window.location.hostname === "social.redcircle.lol") {
 			throw redirect({ to: "/social" });
 		}
+		if (typeof window !== "undefined" && window.location.hostname === "campaigns.redcircle.lol") {
+			throw redirect({ to: "/campaigns" });
+		}
 		const params = typeof window !== "undefined"
 			? new URLSearchParams(window.location.search)
 			: null;
