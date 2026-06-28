@@ -9,7 +9,7 @@ const navLinks = [
   { label: "Feed", to: "/home" },
   { label: "Leaderboard", to: "/leaderboard" },
   { label: "Hot", to: "/hot", icon: Flame },
-  { label: "Campaigns", to: "/campaigns", icon: Target },
+  { label: "Campaigns", to: "/campaigns", href: "https://campaigns.redcircle.lol", icon: Target },
   { label: "Social", to: "/social" },
   { label: "Docs", to: "/docs" },
 ];
@@ -78,18 +78,29 @@ export default function Navbar() {
 
           {/* Desktop nav — absolutely centered so it stays centered regardless of side content width */}
           <nav className="hidden md:flex items-center gap-6 absolute left-1/2 -translate-x-1/2">
-            {navLinks.map((link) => (
-              <Link
-                key={link.to}
-                to={link.to}
-                onClick={link.label === "Feed" ? handleFeedClick : undefined}
-                className="flex items-center gap-1.5 text-sm text-white/70 hover:text-white transition-colors"
-                activeProps={{ className: "flex items-center gap-1.5 text-sm text-[#FF5535] font-semibold" }}
-              >
-                {link.icon && <link.icon className="w-3.5 h-3.5 text-orange-400" />}
-                {link.label}
-              </Link>
-            ))}
+            {navLinks.map((link) =>
+              link.href ? (
+                <a
+                  key={link.to}
+                  href={link.href}
+                  className="flex items-center gap-1.5 text-sm text-white/70 hover:text-white transition-colors"
+                >
+                  {link.icon && <link.icon className="w-3.5 h-3.5 text-orange-400" />}
+                  {link.label}
+                </a>
+              ) : (
+                <Link
+                  key={link.to}
+                  to={link.to}
+                  onClick={link.label === "Feed" ? handleFeedClick : undefined}
+                  className="flex items-center gap-1.5 text-sm text-white/70 hover:text-white transition-colors"
+                  activeProps={{ className: "flex items-center gap-1.5 text-sm text-[#FF5535] font-semibold" }}
+                >
+                  {link.icon && <link.icon className="w-3.5 h-3.5 text-orange-400" />}
+                  {link.label}
+                </Link>
+              )
+            )}
           </nav>
 
           {/* Right side */}
@@ -161,18 +172,30 @@ export default function Navbar() {
             </div>
           )}
 
-          {navLinks.map((link) => (
-            <Link
-              key={link.to}
-              to={link.to}
-              onClick={link.label === "Feed" ? handleFeedClick : () => setMenuOpen(false)}
-              className="flex items-center gap-2 h-11 px-3 rounded-xl text-sm text-white/70 hover:text-white hover:bg-white/5 transition-colors"
-              activeProps={{ className: "flex items-center gap-2 h-11 px-3 rounded-xl text-sm text-white font-semibold bg-white/8" }}
-            >
-              {link.icon && <link.icon className="w-4 h-4 text-orange-400" />}
-              {link.label}
-            </Link>
-          ))}
+          {navLinks.map((link) =>
+            link.href ? (
+              <a
+                key={link.to}
+                href={link.href}
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center gap-2 h-11 px-3 rounded-xl text-sm text-white/70 hover:text-white hover:bg-white/5 transition-colors"
+              >
+                {link.icon && <link.icon className="w-4 h-4 text-orange-400" />}
+                {link.label}
+              </a>
+            ) : (
+              <Link
+                key={link.to}
+                to={link.to}
+                onClick={link.label === "Feed" ? handleFeedClick : () => setMenuOpen(false)}
+                className="flex items-center gap-2 h-11 px-3 rounded-xl text-sm text-white/70 hover:text-white hover:bg-white/5 transition-colors"
+                activeProps={{ className: "flex items-center gap-2 h-11 px-3 rounded-xl text-sm text-white font-semibold bg-white/8" }}
+              >
+                {link.icon && <link.icon className="w-4 h-4 text-orange-400" />}
+                {link.label}
+              </Link>
+            )
+          )}
 
           <div className="pt-1 pb-2">
             <WalletButton />
