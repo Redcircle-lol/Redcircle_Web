@@ -19,6 +19,10 @@
   33%       { transform: translate(40px, -30px) scale(1.08); }
   66%       { transform: translate(-20px, 20px) scale(0.95); }
 }
+@keyframes shimmer {
+  0%        { transform: translateX(-100%); }
+  60%, 100% { transform: translateX(100%); }
+}
 .animate-ticker      { animation: ticker 40s linear infinite; }
 .animate-blob-drift  { animation: blob-drift 12s ease-in-out infinite; }
 .animate-blob-drift2 { animation: blob-drift 16s ease-in-out infinite reverse; }

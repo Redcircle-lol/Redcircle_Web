@@ -17,9 +17,16 @@ import { Route as LeaderboardRouteImport } from './routes/leaderboard'
 import { Route as HotRouteImport } from './routes/hot'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as DocsRouteImport } from './routes/docs'
+import { Route as CampaignsRouteImport } from './routes/campaigns'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CampaignsIndexRouteImport } from './routes/campaigns.index'
 import { Route as TokenTokenIdRouteImport } from './routes/token.$tokenId'
+import { Route as CampaignsLeaderboardRouteImport } from './routes/campaigns.leaderboard'
+import { Route as CampaignsAdminRouteImport } from './routes/campaigns.admin'
+import { Route as CampaignsCampaignIdRouteImport } from './routes/campaigns.$campaignId'
+import { Route as AuthSuccessRouteImport } from './routes/auth.success'
+import { Route as CampaignsAuthSuccessRouteImport } from './routes/campaigns.auth.success'
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
@@ -61,6 +68,11 @@ const DocsRoute = DocsRouteImport.update({
   path: '/docs',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CampaignsRoute = CampaignsRouteImport.update({
+  id: '/campaigns',
+  path: '/campaigns',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -71,15 +83,46 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CampaignsIndexRoute = CampaignsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => CampaignsRoute,
+} as any)
 const TokenTokenIdRoute = TokenTokenIdRouteImport.update({
   id: '/token/$tokenId',
   path: '/token/$tokenId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CampaignsLeaderboardRoute = CampaignsLeaderboardRouteImport.update({
+  id: '/leaderboard',
+  path: '/leaderboard',
+  getParentRoute: () => CampaignsRoute,
+} as any)
+const CampaignsAdminRoute = CampaignsAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => CampaignsRoute,
+} as any)
+const CampaignsCampaignIdRoute = CampaignsCampaignIdRouteImport.update({
+  id: '/$campaignId',
+  path: '/$campaignId',
+  getParentRoute: () => CampaignsRoute,
+} as any)
+const AuthSuccessRoute = AuthSuccessRouteImport.update({
+  id: '/auth/success',
+  path: '/auth/success',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CampaignsAuthSuccessRoute = CampaignsAuthSuccessRouteImport.update({
+  id: '/auth/success',
+  path: '/auth/success',
+  getParentRoute: () => CampaignsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/campaigns': typeof CampaignsRouteWithChildren
   '/docs': typeof DocsRoute
   '/home': typeof HomeRoute
   '/hot': typeof HotRoute
@@ -88,7 +131,13 @@ export interface FileRoutesByFullPath {
   '/signin': typeof SigninRoute
   '/social': typeof SocialRoute
   '/terms': typeof TermsRoute
+  '/auth/success': typeof AuthSuccessRoute
+  '/campaigns/$campaignId': typeof CampaignsCampaignIdRoute
+  '/campaigns/admin': typeof CampaignsAdminRoute
+  '/campaigns/leaderboard': typeof CampaignsLeaderboardRoute
   '/token/$tokenId': typeof TokenTokenIdRoute
+  '/campaigns/': typeof CampaignsIndexRoute
+  '/campaigns/auth/success': typeof CampaignsAuthSuccessRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -101,12 +150,19 @@ export interface FileRoutesByTo {
   '/signin': typeof SigninRoute
   '/social': typeof SocialRoute
   '/terms': typeof TermsRoute
+  '/auth/success': typeof AuthSuccessRoute
+  '/campaigns/$campaignId': typeof CampaignsCampaignIdRoute
+  '/campaigns/admin': typeof CampaignsAdminRoute
+  '/campaigns/leaderboard': typeof CampaignsLeaderboardRoute
   '/token/$tokenId': typeof TokenTokenIdRoute
+  '/campaigns': typeof CampaignsIndexRoute
+  '/campaigns/auth/success': typeof CampaignsAuthSuccessRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/campaigns': typeof CampaignsRouteWithChildren
   '/docs': typeof DocsRoute
   '/home': typeof HomeRoute
   '/hot': typeof HotRoute
@@ -115,13 +171,20 @@ export interface FileRoutesById {
   '/signin': typeof SigninRoute
   '/social': typeof SocialRoute
   '/terms': typeof TermsRoute
+  '/auth/success': typeof AuthSuccessRoute
+  '/campaigns/$campaignId': typeof CampaignsCampaignIdRoute
+  '/campaigns/admin': typeof CampaignsAdminRoute
+  '/campaigns/leaderboard': typeof CampaignsLeaderboardRoute
   '/token/$tokenId': typeof TokenTokenIdRoute
+  '/campaigns/': typeof CampaignsIndexRoute
+  '/campaigns/auth/success': typeof CampaignsAuthSuccessRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/admin'
+    | '/campaigns'
     | '/docs'
     | '/home'
     | '/hot'
@@ -130,7 +193,13 @@ export interface FileRouteTypes {
     | '/signin'
     | '/social'
     | '/terms'
+    | '/auth/success'
+    | '/campaigns/$campaignId'
+    | '/campaigns/admin'
+    | '/campaigns/leaderboard'
     | '/token/$tokenId'
+    | '/campaigns/'
+    | '/campaigns/auth/success'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -143,11 +212,18 @@ export interface FileRouteTypes {
     | '/signin'
     | '/social'
     | '/terms'
+    | '/auth/success'
+    | '/campaigns/$campaignId'
+    | '/campaigns/admin'
+    | '/campaigns/leaderboard'
     | '/token/$tokenId'
+    | '/campaigns'
+    | '/campaigns/auth/success'
   id:
     | '__root__'
     | '/'
     | '/admin'
+    | '/campaigns'
     | '/docs'
     | '/home'
     | '/hot'
@@ -156,12 +232,19 @@ export interface FileRouteTypes {
     | '/signin'
     | '/social'
     | '/terms'
+    | '/auth/success'
+    | '/campaigns/$campaignId'
+    | '/campaigns/admin'
+    | '/campaigns/leaderboard'
     | '/token/$tokenId'
+    | '/campaigns/'
+    | '/campaigns/auth/success'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
+  CampaignsRoute: typeof CampaignsRouteWithChildren
   DocsRoute: typeof DocsRoute
   HomeRoute: typeof HomeRoute
   HotRoute: typeof HotRoute
@@ -170,6 +253,7 @@ export interface RootRouteChildren {
   SigninRoute: typeof SigninRoute
   SocialRoute: typeof SocialRoute
   TermsRoute: typeof TermsRoute
+  AuthSuccessRoute: typeof AuthSuccessRoute
   TokenTokenIdRoute: typeof TokenTokenIdRoute
 }
 
@@ -231,6 +315,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DocsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/campaigns': {
+      id: '/campaigns'
+      path: '/campaigns'
+      fullPath: '/campaigns'
+      preLoaderRoute: typeof CampaignsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin': {
       id: '/admin'
       path: '/admin'
@@ -245,6 +336,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/campaigns/': {
+      id: '/campaigns/'
+      path: '/'
+      fullPath: '/campaigns/'
+      preLoaderRoute: typeof CampaignsIndexRouteImport
+      parentRoute: typeof CampaignsRoute
+    }
     '/token/$tokenId': {
       id: '/token/$tokenId'
       path: '/token/$tokenId'
@@ -252,12 +350,68 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TokenTokenIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/campaigns/leaderboard': {
+      id: '/campaigns/leaderboard'
+      path: '/leaderboard'
+      fullPath: '/campaigns/leaderboard'
+      preLoaderRoute: typeof CampaignsLeaderboardRouteImport
+      parentRoute: typeof CampaignsRoute
+    }
+    '/campaigns/admin': {
+      id: '/campaigns/admin'
+      path: '/admin'
+      fullPath: '/campaigns/admin'
+      preLoaderRoute: typeof CampaignsAdminRouteImport
+      parentRoute: typeof CampaignsRoute
+    }
+    '/campaigns/$campaignId': {
+      id: '/campaigns/$campaignId'
+      path: '/$campaignId'
+      fullPath: '/campaigns/$campaignId'
+      preLoaderRoute: typeof CampaignsCampaignIdRouteImport
+      parentRoute: typeof CampaignsRoute
+    }
+    '/auth/success': {
+      id: '/auth/success'
+      path: '/auth/success'
+      fullPath: '/auth/success'
+      preLoaderRoute: typeof AuthSuccessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/campaigns/auth/success': {
+      id: '/campaigns/auth/success'
+      path: '/auth/success'
+      fullPath: '/campaigns/auth/success'
+      preLoaderRoute: typeof CampaignsAuthSuccessRouteImport
+      parentRoute: typeof CampaignsRoute
+    }
   }
 }
+
+interface CampaignsRouteChildren {
+  CampaignsCampaignIdRoute: typeof CampaignsCampaignIdRoute
+  CampaignsAdminRoute: typeof CampaignsAdminRoute
+  CampaignsLeaderboardRoute: typeof CampaignsLeaderboardRoute
+  CampaignsIndexRoute: typeof CampaignsIndexRoute
+  CampaignsAuthSuccessRoute: typeof CampaignsAuthSuccessRoute
+}
+
+const CampaignsRouteChildren: CampaignsRouteChildren = {
+  CampaignsCampaignIdRoute: CampaignsCampaignIdRoute,
+  CampaignsAdminRoute: CampaignsAdminRoute,
+  CampaignsLeaderboardRoute: CampaignsLeaderboardRoute,
+  CampaignsIndexRoute: CampaignsIndexRoute,
+  CampaignsAuthSuccessRoute: CampaignsAuthSuccessRoute,
+}
+
+const CampaignsRouteWithChildren = CampaignsRoute._addFileChildren(
+  CampaignsRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
+  CampaignsRoute: CampaignsRouteWithChildren,
   DocsRoute: DocsRoute,
   HomeRoute: HomeRoute,
   HotRoute: HotRoute,
@@ -266,6 +420,7 @@ const rootRouteChildren: RootRouteChildren = {
   SigninRoute: SigninRoute,
   SocialRoute: SocialRoute,
   TermsRoute: TermsRoute,
+  AuthSuccessRoute: AuthSuccessRoute,
   TokenTokenIdRoute: TokenTokenIdRoute,
 }
 export const routeTree = rootRouteImport

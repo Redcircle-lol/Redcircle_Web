@@ -2,13 +2,14 @@ import { useState } from "react";
 import { Link, useNavigate, useLocation } from "@tanstack/react-router";
 import { useAuth } from "@/contexts/AuthContext";
 import { getDisplayUsername } from "@/lib/auth";
-import { Menu, X, LogOut, UserRound, Flame } from "lucide-react";
+import { Menu, X, LogOut, UserRound, Flame, Target } from "lucide-react";
 import WalletButton from "@/components/WalletButton";
 
 const navLinks = [
   { label: "Feed", to: "/home" },
   { label: "Leaderboard", to: "/leaderboard" },
   { label: "Hot", to: "/hot", icon: Flame },
+  { label: "Campaigns", to: "/campaigns", icon: Target },
   { label: "Social", to: "/social" },
   { label: "Docs", to: "/docs" },
 ];
