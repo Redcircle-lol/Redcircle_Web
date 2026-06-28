@@ -101,7 +101,7 @@ export default function AdminTasks() {
     }
     const points = Number(form.rewardPoints);
     if (!form.campaignId) return toast.error("Pick a campaign");
-    if (!form.taskName.trim()) return toast.error("Task name is required");
+    if (!form.taskName.trim()) return toast.error("Challenge name is required");
     if (!Number.isFinite(points) || points < 0) return toast.error("Reward points must be ≥ 0");
 
     const body: AdminTaskInput = {
@@ -116,10 +116,10 @@ export default function AdminTasks() {
     try {
       if (editing) {
         await admin.updateTask(editing.taskId, body);
-        toast.success("Task updated");
+        toast.success("Challenge updated");
       } else {
         await admin.createTask(body);
-        toast.success("Task created");
+        toast.success("Challenge created");
       }
       close();
       tasks.reload();
@@ -131,10 +131,10 @@ export default function AdminTasks() {
   };
 
   const remove = async (t: Task) => {
-    if (!confirm(`Delete task "${t.taskName}"?`)) return;
+    if (!confirm(`Delete challenge "${t.taskName}"?`)) return;
     try {
       await admin.deleteTask(t.taskId);
-      toast.success("Task deleted");
+      toast.success("Challenge deleted");
       tasks.reload();
     } catch (e) {
       toast.error("Delete failed", { description: e instanceof Error ? e.message : "" });
@@ -146,9 +146,9 @@ export default function AdminTasks() {
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-bold text-white">Tasks</h2>
+        <h2 className="text-lg font-bold text-white">Challenges</h2>
         <Btn onClick={openCreate} disabled={!campaigns.data?.length}>
-          <Plus className="h-4 w-4" /> New task
+          <Plus className="h-4 w-4" /> New challenge
         </Btn>
       </div>
 
@@ -184,7 +184,7 @@ export default function AdminTasks() {
           ))}
           {tasks.data && tasks.data.length === 0 && (
             <div className="rounded-xl border border-dashed border-white/10 py-10 text-center text-sm text-white/40">
-              No tasks yet.
+              No challenges yet.
             </div>
           )}
         </div>
@@ -192,7 +192,7 @@ export default function AdminTasks() {
 
       {(creating || editing) && (
         <Modal
-          title={editing ? "Edit task" : "New task"}
+          title={editing ? "Edit challenge" : "New challenge"}
           onClose={close}
           footer={
             <>
@@ -215,7 +215,7 @@ export default function AdminTasks() {
               ))}
             </Select>
           </Field>
-          <Field label="Task name">
+          <Field label="Challenge name">
             <TextInput value={form.taskName} onChange={(e) => setForm({ ...form, taskName: e.target.value })} />
           </Field>
           <Field label="Description">
@@ -253,7 +253,7 @@ export default function AdminTasks() {
               />
             </Field>
           ) : (
-            <Field label="Post ID" hint="The X post/tweet id the task targets.">
+            <Field label="Post ID" hint="The X post/tweet id the challenge targets.">
               <TextInput
                 value={form.postId}
                 placeholder="1234567890"

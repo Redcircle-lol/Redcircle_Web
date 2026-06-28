@@ -1,4 +1,4 @@
-// Interprets a task's free-form `metadata` into a concrete user action.
+// Interprets a backend task's free-form `metadata` into a concrete challenge action.
 // The frontend never proves verification — it just helps the user perform the
 // action on X; the backend verifies on submit. Keep this defensive: metadata
 // keys may be missing or of unexpected shape.
@@ -60,11 +60,11 @@ export function resolveTaskAction(task: Task): TaskAction {
     case "twitter_repost_or_quote":
       return { kind: type, actionLabel: "Repost / Quote", actionUrl: postUrl(m), hint: "Repost or quote the post on X, then verify." };
     default:
-      return { kind: "unknown", actionLabel: "Open on X", actionUrl: postUrl(m) ?? profileUrl(m), hint: "Complete the task on X, then verify." };
+      return { kind: "unknown", actionLabel: "Open on X", actionUrl: postUrl(m) ?? profileUrl(m), hint: "Complete the challenge on X, then verify." };
   }
 }
 
-/** Icon key for a task type — consumed by the task card UI. */
+/** Icon key for a backend task type, consumed by the challenge card UI. */
 export function taskIconKey(task: Task): "follow" | "like" | "reply" | "repost" | "quote" | "generic" {
   const t = typeof (task.metadata as TaskMetadata)?.type === "string" ? (task.metadata as TaskMetadata).type : "";
   if (t === "twitter_follow") return "follow";

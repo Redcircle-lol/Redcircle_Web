@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { motion } from "motion/react";
 import { AlertCircle, ArrowLeft, CalendarClock, Loader2 } from "lucide-react";
@@ -11,20 +12,26 @@ import {
   timeLeft,
   useAsync,
 } from "@/lib/campaigns-api";
-import TaskCard from "./TaskCard";
+import CampaignChallengeCard from "./CampaignChallengeCard";
 
 export default function CampaignDetailView({ campaignId }: { campaignId: string }) {
-  const { refresh } = useCampaignAuth();
+  const { refresh, user } = useCampaignAuth();
   const campaign = useAsync(() => getCampaign(campaignId), [campaignId]);
   const tasks = useAsync(() => listCampaignTasks(campaignId), [campaignId]);
-  const submissions = useAsync(() => listMySubmissions(), []);
+  const submissions = useAsync(() => listMySubmissions(), [user?.userId]);
+  const [doneIds, setDoneIds] = useState<Set<string>>(new Set());
 
-  // Set of task ids the user has verified.
-  const doneIds = new Set(
-    (submissions.data ?? []).filter((s) => s.verified).map((s) => s.taskId),
-  );
+  useEffect(() => {
+    if (!user) {
+      setDoneIds(new Set());
+      return;
+    }
+    const completed = (submissions.data ?? []).filter((submission) => submission.verified).map((submission) => submission.taskId);
+    setDoneIds(new Set(completed));
+  }, [submissions.data, user]);
 
-  const onCompleted = () => {
+  const onCompleted = (taskId: string) => {
+    setDoneIds((current) => new Set(current).add(taskId));
     submissions.reload();
     void refresh(); // updates points in header/stats
   };
@@ -50,6 +57,7 @@ export default function CampaignDetailView({ campaignId }: { campaignId: string 
 
   const left = campaign.data ? timeLeft(campaign.data.expiresAt) : null;
   const taskList = tasks.data ?? [];
+  const submissionsByTask = new Map((submissions.data ?? []).map((submission) => [submission.taskId, submission]));
   const doneCount = taskList.filter((t) => doneIds.has(t.taskId)).length;
 
   return (
@@ -90,10 +98,10 @@ export default function CampaignDetailView({ campaignId }: { campaignId: string 
         </motion.div>
       ) : null}
 
-      {/* Tasks */}
+      {/* Challenges */}
       <div className="mt-8">
         <div className="mb-4 flex items-baseline justify-between gap-3">
-          <h2 className="text-lg font-bold text-white">Tasks</h2>
+          <h2 className="text-lg font-bold text-white">Challenges</h2>
           {taskList.length > 0 && (
             <span className="text-sm font-medium text-white/40 tabular-nums">
               {doneCount}/{taskList.length} done
@@ -108,9 +116,11 @@ export default function CampaignDetailView({ campaignId }: { campaignId: string 
         ) : taskList.length > 0 ? (
           <div className="space-y-3">
             {taskList.map((t) => (
-              <TaskCard
+              <CampaignChallengeCard
                 key={t.taskId}
                 task={t}
+                userId={user?.userId ?? ""}
+                submission={submissionsByTask.get(t.taskId)}
                 completed={doneIds.has(t.taskId)}
                 onCompleted={onCompleted}
               />
@@ -118,7 +128,7 @@ export default function CampaignDetailView({ campaignId }: { campaignId: string 
           </div>
         ) : (
           <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] py-12 text-center text-sm text-white/40">
-            No tasks in this campaign yet.
+            No challenges in this campaign yet.
           </div>
         )}
       </div>

@@ -17,7 +17,6 @@ import { Route as LeaderboardRouteImport } from './routes/leaderboard'
 import { Route as HotRouteImport } from './routes/hot'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as DocsRouteImport } from './routes/docs'
-import { Route as ChallengesRouteImport } from './routes/challenges'
 import { Route as CampaignsRouteImport } from './routes/campaigns'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
@@ -27,6 +26,7 @@ import { Route as CampaignsLeaderboardRouteImport } from './routes/campaigns.lea
 import { Route as CampaignsAdminRouteImport } from './routes/campaigns.admin'
 import { Route as CampaignsCampaignIdRouteImport } from './routes/campaigns.$campaignId'
 import { Route as AuthSuccessRouteImport } from './routes/auth.success'
+import { Route as CampaignsAuthSuccessRouteImport } from './routes/campaigns.auth.success'
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
@@ -66,11 +66,6 @@ const HomeRoute = HomeRouteImport.update({
 const DocsRoute = DocsRouteImport.update({
   id: '/docs',
   path: '/docs',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ChallengesRoute = ChallengesRouteImport.update({
-  id: '/challenges',
-  path: '/challenges',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CampaignsRoute = CampaignsRouteImport.update({
@@ -118,12 +113,16 @@ const AuthSuccessRoute = AuthSuccessRouteImport.update({
   path: '/auth/success',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CampaignsAuthSuccessRoute = CampaignsAuthSuccessRouteImport.update({
+  id: '/auth/success',
+  path: '/auth/success',
+  getParentRoute: () => CampaignsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/campaigns': typeof CampaignsRouteWithChildren
-  '/challenges': typeof ChallengesRoute
   '/docs': typeof DocsRoute
   '/home': typeof HomeRoute
   '/hot': typeof HotRoute
@@ -138,11 +137,11 @@ export interface FileRoutesByFullPath {
   '/campaigns/leaderboard': typeof CampaignsLeaderboardRoute
   '/token/$tokenId': typeof TokenTokenIdRoute
   '/campaigns/': typeof CampaignsIndexRoute
+  '/campaigns/auth/success': typeof CampaignsAuthSuccessRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
-  '/challenges': typeof ChallengesRoute
   '/docs': typeof DocsRoute
   '/home': typeof HomeRoute
   '/hot': typeof HotRoute
@@ -157,13 +156,13 @@ export interface FileRoutesByTo {
   '/campaigns/leaderboard': typeof CampaignsLeaderboardRoute
   '/token/$tokenId': typeof TokenTokenIdRoute
   '/campaigns': typeof CampaignsIndexRoute
+  '/campaigns/auth/success': typeof CampaignsAuthSuccessRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/campaigns': typeof CampaignsRouteWithChildren
-  '/challenges': typeof ChallengesRoute
   '/docs': typeof DocsRoute
   '/home': typeof HomeRoute
   '/hot': typeof HotRoute
@@ -178,6 +177,7 @@ export interface FileRoutesById {
   '/campaigns/leaderboard': typeof CampaignsLeaderboardRoute
   '/token/$tokenId': typeof TokenTokenIdRoute
   '/campaigns/': typeof CampaignsIndexRoute
+  '/campaigns/auth/success': typeof CampaignsAuthSuccessRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -185,7 +185,6 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/campaigns'
-    | '/challenges'
     | '/docs'
     | '/home'
     | '/hot'
@@ -200,11 +199,11 @@ export interface FileRouteTypes {
     | '/campaigns/leaderboard'
     | '/token/$tokenId'
     | '/campaigns/'
+    | '/campaigns/auth/success'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/admin'
-    | '/challenges'
     | '/docs'
     | '/home'
     | '/hot'
@@ -219,12 +218,12 @@ export interface FileRouteTypes {
     | '/campaigns/leaderboard'
     | '/token/$tokenId'
     | '/campaigns'
+    | '/campaigns/auth/success'
   id:
     | '__root__'
     | '/'
     | '/admin'
     | '/campaigns'
-    | '/challenges'
     | '/docs'
     | '/home'
     | '/hot'
@@ -239,13 +238,13 @@ export interface FileRouteTypes {
     | '/campaigns/leaderboard'
     | '/token/$tokenId'
     | '/campaigns/'
+    | '/campaigns/auth/success'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
   CampaignsRoute: typeof CampaignsRouteWithChildren
-  ChallengesRoute: typeof ChallengesRoute
   DocsRoute: typeof DocsRoute
   HomeRoute: typeof HomeRoute
   HotRoute: typeof HotRoute
@@ -316,13 +315,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DocsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/challenges': {
-      id: '/challenges'
-      path: '/challenges'
-      fullPath: '/challenges'
-      preLoaderRoute: typeof ChallengesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/campaigns': {
       id: '/campaigns'
       path: '/campaigns'
@@ -386,6 +378,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthSuccessRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/campaigns/auth/success': {
+      id: '/campaigns/auth/success'
+      path: '/auth/success'
+      fullPath: '/campaigns/auth/success'
+      preLoaderRoute: typeof CampaignsAuthSuccessRouteImport
+      parentRoute: typeof CampaignsRoute
+    }
   }
 }
 
@@ -394,6 +393,7 @@ interface CampaignsRouteChildren {
   CampaignsAdminRoute: typeof CampaignsAdminRoute
   CampaignsLeaderboardRoute: typeof CampaignsLeaderboardRoute
   CampaignsIndexRoute: typeof CampaignsIndexRoute
+  CampaignsAuthSuccessRoute: typeof CampaignsAuthSuccessRoute
 }
 
 const CampaignsRouteChildren: CampaignsRouteChildren = {
@@ -401,6 +401,7 @@ const CampaignsRouteChildren: CampaignsRouteChildren = {
   CampaignsAdminRoute: CampaignsAdminRoute,
   CampaignsLeaderboardRoute: CampaignsLeaderboardRoute,
   CampaignsIndexRoute: CampaignsIndexRoute,
+  CampaignsAuthSuccessRoute: CampaignsAuthSuccessRoute,
 }
 
 const CampaignsRouteWithChildren = CampaignsRoute._addFileChildren(
@@ -411,7 +412,6 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
   CampaignsRoute: CampaignsRouteWithChildren,
-  ChallengesRoute: ChallengesRoute,
   DocsRoute: DocsRoute,
   HomeRoute: HomeRoute,
   HotRoute: HotRoute,

@@ -4,7 +4,7 @@ import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
 import { formatDate, timeLeft, type Campaign } from "@/lib/campaigns-api";
 
-/** Campaign summary card → links into the campaign detail/tasks page. */
+/** Campaign summary card -> links into the campaign detail/challenges page. */
 export default function CampaignCard({ campaign, index = 0 }: { campaign: Campaign; index?: number }) {
   const left = timeLeft(campaign.expiresAt);
 
@@ -53,7 +53,7 @@ export default function CampaignCard({ campaign, index = 0 }: { campaign: Campai
               Ends {formatDate(campaign.expiresAt)}
             </span>
             <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#00FFA3] transition-transform group-hover:translate-x-0.5">
-              View tasks <ArrowRight className="h-4 w-4" />
+              View challenges <ArrowRight className="h-4 w-4" />
             </span>
           </div>
         </div>

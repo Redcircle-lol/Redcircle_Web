@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ArrowUpRight,
   Check,
@@ -13,7 +13,15 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { resolveTaskAction, submitAndVerify, taskIconKey, ApiError, type Task } from "@/lib/campaigns-api";
+import {
+  resolveTaskAction,
+  createSubmission,
+  verifySubmission,
+  taskIconKey,
+  ApiError,
+  type Submission,
+  type Task,
+} from "@/lib/campaigns-api";
 
 const ICON = {
   follow: UserPlus,
@@ -27,33 +35,68 @@ const ICON = {
 type Phase = "idle" | "working" | "failed" | "done";
 
 /**
- * One task with the full submit→verify flow.
+ * One challenge with the full submit→verify flow.
  *  - "Open on X" performs the action in a new tab.
  *  - "Verify" creates a submission then verifies it (backend is source of truth).
- * `completed` (from the user's submissions) seeds the done state.
+ * `completed` seeds the done state.
  */
-export default function TaskCard({
+export default function CampaignChallengeCard({
   task,
+  userId,
+  submission,
   completed,
   onCompleted,
 }: {
   task: Task;
+  userId: string;
+  submission?: Submission;
   completed: boolean;
-  onCompleted: () => void;
+  onCompleted: (taskId: string) => void;
 }) {
   const action = resolveTaskAction(task);
   const Icon = ICON[taskIconKey(task)];
+  const submissionKey = useMemo(() => `campaign-submission:${userId}:${task.taskId}`, [task.taskId, userId]);
+  const verifiedKey = `${submissionKey}:verified`;
   const [phase, setPhase] = useState<Phase>(completed ? "done" : "idle");
+  const [submissionId, setSubmissionId] = useState<string | null>(() =>
+    submission?.submissionId ?? (userId ? localStorage.getItem(submissionKey) : null),
+  );
   const isDone = completed || phase === "done";
 
+  useEffect(() => {
+    if (!userId) {
+      setSubmissionId(null);
+      setPhase("idle");
+      return;
+    }
+    const currentSubmissionId = submission?.submissionId ?? localStorage.getItem(submissionKey);
+    setSubmissionId(currentSubmissionId);
+    setPhase(completed || submission?.verified || localStorage.getItem(verifiedKey) === "true" ? "done" : "idle");
+  }, [completed, submission, submissionKey, userId, verifiedKey]);
+
   const verify = async () => {
+    if (!userId) {
+      toast.error("Sign in required", { description: "Please sign in before verifying challenges." });
+      return;
+    }
+
     setPhase("working");
     try {
-      const submission = await submitAndVerify(task.taskId);
+      let id = submissionId;
+      if (!id) {
+        const created = await createSubmission(task.taskId);
+        id = created.submissionId;
+        setSubmissionId(id);
+        localStorage.setItem(submissionKey, id);
+      }
+
+      const submission = await verifySubmission(id);
       if (submission.verified) {
         setPhase("done");
-        toast.success("Task verified!", { description: `+${task.rewardPoints} points` });
-        onCompleted();
+        localStorage.setItem(submissionKey, submission.submissionId);
+        localStorage.setItem(verifiedKey, "true");
+        toast.success("Challenge verified!", { description: `+${task.rewardPoints} points` });
+        onCompleted(task.taskId);
       } else {
         setPhase("failed");
         toast.error("Not verified yet", {
@@ -62,10 +105,15 @@ export default function TaskCard({
       }
     } catch (e) {
       setPhase("failed");
+      if (e instanceof ApiError && e.isNotFound && submissionId) {
+        localStorage.removeItem(submissionKey);
+        localStorage.removeItem(verifiedKey);
+        setSubmissionId(null);
+      }
       const msg =
         e instanceof ApiError
           ? e.status === 409
-            ? "You've already submitted this task."
+            ? "You've already submitted this challenge."
             : e.message
           : "Verification failed. Please try again.";
       toast.error("Verification failed", { description: msg });

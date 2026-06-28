@@ -8,7 +8,7 @@ import AdminUsers from "./AdminUsers";
 
 const TABS = [
   { key: "campaigns", label: "Campaigns", render: () => <AdminCampaigns /> },
-  { key: "tasks", label: "Tasks", render: () => <AdminTasks /> },
+  { key: "tasks", label: "Challenges", render: () => <AdminTasks /> },
   { key: "submissions", label: "Submissions", render: () => <AdminSubmissions /> },
   { key: "users", label: "Users", render: () => <AdminUsers /> },
 ] as const;
@@ -27,7 +27,7 @@ export default function AdminView() {
         transition={{ duration: 0.4, ease: "easeOut" }}
       >
         <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">Admin</h1>
-        <p className="mt-2 text-sm text-white/50">Manage campaigns, tasks, submissions, and users.</p>
+        <p className="mt-2 text-sm text-white/50">Manage campaigns, challenges, submissions, and users.</p>
       </motion.div>
 
       <div className="mt-6 inline-flex flex-wrap gap-1 rounded-full border border-white/10 bg-white/[0.03] p-1">

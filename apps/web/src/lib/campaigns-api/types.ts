@@ -58,9 +58,11 @@ export type LeaderboardEntry = {
 };
 
 export type RankInfo = {
-  rank: number | null;
+  rank: number;
   points: number;
   userId: string;
+  twitterUsername: string | null;
+  walletAddress: string | null;
 };
 
 // ── Supported Twitter task metadata types ────────────────────────────────────
@@ -92,5 +94,6 @@ export type TaskResponse = { task: Task };
 export type SubmissionResponse = { submission: Submission };
 export type SubmissionsResponse = { submissions: Submission[] };
 export type LeaderboardResponse = { leaderboard: LeaderboardEntry[]; cacheTtlSeconds?: number };
+export type RankResponse = { rank: RankInfo | null; cacheTtlSeconds?: number };
 export type UsersResponse = { users: AppUser[] };
 export type UserResponse = { user: AppUser };

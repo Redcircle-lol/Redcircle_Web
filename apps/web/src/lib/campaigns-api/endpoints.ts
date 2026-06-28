@@ -1,7 +1,7 @@
 // Typed wrappers for every campaigns-backend endpoint the frontend uses.
-// Grouped: auth/user, campaigns, tasks, submissions, leaderboard, admin.
+// Backend calls them "tasks"; the product UI renders them as "challenges".
 
-import { api, apiDelete, apiGet, apiPatch, apiPost, API_BASE_URL, ApiError } from "./client";
+import { api, apiDelete, apiGet, apiPatch, apiPost, API_BASE_URL } from "./client";
 import type {
   AppUser,
   Campaign,
@@ -11,6 +11,7 @@ import type {
   LeaderboardResponse,
   MeResponse,
   RankInfo,
+  RankResponse,
   Submission,
   SubmissionResponse,
   SubmissionsResponse,
@@ -78,7 +79,7 @@ export async function getCampaign(campaignId: string): Promise<Campaign> {
   return data.campaign;
 }
 
-// ── Tasks ────────────────────────────────────────────────────────────────────
+// ── Challenges (backend tasks) ───────────────────────────────────────────────
 
 export async function listTasks(): Promise<Task[]> {
   const data = await apiGet<TasksResponse>("/tasks");
@@ -112,39 +113,19 @@ export async function getSubmission(submissionId: string): Promise<Submission> {
   return data.submission;
 }
 
-/**
- * The user's own submissions (lets us preload task completion state).
- * NOTE: per the API doc this endpoint may not exist yet — if it 404s we degrade
- * gracefully to an empty list rather than breaking the page.
- */
 export async function listMySubmissions(): Promise<Submission[]> {
-  try {
-    const data = await apiGet<SubmissionsResponse>("/submissions/me");
-    return data.submissions ?? [];
-  } catch (e) {
-    if (e instanceof ApiError && e.isNotFound) return [];
-    throw e;
-  }
+  const data = await apiGet<SubmissionsResponse>("/submissions/me");
+  return data.submissions;
 }
 
 /**
- * Submit a task then verify it (the common flow). Resilient to retries: if the
- * submission already exists (409), it finds the user's existing submission and
- * verifies that instead — so "Retry verify" works after a first failure.
+ * Submit a challenge then verify it. Pass an existing submission id for retries in
+ * the same browser session; the backend has no user-facing list-submissions
+ * endpoint to rediscover an old submission id after local state is gone.
  */
-export async function submitAndVerify(taskId: string): Promise<Submission> {
-  try {
-    const created = await createSubmission(taskId);
-    return await verifySubmission(created.submissionId);
-  } catch (e) {
-    if (e instanceof ApiError && e.status === 409) {
-      const existing = (await listMySubmissions()).find((s) => s.taskId === taskId);
-      if (existing) {
-        return existing.verified ? existing : verifySubmission(existing.submissionId);
-      }
-    }
-    throw e;
-  }
+export async function submitAndVerify(taskId: string, existingSubmissionId?: string): Promise<Submission> {
+  const submissionId = existingSubmissionId ?? (await createSubmission(taskId)).submissionId;
+  return verifySubmission(submissionId);
 }
 
 // ── Leaderboard ──────────────────────────────────────────────────────────────
@@ -154,12 +135,14 @@ export async function getLeaderboard(limit = 10): Promise<LeaderboardEntry[]> {
   return data.leaderboard;
 }
 
-export async function getMyRank(): Promise<RankInfo> {
-  return apiGet<RankInfo>("/leaderboard/me/rank");
+export async function getMyRank(): Promise<RankInfo | null> {
+  const data = await apiGet<RankResponse>("/leaderboard/me/rank");
+  return data.rank;
 }
 
-export async function getUserRank(userId: string): Promise<RankInfo> {
-  return apiGet<RankInfo>(`/leaderboard/${userId}/rank`);
+export async function getUserRank(userId: string): Promise<RankInfo | null> {
+  const data = await apiGet<RankResponse>(`/leaderboard/${userId}/rank`);
+  return data.rank;
 }
 
 // ── Admin (role === "admin") ─────────────────────────────────────────────────
@@ -172,7 +155,7 @@ export const admin = {
     apiGet<UserResponse>(`/admin/users/by-twitter/${handle}`).then((d) => d.user),
   updateUser: (id: string, patch: Partial<Pick<AppUser, "role" | "points">>) =>
     apiPatch<UserResponse>(`/admin/users/${id}`, patch).then((d) => d.user),
-  deleteUser: (id: string) => apiDelete<{ success?: boolean }>(`/admin/users/${id}`),
+  deleteUser: (id: string) => apiDelete<UserResponse>(`/admin/users/${id}`).then((d) => d.user),
 
   // campaigns (includes inactive + expired)
   listCampaigns: () => apiGet<CampaignsResponse>("/admin/campaigns").then((d) => d.campaigns),
@@ -181,17 +164,17 @@ export const admin = {
     apiPost<CampaignResponse>("/admin/campaigns", body).then((d) => d.campaign),
   updateCampaign: (id: string, patch: Partial<AdminCampaignInput>) =>
     apiPatch<CampaignResponse>(`/admin/campaigns/${id}`, patch).then((d) => d.campaign),
-  deleteCampaign: (id: string) => apiDelete<{ success?: boolean }>(`/admin/campaigns/${id}`),
+  deleteCampaign: (id: string) => apiDelete<CampaignResponse>(`/admin/campaigns/${id}`).then((d) => d.campaign),
   campaignTasks: (id: string) =>
     apiGet<TasksResponse>(`/admin/campaigns/${id}/tasks`).then((d) => d.tasks),
 
-  // tasks
+  // challenges (backend tasks)
   listTasks: () => apiGet<TasksResponse>("/admin/tasks").then((d) => d.tasks),
   getTask: (id: string) => apiGet<TaskResponse>(`/admin/tasks/${id}`).then((d) => d.task),
   createTask: (body: AdminTaskInput) => apiPost<TaskResponse>("/admin/tasks", body).then((d) => d.task),
   updateTask: (id: string, patch: Partial<AdminTaskInput>) =>
     apiPatch<TaskResponse>(`/admin/tasks/${id}`, patch).then((d) => d.task),
-  deleteTask: (id: string) => apiDelete<{ success?: boolean }>(`/admin/tasks/${id}`),
+  deleteTask: (id: string) => apiDelete<TaskResponse>(`/admin/tasks/${id}`).then((d) => d.task),
 
   // submissions
   listSubmissions: () => apiGet<SubmissionsResponse>("/admin/submissions").then((d) => d.submissions),
@@ -203,7 +186,8 @@ export const admin = {
     apiPost<SubmissionResponse>(`/admin/submissions/${id}/verify`, { verified }).then((d) => d.submission),
   updateSubmission: (id: string, patch: { verified: boolean }) =>
     apiPatch<SubmissionResponse>(`/admin/submissions/${id}`, patch).then((d) => d.submission),
-  deleteSubmission: (id: string) => apiDelete<{ success?: boolean }>(`/admin/submissions/${id}`),
+  deleteSubmission: (id: string) =>
+    apiDelete<SubmissionResponse>(`/admin/submissions/${id}`).then((d) => d.submission),
 
   // leaderboard (admin view)
   leaderboard: (limit = 10) =>

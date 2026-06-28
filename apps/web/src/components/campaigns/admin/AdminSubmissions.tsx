@@ -38,7 +38,11 @@ export default function AdminSubmissions() {
   const verify = async (s: Submission, verified: boolean) => {
     setBusyId(s.submissionId);
     try {
-      await admin.verifySubmission(s.submissionId, verified);
+      if (verified) {
+        await admin.verifySubmission(s.submissionId, true);
+      } else {
+        await admin.updateSubmission(s.submissionId, { verified: false });
+      }
       toast.success(verified ? "Marked verified" : "Marked unverified");
       refresh();
     } catch (e) {
@@ -113,7 +117,7 @@ export default function AdminSubmissions() {
                   </span>
                 </div>
                 <div className="mt-0.5 truncate font-mono text-xs text-white/35">
-                  task {s.taskId} · user {s.userId}
+                  challenge {s.taskId} · user {s.userId}
                 </div>
               </div>
               {s.verified ? (
