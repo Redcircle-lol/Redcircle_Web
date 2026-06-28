@@ -1,4 +1,4 @@
-// Small formatting helpers for campaign/task UI.
+// Small formatting helpers for campaign/challenge UI.
 
 /** "Jul 5, 2026" */
 export function formatDate(iso: string): string {

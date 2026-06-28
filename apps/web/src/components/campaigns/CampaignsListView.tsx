@@ -49,7 +49,7 @@ export default function CampaignsListView() {
       >
         <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">Campaigns</h1>
         <p className="mt-3 max-w-2xl text-base leading-relaxed text-white/55">
-          Complete tasks, earn points, and climb the leaderboard. New campaigns drop regularly.
+          Complete challenges, earn points, and climb the leaderboard. New campaigns drop regularly.
         </p>
         <div className="mt-6">
           <StatsStrip />

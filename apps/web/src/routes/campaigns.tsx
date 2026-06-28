@@ -8,8 +8,8 @@ export const Route = createFileRoute("/campaigns")({
 
 /**
  * Layout for the whole /campaigns section: provides the campaigns Twitter/X
- * auth context and the section sub-nav. (The OAuth landing lives at the
- * top-level /auth/success route, outside this layout.)
+ * auth context and the section sub-nav. The campaigns OAuth landing is
+ * /campaigns/auth/success.
  */
 function CampaignsLayout() {
   return (

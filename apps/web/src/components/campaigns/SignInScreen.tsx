@@ -38,7 +38,7 @@ export default function SignInScreen() {
           </div>
           <h1 className="mt-5 text-2xl font-bold text-white">Sign in to join Campaigns</h1>
           <p className="mt-2 text-sm leading-relaxed text-white/55">
-            Connect your X account to complete tasks, earn points, and climb the leaderboard.
+            Connect your X account to complete challenges, earn points, and climb the leaderboard.
           </p>
 
           <button
@@ -51,7 +51,7 @@ export default function SignInScreen() {
           </button>
 
           <p className="mt-4 text-xs text-white/35">
-            We only use your X profile to verify task completion.
+            We only use your X profile to verify challenge completion.
           </p>
         </div>
       </motion.div>
