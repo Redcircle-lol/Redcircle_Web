@@ -5,11 +5,11 @@ import { getDisplayUsername } from "@/lib/auth";
 import { Menu, X, LogOut, UserRound, Flame, Target } from "lucide-react";
 import WalletButton from "@/components/WalletButton";
 
-const navLinks = [
+const navLinks: Array<{ label: string; to: string; href?: string; icon?: React.ComponentType<{ className?: string }> }> = [
   { label: "Feed", to: "/home" },
   { label: "Leaderboard", to: "/leaderboard" },
   { label: "Hot", to: "/hot", icon: Flame },
-   { label: "Campaigns", to: "/campaigns", href: "https://campaigns.redcircle.lol", icon: Target },
+  { label: "Campaigns", to: "/campaigns", icon: Target },
   { label: "Social", to: "/social" },
   { label: "Docs", to: "/docs" },
 ];

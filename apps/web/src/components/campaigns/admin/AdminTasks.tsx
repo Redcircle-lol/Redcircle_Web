@@ -20,6 +20,7 @@ const TASK_TYPES = [
   "twitter_repost",
   "twitter_quote",
   "twitter_repost_or_quote",
+  "other",
 ] as const;
 
 type FormState = {

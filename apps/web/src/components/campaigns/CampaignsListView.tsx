@@ -1,5 +1,5 @@
 import { motion } from "motion/react";
-import { Trophy, Sparkles, AlertCircle } from "lucide-react";
+import { Trophy, Star, AlertCircle } from "lucide-react";
 import { useCampaignAuth } from "@/contexts/CampaignAuthContext";
 import { listCampaigns, getMyRank, useAsync } from "@/lib/campaigns-api";
 import CampaignCard from "./CampaignCard";
@@ -19,7 +19,7 @@ function StatsStrip() {
     <div className="grid grid-cols-2 gap-3 sm:max-w-md">
       <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
         <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/35">
-          <Sparkles className="h-3 w-3" /> Your points
+          <Star className="h-3 w-3" /> Your points
         </div>
         <div className="mt-1 text-2xl font-bold text-[#00FFA3] tabular-nums">
           {(user?.points ?? 0).toLocaleString()}

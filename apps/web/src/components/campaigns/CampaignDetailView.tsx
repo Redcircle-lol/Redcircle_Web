@@ -56,7 +56,9 @@ export default function CampaignDetailView({ campaignId }: { campaignId: string 
   }
 
   const left = campaign.data ? timeLeft(campaign.data.expiresAt) : null;
-  const taskList = tasks.data ?? [];
+  const taskList = [...(tasks.data ?? [])].sort(
+    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+  );
   const submissionsByTask = new Map((submissions.data ?? []).map((submission) => [submission.taskId, submission]));
   const doneCount = taskList.filter((t) => doneIds.has(t.taskId)).length;
 

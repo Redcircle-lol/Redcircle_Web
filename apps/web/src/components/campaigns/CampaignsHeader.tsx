@@ -17,30 +17,31 @@ export default function CampaignsHeader() {
   const isActive = (to: string, exact: boolean) => (exact ? pathname === to : pathname.startsWith(to));
 
   return (
-    <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="mb-8 flex flex-row items-center justify-between gap-2">
       <nav className="inline-flex rounded-full border border-white/10 bg-white/[0.03] p-1">
         {tabs.map((t) => (
           <Link
             key={t.to}
             to={t.to}
             className={cn(
-              "inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-semibold transition-all",
+              "inline-flex items-center justify-center rounded-full transition-all",
+              "px-2.5 py-1.5 sm:gap-1.5 sm:px-3.5 sm:py-1.5",
               isActive(t.to, t.exact) ? "bg-white/10 text-white" : "text-white/45 hover:text-white/70",
             )}
           >
-            <t.icon className="h-3.5 w-3.5" />
-            {t.label}
+            <t.icon className="h-3.5 w-3.5 shrink-0" />
+            <span className="hidden sm:inline sm:text-sm sm:font-semibold ml-1.5">{t.label}</span>
           </Link>
         ))}
       </nav>
 
       {user && (
-        <div className="flex items-center gap-2.5 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5">
-          <span className="text-sm font-medium text-white">
+        <div className="flex shrink-0 items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1.5 sm:gap-2.5 sm:px-3">
+          <span className="hidden text-sm font-medium text-white sm:inline">
             {user.twitterUsername ? `@${user.twitterUsername}` : "You"}
           </span>
-          <span className="h-3.5 w-px bg-white/15" />
-          <span className="text-sm font-bold text-[#00FFA3] tabular-nums">{user.points.toLocaleString()} pts</span>
+          <span className="hidden h-3.5 w-px bg-white/15 sm:inline-block" />
+          <span className="text-xs font-bold text-[#00FFA3] tabular-nums sm:text-sm">{user.points.toLocaleString()} pts</span>
         </div>
       )}
     </div>
