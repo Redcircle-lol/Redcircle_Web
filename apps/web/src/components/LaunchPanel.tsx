@@ -680,7 +680,13 @@ export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
                         ) : (
                           <button
                             type="button"
-                            onClick={() => startProviderSignIn("x")}
+                            onClick={() => {
+                              // Save the current post URL so LaunchPanel restores it after OAuth redirect
+                              if (url) {
+                                try { sessionStorage.setItem("rc_launch_search", `?url=${encodeURIComponent(url)}`); } catch { /* ignore */ }
+                              }
+                              startProviderSignIn("x");
+                            }}
                             className="w-full flex items-center gap-2 bg-black/60 border border-white/[0.07] hover:border-white/15 rounded-lg px-3 py-2.5 text-white/40 hover:text-white/60 text-xs font-mono transition-all"
                           >
                             <span className="text-sm">𝕏</span>
