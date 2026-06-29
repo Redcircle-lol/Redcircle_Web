@@ -3,6 +3,7 @@ import {
   ArrowUpRight,
   Check,
   CircleCheck,
+  Clock,
   Heart,
   Loader2,
   MessageCircle,
@@ -16,7 +17,6 @@ import { cn } from "@/lib/utils";
 import {
   resolveTaskAction,
   createSubmission,
-  verifySubmission,
   taskIconKey,
   ApiError,
   type Submission,
@@ -32,7 +32,7 @@ const ICON = {
   generic: Zap,
 } as const;
 
-type Phase = "idle" | "working" | "failed" | "done";
+type Phase = "idle" | "working" | "pending" | "failed" | "done";
 
 /**
  * One challenge with the full submit→verify flow.
@@ -57,6 +57,7 @@ export default function CampaignChallengeCard({
   const Icon = ICON[taskIconKey(task)];
   const submissionKey = useMemo(() => `campaign-submission:${userId}:${task.taskId}`, [task.taskId, userId]);
   const verifiedKey = `${submissionKey}:verified`;
+  const pendingKey = `${submissionKey}:pending`;
   const [phase, setPhase] = useState<Phase>(completed ? "done" : "idle");
   const [submissionId, setSubmissionId] = useState<string | null>(() =>
     submission?.submissionId ?? (userId ? localStorage.getItem(submissionKey) : null),
@@ -71,8 +72,14 @@ export default function CampaignChallengeCard({
     }
     const currentSubmissionId = submission?.submissionId ?? localStorage.getItem(submissionKey);
     setSubmissionId(currentSubmissionId);
-    setPhase(completed || submission?.verified || localStorage.getItem(verifiedKey) === "true" ? "done" : "idle");
-  }, [completed, submission, submissionKey, userId, verifiedKey]);
+    if (completed || submission?.verified || localStorage.getItem(verifiedKey) === "true") {
+      setPhase("done");
+    } else if (localStorage.getItem(pendingKey) === "true") {
+      setPhase("pending");
+    } else {
+      setPhase("idle");
+    }
+  }, [completed, submission, submissionKey, userId, verifiedKey, pendingKey]);
 
   const verify = async () => {
     if (!userId) {
@@ -90,33 +97,22 @@ export default function CampaignChallengeCard({
         localStorage.setItem(submissionKey, id);
       }
 
-      const submission = await verifySubmission(id);
-      if (submission.verified) {
-        setPhase("done");
-        localStorage.setItem(submissionKey, submission.submissionId);
-        localStorage.setItem(verifiedKey, "true");
-        toast.success("Challenge verified!", { description: `+${task.rewardPoints} points` });
-        onCompleted(task.taskId);
-      } else {
-        setPhase("failed");
-        toast.error("Not verified yet", {
-          description: "We couldn't confirm the action on X. Complete it, then retry.",
-        });
-      }
+      setPhase("pending");
+      localStorage.setItem(pendingKey, "true");
+      toast.success("Submitted!", {
+        description: "We'll verify your action and allocate your rewards shortly.",
+      });
     } catch (e) {
       setPhase("failed");
       if (e instanceof ApiError && e.isNotFound && submissionId) {
         localStorage.removeItem(submissionKey);
-        localStorage.removeItem(verifiedKey);
         setSubmissionId(null);
       }
       const msg =
-        e instanceof ApiError
-          ? e.status === 409
-            ? "You've already submitted this challenge."
-            : e.message
-          : "Verification failed. Please try again.";
-      toast.error("Verification failed", { description: msg });
+        e instanceof ApiError && e.status === 409
+          ? "You've already submitted this challenge."
+          : "Submission failed. Please try again.";
+      toast.error("Submission failed", { description: msg });
     }
   };
 
@@ -126,16 +122,26 @@ export default function CampaignChallengeCard({
         "flex flex-col gap-4 rounded-2xl border p-4 transition-colors sm:flex-row sm:items-center",
         isDone
           ? "border-[#00FFA3]/25 bg-[#00FFA3]/[0.04]"
-          : "border-white/[0.08] bg-white/[0.025] hover:border-white/15",
+          : phase === "pending"
+            ? "border-amber-400/20 bg-amber-400/[0.04]"
+            : "border-white/[0.08] bg-white/[0.025] hover:border-white/15",
       )}
     >
       <div
         className={cn(
           "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ring-1",
-          isDone ? "bg-[#00FFA3]/15 ring-[#00FFA3]/25" : "bg-white/[0.04] ring-white/10",
+          isDone
+            ? "bg-[#00FFA3]/15 ring-[#00FFA3]/25"
+            : phase === "pending"
+              ? "bg-amber-400/10 ring-amber-400/20"
+              : "bg-white/[0.04] ring-white/10",
         )}
       >
-        {isDone ? <CircleCheck className="h-5 w-5 text-[#00FFA3]" /> : <Icon className="h-5 w-5 text-white/70" />}
+        {isDone
+          ? <CircleCheck className="h-5 w-5 text-[#00FFA3]" />
+          : phase === "pending"
+            ? <Clock className="h-5 w-5 text-amber-400" />
+            : <Icon className="h-5 w-5 text-white/70" />}
       </div>
 
       <div className="min-w-0 flex-1">
@@ -165,6 +171,10 @@ export default function CampaignChallengeCard({
           <span className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#00FFA3]/10 px-3 py-2 text-sm font-semibold text-[#00FFA3] sm:flex-none">
             <Check className="h-4 w-4" /> Done
           </span>
+        ) : phase === "pending" ? (
+          <span className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-amber-400/20 bg-amber-400/10 px-3 py-2 text-sm font-semibold text-amber-400 sm:flex-none">
+            <Clock className="h-4 w-4" /> Under review
+          </span>
         ) : (
           <button
             onClick={verify}
@@ -177,7 +187,7 @@ export default function CampaignChallengeCard({
             )}
           >
             {phase === "working" && <Loader2 className="h-4 w-4 animate-spin" />}
-            {phase === "working" ? "Verifying…" : phase === "failed" ? "Retry verify" : "Verify"}
+            {phase === "working" ? "Submitting…" : phase === "failed" ? "Retry" : "Verify"}
           </button>
         )}
       </div>
