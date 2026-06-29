@@ -9,7 +9,7 @@ const navLinks: Array<{ label: string; to: string; href?: string; icon?: React.C
   { label: "Feed", to: "/home" },
   { label: "Leaderboard", to: "/leaderboard" },
   { label: "Hot", to: "/hot", icon: Flame },
-  { label: "Campaigns", to: "/campaigns", icon: Target },
+  { label: "Campaigns", to: "/campaigns", href: "https://campaigns.redcircle.lol", icon: Target },
   { label: "Social", to: "/social" },
   { label: "Docs", to: "/docs" },
 ];
