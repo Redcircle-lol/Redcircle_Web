@@ -148,13 +148,13 @@ export default function CampaignChallengeCard({
         <p className="mt-0.5 text-sm leading-relaxed text-white/50">{task.taskDescription || action.hint}</p>
       </div>
 
-      <div className="flex items-center gap-2 sm:shrink-0">
+      <div className="flex w-full items-center gap-2 sm:w-auto sm:shrink-0">
         {!isDone && action.actionUrl && (
           <a
             href={action.actionUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm font-medium text-white/80 transition-all hover:bg-white/[0.08]"
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm font-medium text-white/80 transition-all hover:bg-white/[0.08] sm:flex-none"
           >
             {action.actionLabel}
             <ArrowUpRight className="h-3.5 w-3.5" />
@@ -162,7 +162,7 @@ export default function CampaignChallengeCard({
         )}
 
         {isDone ? (
-          <span className="inline-flex items-center gap-1.5 rounded-lg bg-[#00FFA3]/10 px-3 py-2 text-sm font-semibold text-[#00FFA3]">
+          <span className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#00FFA3]/10 px-3 py-2 text-sm font-semibold text-[#00FFA3] sm:flex-none">
             <Check className="h-4 w-4" /> Done
           </span>
         ) : (
@@ -170,7 +170,7 @@ export default function CampaignChallengeCard({
             onClick={verify}
             disabled={phase === "working"}
             className={cn(
-              "inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition-all active:scale-[0.98] disabled:opacity-60",
+              "flex flex-1 items-center justify-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition-all active:scale-[0.98] disabled:opacity-60 sm:flex-none",
               phase === "failed"
                 ? "border border-amber-400/30 bg-amber-400/10 text-amber-300 hover:bg-amber-400/20"
                 : "border border-[#00FFA3]/25 bg-[#00FFA3]/10 text-[#00FFA3] hover:bg-[#00FFA3]/20",

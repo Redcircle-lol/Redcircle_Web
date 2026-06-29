@@ -54,14 +54,14 @@ export default function LeaderboardView() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
       >
-        <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">Leaderboard</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-white sm:text-5xl">Leaderboard</h1>
         <p className="mt-3 max-w-2xl text-base leading-relaxed text-white/55">
           Top earners across all campaigns. Complete challenges to climb the ranks.
         </p>
       </motion.div>
 
       {/* Your rank callout */}
-      <div className="mt-6 inline-flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+      <div className="mt-6 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 sm:inline-flex">
         <Trophy className="h-5 w-5 text-[#00FFA3]" />
         <div>
           <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/35">Your rank</div>

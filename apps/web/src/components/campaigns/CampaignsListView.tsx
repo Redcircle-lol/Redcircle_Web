@@ -47,7 +47,7 @@ export default function CampaignsListView() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
       >
-        <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">Campaigns</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-white sm:text-5xl">Campaigns</h1>
         <p className="mt-3 max-w-2xl text-base leading-relaxed text-white/55">
           Complete challenges, earn points, and climb the leaderboard. New campaigns drop regularly.
         </p>

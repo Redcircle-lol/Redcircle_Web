@@ -89,7 +89,7 @@ export default function CampaignDetailView({ campaignId }: { campaignId: string 
               </span>
             )}
           </div>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+          <h1 className="mt-2 text-2xl font-bold tracking-tight text-white sm:text-4xl">
             {campaign.data.campaignName}
           </h1>
           <p className="mt-2 max-w-2xl text-base leading-relaxed text-white/55">
