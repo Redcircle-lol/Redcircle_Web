@@ -11,6 +11,7 @@ import {
   createUser,
   getMe,
   signInWithX,
+  signOut,
   updateWallet,
   type AppUser,
 } from "@/lib/campaigns-api";
@@ -27,6 +28,8 @@ interface CampaignAuthContextType {
   signIn: () => Promise<void>;
   /** Link/replace the Solana wallet, then refresh. */
   connectWallet: (address: string) => Promise<void>;
+  /** Sign out of the campaigns session. */
+  logout: () => Promise<void>;
 }
 
 const CampaignAuthContext = createContext<CampaignAuthContextType | undefined>(undefined);
@@ -106,6 +109,12 @@ export function CampaignAuthProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  const logout = useCallback(async () => {
+    await signOut();
+    setUser(null);
+    setStatus("unauthenticated");
+  }, []);
+
   const value: CampaignAuthContextType = {
     user,
     status,
@@ -113,6 +122,7 @@ export function CampaignAuthProvider({ children }: { children: ReactNode }) {
     refresh,
     signIn,
     connectWallet,
+    logout,
   };
 
   return <CampaignAuthContext.Provider value={value}>{children}</CampaignAuthContext.Provider>;

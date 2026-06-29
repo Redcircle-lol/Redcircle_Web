@@ -1,11 +1,11 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { Trophy, Target, ShieldCheck } from "lucide-react";
+import { Trophy, Target, ShieldCheck, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCampaignAuth } from "@/contexts/CampaignAuthContext";
 
 /** Section sub-nav + signed-in user chip, shown across all /campaigns pages. */
 export default function CampaignsHeader() {
-  const { user, isAdmin } = useCampaignAuth();
+  const { user, isAdmin, logout } = useCampaignAuth();
   const { pathname } = useLocation();
 
   const tabs = [
@@ -36,12 +36,21 @@ export default function CampaignsHeader() {
       </nav>
 
       {user && (
-        <div className="flex shrink-0 items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1.5 sm:gap-2.5 sm:px-3">
-          <span className="hidden text-sm font-medium text-white sm:inline">
-            {user.twitterUsername ? `@${user.twitterUsername}` : "You"}
-          </span>
-          <span className="hidden h-3.5 w-px bg-white/15 sm:inline-block" />
-          <span className="text-xs font-bold text-[#00FFA3] tabular-nums sm:text-sm">{user.points.toLocaleString()} pts</span>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <div className="flex shrink-0 items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1.5 sm:gap-2.5 sm:px-3">
+            <span className="hidden text-sm font-medium text-white sm:inline">
+              {user.twitterUsername ? `@${user.twitterUsername}` : "You"}
+            </span>
+            <span className="hidden h-3.5 w-px bg-white/15 sm:inline-block" />
+            <span className="text-xs font-bold text-[#00FFA3] tabular-nums sm:text-sm">{user.points.toLocaleString()} pts</span>
+          </div>
+          <button
+            onClick={logout}
+            title="Sign out"
+            className="flex items-center justify-center rounded-full border border-white/10 bg-white/[0.03] p-1.5 text-white/40 transition-colors hover:bg-white/[0.08] hover:text-white/80"
+          >
+            <LogOut className="h-3.5 w-3.5" />
+          </button>
         </div>
       )}
     </div>

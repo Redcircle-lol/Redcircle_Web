@@ -49,6 +49,9 @@ function ScrollToTop() {
 	return null;
 }
 
+const isCampaignsDomain =
+	typeof window !== "undefined" && window.location.hostname === "campaigns.redcircle.lol";
+
 function RootComponent() {
 	return (
 		<>
@@ -63,9 +66,9 @@ function RootComponent() {
 					<AuthProvider>
 						<VoteProvider>
 						<ScrollToTop />
-						<Navbar />
-						<MobileWalletBanner />
-						<div className="pt-16">
+						{!isCampaignsDomain && <Navbar />}
+						{!isCampaignsDomain && <MobileWalletBanner />}
+						<div className={isCampaignsDomain ? "" : "pt-16"}>
 							<Outlet />
 						</div>
 						<Toaster richColors />

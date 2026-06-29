@@ -43,6 +43,14 @@ export async function signInWithX(callbackURL: string): Promise<void> {
   window.location.href = data.url;
 }
 
+/** Sign out via Better Auth — clears the session cookie. */
+export async function signOut(): Promise<void> {
+  await fetch(`${API_BASE_URL}/api/auth/sign-out`, {
+    method: "POST",
+    credentials: "include",
+  });
+}
+
 /** Current user via session cookie. Throws ApiError(401) when signed out. */
 export async function getMe(): Promise<AppUser> {
   const data = await apiGet<MeResponse>("/auth/me");
