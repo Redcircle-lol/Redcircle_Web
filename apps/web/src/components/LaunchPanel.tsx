@@ -6,6 +6,7 @@ import {
   Loader2, ExternalLink, Check, Wallet, Copy,
 } from "lucide-react";
 import { getApiUrl } from "@/lib/auth";
+import { useAuth } from "@/contexts/AuthContext";
 import { buildTokenPageUrl } from "@/lib/x-share";
 import XThreadShare from "@/components/XThreadShare";
 import { cn, tokenSlug } from "@/lib/utils";
@@ -93,6 +94,7 @@ function resolveIncomingLaunchUrl(initialUrl?: string): string {
 export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
   const { connected, publicKey, disconnect } = useWallet();
   const { setVisible: openWalletModal } = useWalletModal();
+  const { hasLinkedProvider, startProviderSignIn } = useAuth();
   const [url, setUrl]               = useState(() => resolveIncomingLaunchUrl(initialUrl));
   const [postPreview, setPostPreview] = useState<PostPreview | null>(null);
   const [quote, setQuote]           = useState<Quote | null>(null);
@@ -279,7 +281,9 @@ export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
 
   const isBusy = ["fetching", "quoting", "preparing", "polling"].includes(step);
   const needsPhantomHandoff = shouldRedirectToPhantomBrowser();
-  const canLaunch = !!tokenName && !!tokenSymbol && (hasCuratorWallet || needsPhantomHandoff);
+  const isXPost = postPreview?.platform === "x";
+  const hasXLinked = hasLinkedProvider("x");
+  const canLaunch = !!tokenName && !!tokenSymbol && (hasCuratorWallet || needsPhantomHandoff) && (!isXPost || hasXLinked);
 
   const tokenPageUrl = mintAddress
     ? buildTokenPageUrl(tokenSlug(tokenSymbol, mintAddress) || mintAddress)
@@ -664,6 +668,31 @@ export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
                       </p>
                     </div>
 
+                    {/* Step 4 — X Account (required for X posts) */}
+                    {isXPost && (
+                      <div className="space-y-2">
+                        <SectionLabel n={4} text="X Account (required)" />
+                        {hasXLinked ? (
+                          <div className="flex items-center gap-2 bg-black/60 border border-emerald-500/20 rounded-lg px-3 py-2.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-green-400 shrink-0" />
+                            <span className="text-xs font-mono text-white/70">X account connected</span>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => startProviderSignIn("x")}
+                            className="w-full flex items-center gap-2 bg-black/60 border border-white/[0.07] hover:border-white/15 rounded-lg px-3 py-2.5 text-white/40 hover:text-white/60 text-xs font-mono transition-all"
+                          >
+                            <span className="text-sm">𝕏</span>
+                            Connect X account to launch
+                          </button>
+                        )}
+                        <p className="text-[10px] font-mono text-white/25 leading-relaxed px-0.5">
+                          Required for X posts so we can verify your curator identity for campaign rewards.
+                        </p>
+                      </div>
+                    )}
+
                   </div>
 
                   {/* Launch button — centered */}
@@ -684,9 +713,11 @@ export default function LaunchPanel({ initialUrl }: { initialUrl?: string }) {
                           ? "Connect a curator wallet to launch"
                           : !tokenName || !tokenSymbol
                             ? "Fill in token details"
-                            : needsPhantomHandoff
-                              ? "Opens in Phantom app to connect wallet"
-                              : undefined
+                            : isXPost && !hasXLinked
+                              ? "Connect your X account to launch"
+                              : needsPhantomHandoff
+                                ? "Opens in Phantom app to connect wallet"
+                                : undefined
                       }
                       className={cn(
                         "px-8 py-2.5 rounded-xl font-mono font-black text-sm uppercase tracking-wide transition-all flex items-center justify-center gap-2",
