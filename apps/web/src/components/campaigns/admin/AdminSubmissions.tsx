@@ -6,12 +6,16 @@ import { Btn, TextInput } from "./ui";
 
 export default function AdminSubmissions() {
   const all = useAsync(() => admin.listSubmissions(), []);
+  const users = useAsync(() => admin.listUsers(), []);
+  const tasks = useAsync(() => admin.listTasks(), []);
   const [handle, setHandle] = useState("");
   const [filtered, setFiltered] = useState<Submission[] | null>(null);
   const [searching, setSearching] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const rows = filtered ?? all.data ?? [];
+  const usersById = new Map((users.data ?? []).map((u) => [u.userId, u]));
+  const tasksById = new Map((tasks.data ?? []).map((t) => [t.taskId, t]));
 
   const search = async () => {
     const h = handle.trim().replace(/^@/, "");
@@ -92,52 +96,66 @@ export default function AdminSubmissions() {
         </div>
       </div>
 
-      {all.isLoading ? (
+      {all.isLoading || users.isLoading || tasks.isLoading ? (
         <div className="flex justify-center py-10">
           <Loader2 className="h-5 w-5 animate-spin text-white/40" />
         </div>
       ) : (
         <div className="space-y-2">
-          {rows.map((s) => (
-            <div
-              key={s.submissionId}
-              className="flex items-center gap-3 rounded-xl border border-white/[0.08] bg-white/[0.025] px-4 py-3"
-            >
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="truncate font-mono text-xs text-white/70">{s.submissionId}</span>
-                  <span
-                    className={
-                      s.verified
-                        ? "rounded-full bg-[#00FFA3]/10 px-2 py-0.5 text-[10px] font-bold text-[#00FFA3]"
-                        : "rounded-full bg-amber-400/10 px-2 py-0.5 text-[10px] font-bold text-amber-300"
-                    }
-                  >
-                    {s.verified ? "Verified" : "Pending"}
-                  </span>
+          {rows.map((s) => {
+            const user = usersById.get(s.userId);
+            const task = tasksById.get(s.taskId);
+            return (
+              <div
+                key={s.submissionId}
+                className="flex flex-col gap-3 rounded-xl border border-white/[0.08] bg-white/[0.025] px-4 py-3 sm:flex-row sm:items-center"
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="truncate font-mono text-xs text-white/70">{s.submissionId}</span>
+                    <span
+                      className={
+                        s.verified
+                          ? "rounded-full bg-[#00FFA3]/10 px-2 py-0.5 text-[10px] font-bold text-[#00FFA3]"
+                          : "rounded-full bg-amber-400/10 px-2 py-0.5 text-[10px] font-bold text-amber-300"
+                      }
+                    >
+                      {s.verified ? "Verified" : "Pending"}
+                    </span>
+                  </div>
+                  <div className="mt-1 truncate text-sm font-semibold text-white">
+                    {task?.taskName ?? "Unknown challenge"}
+                  </div>
+                  <div className="mt-0.5 truncate font-mono text-xs text-white/35">
+                    challenge {s.taskId} · user {s.userId} ·{" "}
+                    {user?.twitterUsername ? `@${user.twitterUsername}` : "no twitter"}
+                  </div>
                 </div>
-                <div className="mt-0.5 truncate font-mono text-xs text-white/35">
-                  challenge {s.taskId} · user {s.userId}
+                <div className="flex shrink-0 items-center gap-2">
+                  {s.verified ? (
+                    <Btn variant="ghost" onClick={() => verify(s, false)} disabled={busyId === s.submissionId}>
+                      <X className="h-4 w-4" /> Unverify
+                    </Btn>
+                  ) : (
+                    <Btn onClick={() => verify(s, true)} disabled={busyId === s.submissionId}>
+                      {busyId === s.submissionId ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Check className="h-4 w-4" />
+                      )}
+                      Verify
+                    </Btn>
+                  )}
+                  <button
+                    onClick={() => remove(s)}
+                    className="rounded-lg p-2 text-white/50 hover:bg-red-500/10 hover:text-red-400"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 </div>
               </div>
-              {s.verified ? (
-                <Btn variant="ghost" onClick={() => verify(s, false)} disabled={busyId === s.submissionId}>
-                  <X className="h-4 w-4" /> Unverify
-                </Btn>
-              ) : (
-                <Btn onClick={() => verify(s, true)} disabled={busyId === s.submissionId}>
-                  {busyId === s.submissionId ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                  Verify
-                </Btn>
-              )}
-              <button
-                onClick={() => remove(s)}
-                className="rounded-lg p-2 text-white/50 hover:bg-red-500/10 hover:text-red-400"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </div>
-          ))}
+            );
+          })}
           {rows.length === 0 && (
             <div className="rounded-xl border border-dashed border-white/10 py-10 text-center text-sm text-white/40">
               {filtered ? "No submissions for that handle." : "No submissions yet."}
