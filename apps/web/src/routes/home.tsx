@@ -54,7 +54,7 @@ function HomeComponent() {
         <div className="mb-8 sm:mb-12 text-center">
 
           {/* Bounty CTA */}
-          <a
+          {/* <a
             href="https://app.gib.work/tasks/df3f08ab-7124-4481-9a77-048eae91aa97?referral=bluecircle"
             target="_blank"
             rel="noopener noreferrer"
@@ -69,7 +69,7 @@ function HomeComponent() {
             <svg className="w-3 h-3 text-white/40 group-hover:text-white/70 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
             </svg>
-          </a>
+          </a> */}
 
           <h1 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight leading-[1.05] mb-4 sm:mb-5">
             <span className="text-white">Turn Reddit & X Posts Into</span>
