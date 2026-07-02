@@ -8,6 +8,21 @@ const { launches, users } = schema;
 
 const router: import("express").Router = Router();
 
+// Simple TTL cache — leaderboard data is expensive to compute (external Orynth
+// call for every pool) and doesn't need to be real-time.
+const CACHE_TTL_MS = 60 * 1000; // 1 minute
+const cache = new Map<string, { data: unknown; ts: number }>();
+
+function getCached<T>(key: string): T | null {
+  const entry = cache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.ts > CACHE_TTL_MS) { cache.delete(key); return null; }
+  return entry.data as T;
+}
+function setCached(key: string, data: unknown) {
+  cache.set(key, { data, ts: Date.now() });
+}
+
 /**
  * GET /api/leaderboard
  * Returns top creators ranked by USDC earnings.
@@ -18,6 +33,11 @@ const router: import("express").Router = Router();
 router.get("/", async (req, res) => {
   try {
     const limit = parseInt(req.query.limit as string) || 10;
+
+    // Serve from cache if fresh
+    const cacheKey = `leaderboard:${limit}`;
+    const cached = getCached<object>(cacheKey);
+    if (cached) return res.json(cached);
 
     // 1. Get confirmed launches that have a pool + creatorUsername.
     //    LEFT JOIN users so creators without a Redcircle account still appear;
@@ -126,7 +146,9 @@ router.get("/", async (req, res) => {
         category:      "author" as const,
       }));
 
-    return res.json({ success: true, category: "author", data });
+    const response = { success: true, category: "author", data };
+    setCached(cacheKey, response);
+    return res.json(response);
   } catch (error) {
     console.error("❌ Error fetching leaderboard:", error);
     return res.status(500).json({

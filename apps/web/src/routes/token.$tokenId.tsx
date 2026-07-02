@@ -407,15 +407,27 @@ function TokenDetailsPage() {
                         {post.holders.toLocaleString()} holders
                       </span>
                     )}
-                    {post.totalSupply != null && post.totalSupply > 0 && (
-                      <span className="rounded-full bg-black/30 px-2 py-1 text-[9px] font-medium text-white/45 ring-1 ring-white/[0.08] sm:px-3 sm:py-1.5 sm:text-[11px]">
-                        Supply {post.totalSupply >= 1e9
-                          ? `${(post.totalSupply / 1e9).toFixed(0)}B`
-                          : post.totalSupply >= 1e6
-                            ? `${(post.totalSupply / 1e6).toFixed(0)}M`
-                            : post.totalSupply.toLocaleString()}
-                      </span>
-                    )}
+                    {(() => {
+                      // Prefer on-chain supply derived from dex data (fdv / price) since
+                      // the DB value is hardcoded to 1B at launch and may be wrong.
+                      const price = dex ? Number(dex.priceUsd) : 0;
+                      const supply = (dex?.fdv && price > 0)
+                        ? Math.round(dex.fdv / price)
+                        : post.totalSupply;
+                      if (!supply || supply <= 0) return null;
+                      const label = supply >= 1e9
+                        ? `${(supply / 1e9).toFixed(2)}B`
+                        : supply >= 1e6
+                          ? `${(supply / 1e6).toFixed(2)}M`
+                          : supply >= 1e3
+                            ? `${(supply / 1e3).toFixed(1)}K`
+                            : supply.toLocaleString();
+                      return (
+                        <span className="rounded-full bg-black/30 px-2 py-1 text-[9px] font-medium text-white/45 ring-1 ring-white/[0.08] sm:px-3 sm:py-1.5 sm:text-[11px]">
+                          Supply {label}
+                        </span>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
