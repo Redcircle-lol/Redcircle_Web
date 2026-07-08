@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import Banner from "@/components/Banner";
 import LaunchPanel from "@/components/LaunchPanel";
 import RedditFeed from "@/components/RedditFeed";
 import CopyCA from "@/components/CopyCA";
@@ -50,6 +51,7 @@ function HomeComponent() {
       </div>
 
       <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 pt-6 sm:pt-10 pb-8">
+        <Banner />
         {/* Hero */}
         <div className="mb-8 sm:mb-12 text-center">
 
